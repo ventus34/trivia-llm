@@ -13,11 +13,10 @@ const generateCategoriesBtn = document.getElementById('generate-categories-btn')
 const categoriesContainer = document.getElementById('categories-container');
 const playerCountInput = document.getElementById('player-count');
 const playerNamesContainer = document.getElementById('player-names-container');
-const geminiApiKeyInput = document.getElementById('gemini-api-key');
-const modelSelect = document.getElementById('model-select');
+// ZMIANA: Pole na adres URL serwera LM Studio
+const lmStudioUrlInput = document.getElementById('lmstudio-url-input');
 const temperatureSlider = document.getElementById('temperature-slider');
 const temperatureValueSpan = document.getElementById('temperature-value');
-const refreshModelsBtn = document.getElementById('refresh-models-btn');
 const includeThemeToggle = document.getElementById('include-theme-toggle');
 const mutateCategoriesToggle = document.getElementById('mutate-categories-toggle');
 const startGameBtn = document.getElementById('start-game-btn');
@@ -66,14 +65,13 @@ const notificationContainer = document.getElementById('notification-container');
 // --- STAN GRY I TŁUMACZENIA ---
 let gameState = { currentLanguage: 'pl' };
 const EMOJI_OPTIONS = ['😀', '🚀', '🦄', '🤖', '🦊', '🧙', '👽', '👾', '👻', '👑', '💎', '🍕', '🍔', '⚽️', '🏀', '🎸', '🎨', '🎭', '🎬', '🎤', '🎮', '💻', '💡', '🧪', '🌍', '🏛️', '🏰', '🗿', '🛸'];
+// ZMIANA: Zaktualizowano tłumaczenia pod LM Studio
 const translations = {
     setup_title: { pl: "Ustawienia Zaawansowane", en: "Advanced Settings" },
-    gemini_api_key_label: { pl: "Klucz API Google Gemini:", en: "Google Gemini API Key:" },
-    model_label: { pl: "Model Językowy:", en: "Language Model:" },
+    lm_studio_url_label: { pl: "Adres serwera LM Studio:", en: "LM Studio Server URL:" },
+    lm_studio_url_placeholder: { pl: "np. http://localhost:1234/v1/chat/completions", en: "e.g., http://localhost:1234/v1/chat/completions" },
+    lm_studio_url_alert: { pl: "Proszę podać adres serwera LM Studio.", en: "Please provide the LM Studio server URL." },
     temperature_label: { pl: "Temperatura:", en: "Temperature:" },
-    refresh_models_title: { pl: "Odśwież listę modeli", en: "Refresh model list" },
-    gemini_api_key_placeholder: { pl: "Wklej swój klucz API", en: "Paste your API key" },
-    api_key_alert: { pl: "Proszę podać klucz API Gemini.", en: "Please provide a Gemini API key." },
     game_mode_label: { pl: "Tryb Gry:", en: "Game Mode:" },
     game_mode_mcq: { pl: "Pytania zamknięte", en: "Single Choice" },
     game_mode_short: { pl: "Pytania otwarte (krótkie)", en: "Open-ended (short)" },
@@ -263,9 +261,8 @@ Return the response as a JSON object in the format: {"explanation": "Your explan
     pl: `Jesteś kreatywnym mistrzem gry. Kategoria "{old_category}" została opanowana. Twoim zadaniem jest wygenerowanie JEDNEJ, nowej, powiązanej tematycznie, ale wyraźnie innej kategorii. Unikaj prostych synonimów. ID sesji: {random_id}. Zwróć TYLKO i WYŁĄCZNIE obiekt JSON w formacie {"new_category": "Nazwa nowej kategorii"}. Nie dodawaj żadnych innych słów ani formatowania markdown.`,
     en: `You are a creative game master. The category "{old_category}" has been mastered. Your task is to generate ONE, new, thematically related, but distinctly different category. Avoid simple synonyms. Session ID: {random_id}. Return ONLY and EXCLUSIVELY a JSON object in the format {"new_category": "New category name"}. Do not add any other words or markdown formatting.`
 },
-    api_error: { pl: "Błąd API", en: "API Error" },
-    fetch_models_error: { pl: "Nie udało się pobrać listy modeli. Sprawdź klucz API i spróbuj ponownie.", en: "Failed to fetch model list. Check your API key and try again." },
-    generate_categories_error: { pl: "Nie udało się wygenerować kategorii. Sprawdź klucz API i spróbuj ponownie.", en: "Failed to generate categories. Check your API key and try again." },
+    api_error: { pl: "Błąd Połączenia", en: "Connection Error" },
+    generate_categories_error: { pl: "Nie udało się wygenerować kategorii. Sprawdź adres serwera i czy model jest załadowany w LM Studio.", en: "Failed to generate categories. Check the server URL and ensure a model is loaded in LM Studio." },
     category_mutated: { pl: "Kategoria zmutowała!", en: "Category has mutated!" },
     new_category_msg: { pl: '"{old_cat}" zmienia się w "{new_cat}"!', en: '"{old_cat}" changes into "{new_cat}"!' }
 };
@@ -325,18 +322,17 @@ function setLanguage(lang) {
             }
         }
     });
-    geminiApiKeyInput.placeholder = translations.gemini_api_key_placeholder[lang];
+    lmStudioUrlInput.placeholder = translations.lm_studio_url_placeholder[lang];
     regenerateQuestionBtn.title = translations.regenerate_question_btn[lang];
-    refreshModelsBtn.title = translations.refresh_models_title[lang];
     updateCategoryInputs(translations.default_categories[lang].split(', '));
     updatePlayerNameInputs();
     updateDescriptions();
 }
 
+// ZMIANA: Logika ustawień dla LM Studio
 function saveSettings() {
     localStorage.setItem('quizGameSettings', JSON.stringify({
-        apiKey: geminiApiKeyInput.value,
-        model: modelSelect.value,
+        lmStudioUrl: lmStudioUrlInput.value,
         temperature: temperatureSlider.value,
         includeTheme: includeThemeToggle.checked,
         mutateCategories: mutateCategoriesToggle.checked
@@ -347,83 +343,26 @@ function loadSettings() {
     const savedSettings = localStorage.getItem('quizGameSettings');
     if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-        if (settings.apiKey) geminiApiKeyInput.value = settings.apiKey;
-        if (settings.model && [...modelSelect.options].some(opt => opt.value === settings.model)) {
-             modelSelect.value = settings.model;
-        }
+        if (settings.lmStudioUrl) lmStudioUrlInput.value = settings.lmStudioUrl;
         if (settings.temperature) {
-            temperatureSlider.value = settings.temperature;
-            temperatureValueSpan.textContent = parseFloat(settings.temperature).toFixed(1);
-            temperatureSlider.style.setProperty('--thumb-color', `hsl(${(1 - settings.temperature / 2) * 240}, 70%, 50%)`);
+            const tempValue = parseFloat(settings.temperature || "0.7");
+            temperatureSlider.value = tempValue;
+            temperatureValueSpan.textContent = tempValue.toFixed(1);
+            temperatureSlider.style.setProperty('--thumb-color', `hsl(${(1 - tempValue / 2) * 240}, 70%, 50%)`);
         }
         if (settings.includeTheme) includeThemeToggle.checked = settings.includeTheme;
         if (settings.mutateCategories) mutateCategoriesToggle.checked = settings.mutateCategories;
+    } else {
+        // Ustawienia domyślne przy pierwszym uruchomieniu
+        lmStudioUrlInput.value = 'http://localhost:1234/v1/chat/completions';
+        const tempValue = 0.7;
+        temperatureSlider.value = tempValue;
+        temperatureValueSpan.textContent = tempValue.toFixed(1);
+        temperatureSlider.style.setProperty('--thumb-color', `hsl(${(1 - tempValue / 2) * 240}, 70%, 50%)`);
     }
 }
 
-function populateModelsDropdown(models = []) {
-    const preferredDefaultModel = 'gemma-3-27b-it';
-    const defaultModels = [
-        { id: 'gemini-2.5-flash-latest', displayName: 'Gemini 2.5 Flash' },
-        { id: 'gemini-2.5-pro-latest', displayName: 'Gemini 2.5 Pro' },
-        { id: 'gemma-3-27b-it', displayName: 'Gemma 3 27B' }
-    ];
-
-    const allModels = [...defaultModels, ...models];
-    const uniqueModels = allModels.filter((model, index, self) =>
-        index === self.findIndex((m) => m.id === model.id)
-    );
-    
-
-    const savedModel = localStorage.getItem('quizGameSettings') ? JSON.parse(localStorage.getItem('quizGameSettings')).model : 'gemini-1.5-flash-latest';
-    
-    modelSelect.innerHTML = '';
-    uniqueModels.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.id;
-        option.textContent = model.displayName;
-        if (model.id === savedModel) {
-            option.selected = true;
-        }
-        modelSelect.appendChild(option);
-    });
-}
-
-async function fetchModels() {
-    const apiKey = geminiApiKeyInput.value.trim();
-    if (!apiKey) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.api_key_alert[gameState.currentLanguage] }, 'error');
-        return;
-    }
-
-    const refreshIcon = document.getElementById('refresh-icon');
-    const loadingSpinner = document.getElementById('loading-spinner');
-
-    refreshModelsBtn.disabled = true;
-    refreshIcon.classList.add('hidden');
-    loadingSpinner.classList.remove('hidden');
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        const data = await response.json();
-        const supportedModels = data.models
-            .filter(model => model.supportedGenerationMethods.includes('generateContent'))
-            .map(model => ({ 
-                id: model.name.replace('models/', ''),
-                displayName: model.displayName 
-            }));
-        populateModelsDropdown(supportedModels);
-    } catch (error) {
-        console.error("Fetch models error:", error);
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.fetch_models_error[gameState.currentLanguage] }, 'error');
-        populateModelsDropdown(); 
-    } finally {
-        refreshModelsBtn.disabled = false;
-        refreshIcon.classList.remove('hidden');
-        loadingSpinner.classList.add('hidden');
-    }
-}
+// USUNIĘTO: Funkcje `populateModelsDropdown` i `fetchModels`
 
 function updateDescriptions() {
     const lang = gameState.currentLanguage;
@@ -443,13 +382,14 @@ function updateCategoryInputs(cats) {
     }
 }
 
+// ZMIANA: `generateCategories` używa nowej funkcji API
 async function generateCategories() {
     const theme = themeInput.value.trim();
     if (!theme) return;
     
-    const apiKey = geminiApiKeyInput.value.trim();
-    if (!apiKey) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.api_key_alert[gameState.currentLanguage] }, 'error');
+    const lmStudioUrl = lmStudioUrlInput.value.trim();
+    if (!lmStudioUrl) {
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.lm_studio_url_alert[gameState.currentLanguage] }, 'error');
         return;
     }
 
@@ -469,15 +409,14 @@ async function generateCategories() {
             .replace('{existing_categories}', existingCategoriesPrompt)
             .replace('{random_id}', randomId);
             
-        const modelId = modelSelect.value;
         const temperature = parseFloat(temperatureSlider.value);
-        const response = await callGeminiApiWithRetries(apiKey, modelId, temperature, prompt, true);
+        const response = await callLmStudioApi(lmStudioUrl, temperature, prompt, true);
         const generatedCats = response.categories;
 
         if (Array.isArray(generatedCats) && generatedCats.length >= 6) {
             updateCategoryInputs(generatedCats.slice(0, 6));
         } else {
-            throw new Error("Invalid format received from Gemini.");
+            throw new Error("Invalid format received from LLM.");
         }
     } catch (error) {
         console.error("Category generation error:", error);
@@ -565,10 +504,11 @@ function createBoardLayout() {
     gameState.board = layout;
 }
 
+// ZMIANA: `initializeGame` używa ustawień LM Studio
 function initializeGame() {
-    const apiKey = geminiApiKeyInput.value.trim();
-    if(!apiKey) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.api_key_alert[gameState.currentLanguage] }, 'error');
+    const lmStudioUrl = lmStudioUrlInput.value.trim();
+    if(!lmStudioUrl) {
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.lm_studio_url_alert[gameState.currentLanguage] }, 'error');
         return;
     }
 
@@ -596,12 +536,11 @@ function initializeGame() {
         lastAnswerWasCorrect: false,
         gameMode: gameModeSelect.value,
         knowledgeLevel: knowledgeLevelSelect.value,
-        geminiApiKey: apiKey,
-        model: modelSelect.value,
+        lmStudioUrl: lmStudioUrl,
         temperature: parseFloat(temperatureSlider.value),
         currentQuestionData: null,
         categoryTopicHistory: JSON.parse(localStorage.getItem('globalQuizHistory')) || {},
-        possiblePaths: {}, // ZMIANA: Dodano do przechowywania możliwych ścieżek
+        possiblePaths: {},
     };
 
     gameState.categories.forEach(cat => {
@@ -736,7 +675,6 @@ function rollDice() {
     }
 }
 
-// ZMIANA: Funkcja zwraca teraz obiekt z pełnymi ścieżkami
 function findPossibleMoves(startId, steps) {
     let queue = [[startId, [startId]]];
     const finalPaths = {};
@@ -755,7 +693,6 @@ function findPossibleMoves(startId, steps) {
 
         const currentSquare = gameState.board.find(s => s.id === currentId);
         for (const neighborId of currentSquare.connections) {
-            // Pozwól na powrót, ale nie od razu na poprzednie pole
             if (path.length > 1 && neighborId === path[path.length - 2]) continue;
             
             const newPath = [...path, neighborId];
@@ -781,7 +718,6 @@ function promptCategoryChoice() {
     categoryChoiceModal.classList.remove('hidden');
 }
 
-// ZMIANA: Nowa funkcja do animacji pionka
 async function animatePawnMovement(path) {
     const playerIndex = gameState.currentPlayerIndex;
     const tokenEl = document.getElementById(`token-${playerIndex}`);
@@ -795,7 +731,6 @@ async function animatePawnMovement(path) {
     }
 }
 
-// ZMIANA: Zmodyfikowano logikę kliknięcia na pole, aby używać animacji
 async function handleSquareClick(squareId) {
     if (!gameState.isAwaitingMove) return;
 
@@ -806,7 +741,7 @@ async function handleSquareClick(squareId) {
     gameState.isAwaitingMove = false;
     gameMessageDiv.textContent = '';
     
-    await animatePawnMovement(path.slice(1)); // Animuj od drugiego pola
+    await animatePawnMovement(path.slice(1));
 
     const player = gameState.players[gameState.currentPlayerIndex];
     player.position = squareId;
@@ -843,6 +778,7 @@ function constructQuestionPrompt(category, lang) {
     return basePrompt;
 }
 
+// ZMIANA: `askQuestion` używa nowej funkcji API
 async function askQuestion(forcedCategoryIndex = null) {
     gameState.currentForcedCategoryIndex = forcedCategoryIndex; 
     const player = gameState.players[gameState.currentPlayerIndex];
@@ -862,7 +798,7 @@ async function askQuestion(forcedCategoryIndex = null) {
 
     try {
         const prompt = constructQuestionPrompt(category, lang);
-        const data = await callGeminiApiWithRetries(gameState.geminiApiKey, gameState.model, gameState.temperature, prompt, true);
+        const data = await callLmStudioApi(gameState.lmStudioUrl, gameState.temperature, prompt, true);
         
         if (!data.question || !data.answer || !data.explanation || !data.keywords) {
             throw new Error("Invalid data structure from API.");
@@ -940,8 +876,9 @@ function showManualVerificationPopup(playerAnswer, correctAnswer) {
     showAnswerPopup();
 }
 
+// ZMIANA: `getIncorrectAnswerExplanation` używa nowej funkcji API
 async function getIncorrectAnswerExplanation() {
-    const { currentQuestionData, currentPlayerAnswer, currentLanguage, geminiApiKey, model, temperature } = gameState;
+    const { currentQuestionData, currentPlayerAnswer, currentLanguage, lmStudioUrl, temperature } = gameState;
 
     const prompt = translations.incorrect_answer_explanation_prompt[currentLanguage]
         .replace('{question}', currentQuestionData.question)
@@ -950,7 +887,7 @@ async function getIncorrectAnswerExplanation() {
 
     try {
         incorrectExplanationLoader.classList.remove('hidden');
-        const data = await callGeminiApiWithRetries(geminiApiKey, model, temperature, prompt, true);
+        const data = await callLmStudioApi(lmStudioUrl, temperature, prompt, true);
         if (data.explanation) {
             incorrectExplanationText.textContent = data.explanation;
         } else {
@@ -1003,6 +940,7 @@ async function handleManualVerification(isCorrect) {
     }
 }
 
+// ZMIANA: `mutateCategory` używa nowej funkcji API
 async function mutateCategory(categoryIndex) {
     const oldCategory = gameState.categories[categoryIndex];
     const randomId = Math.floor(Math.random() * 1000000);
@@ -1011,7 +949,7 @@ const prompt = translations.category_mutation_prompt[gameState.currentLanguage]
     .replace('{random_id}', randomId);
 
     try {
-        const data = await callGeminiApiWithRetries(gameState.geminiApiKey, gameState.model, gameState.temperature, prompt, true);
+        const data = await callLmStudioApi(gameState.lmStudioUrl, gameState.temperature, prompt, true);
         if (data.new_category) {
             const newCategory = data.new_category;
             gameState.categories[categoryIndex] = newCategory;
@@ -1071,21 +1009,22 @@ function checkWinCondition() {
     }
 }
 
-async function callGeminiApiWithRetries(apiKey, modelId, temperature, prompt, expectJson = true) {
-    const maxRetries = 3; 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
-    console.log('API Prompt:', prompt);
+// NOWA FUNKCJA: Wywołanie API dla LM Studio (zastępuje `callGeminiApiWithRetries`)
+async function callLmStudioApi(url, temperature, prompt, expectJson = true) {
+    const maxRetries = 3;
+    console.log('LM Studio Prompt:', prompt);
+
+    const payload = {
+        messages: [{ role: 'user', content: prompt }],
+        temperature: temperature,
+        stream: false,
+    };
 
     for (let i = 0; i < maxRetries; i++) {
         try {
-     const generationConfig = { temperature };
-if (expectJson && modelId.startsWith('gemini')) {
-    generationConfig.response_mime_type = "application/json";
-}
-            const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig };
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
@@ -1095,31 +1034,32 @@ if (expectJson && modelId.startsWith('gemini')) {
             }
 
             const data = await response.json();
-            console.log('API Response:', data);
-            
-            if (data.candidates && data.candidates[0].content?.parts?.[0]) {
-                let content = data.candidates[0].content.parts[0].text;
+            console.log('LM Studio Response:', data);
+
+            if (data.choices && data.choices[0].message?.content) {
+                let content = data.choices[0].message.content;
                 if (expectJson) {
-                        try {
-        const firstBracket = content.indexOf('{');
-        const lastBracket = content.lastIndexOf('}');
-        if (firstBracket === -1 || lastBracket === -1) {
-            throw new Error("No JSON object found in the response.");
-        }
-        const jsonString = content.substring(firstBracket, lastBracket + 1);
-        return JSON.parse(jsonString);
-    } catch (e) {
-        console.error("JSON parsing error:", e, "Original content:", content);
-        throw new Error("Failed to parse JSON from API response.");
-    }
+                    try {
+                        const firstBracket = content.indexOf('{');
+                        const lastBracket = content.lastIndexOf('}');
+                        if (firstBracket === -1 || lastBracket === -1) {
+                            throw new Error("No JSON object found in the response string.");
+                        }
+                        const jsonString = content.substring(firstBracket, lastBracket + 1);
+                        return JSON.parse(jsonString);
+                    } catch (e) {
+                        console.error("JSON parsing error:", e, "Original content:", content);
+                        throw new Error("Failed to parse JSON from API response.");
+                    }
                 }
-                return content;
+                return content; 
             } else {
-                 throw new Error("Invalid or empty response from API.");
+                throw new Error("Invalid or empty response from LM Studio API.");
             }
         } catch (error) {
             console.error(`Attempt ${i + 1} failed:`, error);
             if (i === maxRetries - 1) throw error;
+            await new Promise(res => setTimeout(res, 1000));
         }
     }
 }
@@ -1182,8 +1122,8 @@ function updatePlayerNameInputs() {
 }
 
 // --- EVENT LISTENERS ---
+// ZMIANA: Usunięto nasłuchiwacze dla nieistniejących elementów
 window.addEventListener('DOMContentLoaded', () => {
-    populateModelsDropdown();
     loadSettings();
     setLanguage('pl');
 });
@@ -1191,8 +1131,7 @@ langPlBtn.addEventListener('click', () => setLanguage('pl'));
 langEnBtn.addEventListener('click', () => setLanguage('en'));
 gameModeSelect.addEventListener('change', updateDescriptions);
 knowledgeLevelSelect.addEventListener('change', updateDescriptions);
-geminiApiKeyInput.addEventListener('input', saveSettings);
-modelSelect.addEventListener('change', saveSettings);
+lmStudioUrlInput.addEventListener('input', saveSettings);
 temperatureSlider.addEventListener('input', (e) => {
     const temp = parseFloat(e.target.value);
     temperatureValueSpan.textContent = temp.toFixed(1);
@@ -1201,7 +1140,6 @@ temperatureSlider.addEventListener('input', (e) => {
 });
 includeThemeToggle.addEventListener('change', saveSettings);
 mutateCategoriesToggle.addEventListener('change', saveSettings);
-refreshModelsBtn.addEventListener('click', fetchModels);
 generateCategoriesBtn.addEventListener('click', generateCategories);
 regenerateQuestionBtn.addEventListener('click', () => askQuestion(gameState.currentForcedCategoryIndex));
 popupRegenerateBtn.addEventListener('click', () => {
