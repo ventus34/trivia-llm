@@ -1,0 +1,1 @@
+python3 -c "import http.server, socketserver, webbrowser; PORT = 8000; Handler = http.server.SimpleHTTPRequestHandler; httpd = socketserver.TCPServer(('', PORT), Handler); url = f'http://localhost:{PORT}'; webbrowser.open_new_tab(url); print(f'Serwer uruchomiony na {url}'); httpd.serve_forever()"

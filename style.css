@@ -1,0 +1,226 @@
+/* Podstawowe style body */
+body {
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+}
+
+/* Wrapper planszy, aby zachować proporcje */
+.board-wrapper {
+    width: 80vh;
+    height: 80vh;
+    max-width: 800px;
+    max-height: 800px;
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+/* Kontener planszy */
+.board-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Style dla pojedynczego pola na planszy */
+.board-square {
+    position: absolute;
+    width: 6%;
+    height: 6%;
+    border: 2px solid #374151; /* gray-700 */
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 10px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    z-index: 2; /* Pola nad liniami łączącymi */
+}
+
+/* Podświetlenie możliwego ruchu */
+.board-square.highlighted-move {
+    border-color: #10b981; /* emerald-500 */
+    transform: scale(1.1);
+    box-shadow: 0 0 15px #10b981;
+    z-index: 10;
+}
+
+/* Pionek gracza */
+.player-token {
+    position: absolute;
+    width: 3.5%;
+    height: 3.5%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8vh;
+    line-height: 1;
+    transition: all 0.5s ease-in-out; /* Dłuższa animacja dla płynnego ruchu */
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+    z-index: 5;
+}
+
+/* "Cząstka" kategorii w panelu gracza */
+.category-wedge {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 1px;
+    border: 1px solid rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.category-wedge:hover {
+    transform: scale(1.2);
+}
+
+/* Aktywny przycisk języka */
+.lang-btn.active { 
+    background-color: #4f46e5; /* indigo-600 */
+    color: white; 
+}
+
+/* Popup z odpowiedzią - style przejścia */
+#answer-popup {
+    transition: opacity 0.5s, transform 0.5s;
+}
+
+/* Kontener na kostkę 3D */
+.dice-container {
+    width: 60px;
+    height: 60px;
+    perspective: 1000px;
+}
+
+/* Kostka 3D */
+.dice {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s ease-out;
+}
+
+/* Ścianka kostki */
+.face {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #999;
+    font-size: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #333;
+}
+
+/* Pozycje ścianek kostki w przestrzeni 3D */
+.front  { transform: rotateY(  0deg) translateZ(30px); }
+.back   { transform: rotateY(180deg) translateZ(30px); }
+.right  { transform: rotateY( 90deg) translateZ(30px); }
+.left   { transform: rotateY(-90deg) translateZ(30px); }
+.top    { transform: rotateX( 90deg) translateZ(30px); }
+.bottom { transform: rotateX(-90deg) translateZ(30px); }
+
+/* Suwak temperatury */
+#temperature-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+}
+#temperature-slider::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, #60a5fa, #f87171);
+    height: 0.5rem;
+    border-radius: 0.5rem;
+}
+#temperature-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -4px;
+    background-color: var(--thumb-color, #4f46e5);
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+/* Wybór emotikonek */
+.emoji-picker {
+    position: relative;
+}
+.emoji-button {
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    background-color: #f3f4f6;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.emoji-button:hover {
+    background-color: #e5e7eb;
+}
+.emoji-panel {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 20;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.25rem;
+    width: 240px;
+}
+.emoji-panel.active {
+    display: grid;
+}
+.emoji-option {
+    cursor: pointer;
+    font-size: 1.5rem;
+    text-align: center;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+.emoji-option:hover {
+    background-color: #f3f4f6;
+}
+
+/* Kontener na powiadomienia */
+.notification {
+    max-width: 350px;
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: start;
+    gap: 0.75rem;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.5s ease-in-out;
+}
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+.notification.error {
+    border-left: 4px solid #ef4444; /* red-500 */
+}
+.notification.success {
+    border-left: 4px solid #22c55e; /* green-500 */
+}
+.notification.info {
+    border-left: 4px solid #3b82f6; /* blue-500 */
+}
