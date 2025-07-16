@@ -128,9 +128,8 @@ const translations = {
         pl: `Jesteś kreatywnym mistrzem gry. Twoim zadaniem jest stworzenie zestawu 6 świeżych i unikalnych kategorii do quizu na podstawie motywu: "{theme}".
 
     Kryteria:
-    1.  **Unikalność**: Kategorie nie mogą być typowe ani oczywiste. Szukaj niekonwencjonalnych, ale logicznych powiązań z tematem.
-    2.  **Zwięzłość**: Każda nazwa kategorii nie może przekraczać 5 słów.
-    3.  **Różnorodność**: Unikaj generowania kategorii, które już istnieją.
+    1.  **Zwięzłość**: Każda nazwa kategorii musi zawierać od jednego do trzech słów. Preferuj jedno słowo, o ile pozwala precyzyjnie określić temat.
+    2.  **Różnorodność**: Unikaj generowania kategorii, które już istnieją.
     
     Istniejące kategorie, których należy unikać: {existing_categories}
 
@@ -140,9 +139,8 @@ const translations = {
         en: `You are a creative game master. Your task is to create a set of 6 fresh and unique quiz categories based on the theme: "{theme}".
 
     Criteria:
-    1.  **Uniqueness**: The categories must not be typical or obvious. Look for unconventional but logical connections to the theme.
-    2.  **Brevity**: Each category name must not exceed 5 words.
-    3.  **Variety**: Avoid generating categories that already exist.
+    1.  **Brevity**: Each category name must contain from one to three words. Prefer one word, as long as it allows to precisely define topic.
+    2.  **Variety**: Avoid generating categories that already exist.
     
     Existing categories to avoid: {existing_categories}
 
@@ -253,14 +251,14 @@ Return the response as a JSON object in the format: {"explanation": "Your explan
         mcq: { pl: "Pytanie jednokrotnego wyboru (MCQ).", en: "Single Choice Question (MCQ)." },
         short_answer: { pl: "Pytanie otwarte z krótką odpowiedzią (1-3 słowa).", en: "Open-ended question with a short answer (1-3 words)." },
     },
-    question_history_prompt: { 
-        pl: `"{topics}"`, 
-        en: `"{topics}"` 
+    question_history_prompt: {
+        pl: `"{topics}"`,
+        en: `"{topics}"`
     },
     category_mutation_prompt: {
-    pl: `Jesteś kreatywnym mistrzem gry. Kategoria "{old_category}" została opanowana. Twoim zadaniem jest wygenerowanie JEDNEJ, nowej, powiązanej tematycznie, ale wyraźnie innej kategorii. Unikaj prostych synonimów. ID sesji: {random_id}. Zwróć TYLKO i WYŁĄCZNIE obiekt JSON w formacie {"new_category": "Nazwa nowej kategorii"}. Nie dodawaj żadnych innych słów ani formatowania markdown.`,
-    en: `You are a creative game master. The category "{old_category}" has been mastered. Your task is to generate ONE, new, thematically related, but distinctly different category. Avoid simple synonyms. Session ID: {random_id}. Return ONLY and EXCLUSIVELY a JSON object in the format {"new_category": "New category name"}. Do not add any other words or markdown formatting.`
-},
+        pl: `Jesteś kreatywnym mistrzem gry. Kategoria "{old_category}" została opanowana. Twoim zadaniem jest wygenerowanie JEDNEJ, nowej, powiązanej tematycznie, ale wyraźnie innej kategorii. Unikaj prostych synonimów. ID sesji: {random_id}. Zwróć TYLKO i WYŁĄCZNIE obiekt JSON w formacie {"new_category": "Nazwa nowej kategorii"}. Nie dodawaj żadnych innych słów ani formatowania markdown.`,
+        en: `You are a creative game master. The category "{old_category}" has been mastered. Your task is to generate ONE, new, thematically related, but distinctly different category. Avoid simple synonyms. Session ID: {random_id}. Return ONLY and EXCLUSIVELY a JSON object in the format {"new_category": "New category name"}. Do not add any other words or markdown formatting.`
+    },
     api_error: { pl: "Błąd Połączenia", en: "Connection Error" },
     generate_categories_error: { pl: "Nie udało się wygenerować kategorii. Sprawdź adres serwera i czy model jest załadowany w LM Studio.", en: "Failed to generate categories. Check the server URL and ensure a model is loaded in LM Studio." },
     category_mutated: { pl: "Kategoria zmutowała!", en: "Category has mutated!" },
@@ -276,20 +274,20 @@ const SQUARE_TYPES = { HQ: 'HEADQUARTERS', SPOKE: 'SPOKE', RING: 'RING', HUB: 'H
 function showNotification(message, type = 'info', duration = 5000) {
     const notif = document.createElement('div');
     notif.className = `notification ${type}`;
-    
+
     const iconContainer = document.createElement('div');
     iconContainer.className = 'flex-shrink-0';
-    
+
     let iconSvg = '';
     if (type === 'error') iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
     else if (type === 'success') iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
     else iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-    
+
     iconContainer.innerHTML = iconSvg;
 
     const textContainer = document.createElement('div');
     textContainer.innerHTML = `<p class="text-sm font-medium text-gray-900">${message.title}</p><p class="text-sm text-gray-500">${message.body}</p>`;
-    
+
     notif.appendChild(iconContainer);
     notif.appendChild(textContainer);
 
@@ -386,7 +384,7 @@ function updateCategoryInputs(cats) {
 async function generateCategories() {
     const theme = themeInput.value.trim();
     if (!theme) return;
-    
+
     const lmStudioUrl = lmStudioUrlInput.value.trim();
     if (!lmStudioUrl) {
         showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.lm_studio_url_alert[gameState.currentLanguage] }, 'error');
@@ -397,9 +395,11 @@ async function generateCategories() {
     generateCategoriesBtn.textContent = translations.generating_categories[gameState.currentLanguage];
     generateCategoriesBtn.disabled = true;
 
+    let defaultCategories = translations.default_categories[gameState.currentLanguage].split(', ');
     const existingCategories = Array.from(document.querySelectorAll('#categories-container .category-input'))
         .map(input => input.value.trim())
-        .filter(c => c !== '');
+        .filter(c => c !== '')
+        .filter(c => !defaultCategories.includes(c));
     const existingCategoriesPrompt = existingCategories.length > 0 ? `"${existingCategories.join('", "')}"` : "brak";
 
     try {
@@ -408,13 +408,23 @@ async function generateCategories() {
             .replace('{theme}', theme)
             .replace('{existing_categories}', existingCategoriesPrompt)
             .replace('{random_id}', randomId);
-            
+
         const temperature = parseFloat(temperatureSlider.value);
         const response = await callLmStudioApi(lmStudioUrl, temperature, prompt, true);
         const generatedCats = response.categories;
 
         if (Array.isArray(generatedCats) && generatedCats.length >= 6) {
-            updateCategoryInputs(generatedCats.slice(0, 6));
+            // KLUCZOWA ZMIANA: Zapisz nowo wygenerowane kategorie do globalnej historii
+            const categoriesToSave = generatedCats.slice(0, 6);
+            const currentHistory = JSON.parse(localStorage.getItem('globalQuizHistory')) || {};
+            categoriesToSave.forEach(cat => {
+                if (!currentHistory[cat]) {
+                    currentHistory[cat] = []; // Inicjalizuj z pustą historią słów kluczowych
+                }
+            });
+            localStorage.setItem('globalQuizHistory', JSON.stringify(currentHistory));
+
+            updateCategoryInputs(categoriesToSave);
         } else {
             throw new Error("Invalid format received from LLM.");
         }
@@ -543,6 +553,10 @@ function initializeGame() {
         possiblePaths: {},
     };
 
+    // KLUCZOWA ZMIANA: Ta pętla zapewnia, że KAŻDA kategoria w BIEŻĄCEJ grze
+    // (nawet domyślna lub ręcznie edytowana) ma miejsce na słowa kluczowe,
+    // ale NIE ZAPISUJE ich do localStorage, co zapobiega "zanieczyszczeniu"
+    // globalnej historii.
     gameState.categories.forEach(cat => {
         if (!gameState.categoryTopicHistory[cat]) {
             gameState.categoryTopicHistory[cat] = [];
@@ -694,7 +708,7 @@ function findPossibleMoves(startId, steps) {
         const currentSquare = gameState.board.find(s => s.id === currentId);
         for (const neighborId of currentSquare.connections) {
             if (path.length > 1 && neighborId === path[path.length - 2]) continue;
-            
+
             const newPath = [...path, neighborId];
             queue.push([neighborId, newPath]);
         }
@@ -740,7 +754,7 @@ async function handleSquareClick(squareId) {
     document.querySelectorAll('.highlighted-move').forEach(el => el.classList.remove('highlighted-move'));
     gameState.isAwaitingMove = false;
     gameMessageDiv.textContent = '';
-    
+
     await animatePawnMovement(path.slice(1));
 
     const player = gameState.players[gameState.currentPlayerIndex];
@@ -764,7 +778,7 @@ function constructQuestionPrompt(category, lang) {
     const randomId = Math.floor(Math.random() * 1000000) + 1;
 
     let themeContext = includeCategoryTheme && theme ? translations.main_theme_context_prompt[lang].replace('{theme}', theme) : "Brak dodatkowego motywu.";
-    
+
     let historyPrompt = history.length > 0 ? translations.question_history_prompt[lang].replace('{topics}', history.join('", "')) : "Brak historii.";
 
     let basePrompt = translations.question_prompt[lang]
@@ -774,13 +788,13 @@ function constructQuestionPrompt(category, lang) {
         .replace('{game_mode_prompt}', translations.game_mode_prompts[gameMode][lang])
         .replace('{history_prompt}', historyPrompt)
         .replace('{random_id}', randomId);
-    
+
     return basePrompt;
 }
 
 // ZMIANA: `askQuestion` używa nowej funkcji API
 async function askQuestion(forcedCategoryIndex = null) {
-    gameState.currentForcedCategoryIndex = forcedCategoryIndex; 
+    gameState.currentForcedCategoryIndex = forcedCategoryIndex;
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = forcedCategoryIndex !== null ? forcedCategoryIndex : square.categoryIndex;
@@ -799,7 +813,7 @@ async function askQuestion(forcedCategoryIndex = null) {
     try {
         const prompt = constructQuestionPrompt(category, lang);
         const data = await callLmStudioApi(gameState.lmStudioUrl, gameState.temperature, prompt, true);
-        
+
         if (!data.question || !data.answer || !data.explanation || !data.keywords) {
             throw new Error("Invalid data structure from API.");
         }
@@ -867,12 +881,12 @@ function showManualVerificationPopup(playerAnswer, correctAnswer) {
     explanationContainer.classList.add('hidden');
     incorrectExplanationContainer.classList.add('hidden');
     incorrectExplanationText.textContent = '';
-    
+
     explanationText.textContent = gameState.currentQuestionData.explanation;
     manualVerificationButtons.classList.remove('hidden');
     postVerificationButtons.classList.add('hidden');
     answerPopupTitle.textContent = translations.answer_evaluation[gameState.currentLanguage];
-    
+
     showAnswerPopup();
 }
 
@@ -905,7 +919,7 @@ async function handleManualVerification(isCorrect) {
     gameState.lastAnswerWasCorrect = isCorrect;
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
-    
+
     const categoryIndex = gameState.currentForcedCategoryIndex !== null ? gameState.currentForcedCategoryIndex : square.categoryIndex;
     const category = gameState.categories[categoryIndex];
 
@@ -920,9 +934,9 @@ async function handleManualVerification(isCorrect) {
 
     manualVerificationButtons.classList.add('hidden');
     postVerificationButtons.classList.remove('hidden');
-    
+
     explanationContainer.classList.remove('hidden');
-    
+
     closePopupBtn.textContent = translations.next_turn_btn[gameState.currentLanguage];
 
     if (isCorrect) {
@@ -944,9 +958,9 @@ async function handleManualVerification(isCorrect) {
 async function mutateCategory(categoryIndex) {
     const oldCategory = gameState.categories[categoryIndex];
     const randomId = Math.floor(Math.random() * 1000000);
-const prompt = translations.category_mutation_prompt[gameState.currentLanguage]
-    .replace('{old_category}', oldCategory)
-    .replace('{random_id}', randomId);
+    const prompt = translations.category_mutation_prompt[gameState.currentLanguage]
+        .replace('{old_category}', oldCategory)
+        .replace('{random_id}', randomId);
 
     try {
         const data = await callLmStudioApi(gameState.lmStudioUrl, gameState.temperature, prompt, true);
@@ -1052,7 +1066,7 @@ async function callLmStudioApi(url, temperature, prompt, expectJson = true) {
                         throw new Error("Failed to parse JSON from API response.");
                     }
                 }
-                return content; 
+                return content;
             } else {
                 throw new Error("Invalid or empty response from LM Studio API.");
             }
@@ -1082,7 +1096,7 @@ function updatePlayerNameInputs() {
     for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
         div.className = 'player-entry flex gap-2 items-center';
-        
+
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
         nameInput.className = 'player-name-input flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm';
@@ -1114,7 +1128,7 @@ function updatePlayerNameInputs() {
 
         emojiPickerDiv.appendChild(emojiButton);
         emojiPickerDiv.appendChild(emojiPanel);
-        
+
         div.appendChild(nameInput);
         div.appendChild(emojiPickerDiv);
         playerNamesContainer.appendChild(div);
