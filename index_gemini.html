@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+<div id="notification-container" class="fixed top-5 right-5 z-[100] space-y-2"></div>
+
+<div id="setup-screen" class="w-full max-w-lg lg:max-w-5xl p-4 lg:p-6 bg-white rounded-2xl shadow-xl h-full max-h-screen lg:h-auto lg:max-h-[95vh] flex flex-col">
+    <div class="flex-shrink-0">
+        <div class="flex justify-center mb-4">
+            <div class="inline-flex rounded-md shadow-sm">
+                <button id="lang-pl" class="lang-btn px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">Polski</button>
+                <button id="lang-en" class="lang-btn -ml-px px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">English</button>
+            </div>
+        </div>
+        <h1 data-lang-key="setup_title" class="text-3xl font-bold text-center text-gray-900 mb-6">Ustawienia</h1>
+    </div>
+
+    <div class="flex-grow overflow-y-auto px-2 -mx-2">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <div class="flex-1 space-y-6">
+                <div>
+                    <label for="gemini-api-key" data-lang-key="gemini_api_key_label" class="block text-sm font-medium text-gray-700">Klucz API Google Gemini:</label>
+                    <input type="password" id="gemini-api-key" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" placeholder="Wklej swój klucz API">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="model-select" data-lang-key="model_label" class="block text-sm font-medium text-gray-700">Model Językowy:</label>
+                        <div class="flex items-end gap-2">
+                            <select id="model-select" class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                                </select>
+                            <button id="refresh-models-btn" class="p-2 mb-1 rounded-md hover:bg-gray-200" title="Odśwież listę modeli">
+                                <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-cw"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 1 1.6-5.2"/></svg>
+                                <svg id="loading-spinner" class="hidden animate-spin h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="temperature-slider" data-lang-key="temperature_label" class="block text-sm font-medium text-gray-700">Temperatura: <span id="temperature-value">1.0</span></label>
+                        <input type="range" id="temperature-slider" min="0" max="2" step="0.1" value="1.0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2" style="--thumb-color: #4f46e5;">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="game-mode" data-lang-key="game_mode_label" class="block text-sm font-medium text-gray-700">Tryb Gry:</label>
+                        <select id="game-mode" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                            <option value="mcq" selected data-lang-key="game_mode_mcq">Pytania zamknięte</option>
+                            <option value="short_answer" data-lang-key="game_mode_short">Pytania otwarte (krótkie)</option>
+                        </select>
+                        <p id="game-mode-description" class="mt-1 text-xs text-gray-500"></p>
+                    </div>
+                    <div>
+                        <label for="knowledge-level" data-lang-key="knowledge_level_label" class="block text-sm font-medium text-gray-700">Poziom Wiedzy:</label>
+                        <select id="knowledge-level" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                            <option value="basic" data-lang-key="knowledge_level_basic">Podstawowy</option>
+                            <option value="intermediate" data-lang-key="knowledge_level_intermediate">Średniozaawansowany</option>
+                            <option value="expert" data-lang-key="knowledge_level_expert">Ekspercki</option>
+                        </select>
+                        <p id="knowledge-level-description" class="mt-1 text-xs text-gray-500"></p>
+                    </div>
+                </div>
+
+                <div>
+                    <label data-lang-key="category_theme_label" class="block text-sm font-medium text-gray-700">Temat do generacji kategorii (opcjonalnie)</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="text" id="theme-input" data-lang-key="category_theme_placeholder" placeholder="Wpisz motyw, np. Władca Pierścieni" class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                        <button id="generate-categories-btn" data-lang-key="category_generator_btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Generuj</button>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                     <div class="flex items-center">
+                        <input id="include-theme-toggle" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="include-theme-toggle" data-lang-key="include_theme_label" class="ml-2 block text-sm text-gray-900">Dodaj temat generacji do pytań</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input id="mutate-categories-toggle" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="mutate-categories-toggle" data-lang-key="mutate_categories_label" class="ml-2 block text-sm text-gray-900">Mutacja kategorii po zdobyciu punktu</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 space-y-6">
+                 <div>
+                    <label data-lang-key="categories_label" class="block text-sm font-medium text-gray-700">Kategorie</label>
+                    <div id="categories-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+                        </div>
+                </div>
+
+                <div>
+                    <label data-lang-key="players_label" class="block text-sm font-medium text-gray-700">Gracze</label>
+                    <div class="flex items-center gap-4">
+                        <label for="player-count" data-lang-key="player_count_label" class="text-sm font-medium text-gray-700">Liczba:</label>
+                        <input type="number" id="player-count" min="1" max="10" value="2" class="block w-20 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div id="player-names-container" class="space-y-2 mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex-shrink-0 pt-6">
+        <button id="start-game-btn" data-lang-key="start_game_btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Rozpocznij Grę</button>
+    </div>
+</div>
+
+
+<div id="game-screen" class="hidden w-full h-screen p-4 flex flex-col lg:flex-row items-center justify-center gap-8">
+    <div class="flex flex-col items-center gap-4">
+        <div class="board-wrapper">
+            <div id="board" class="board-container"></div>
+        </div>
+        <div id="category-legend" class="flex flex-wrap justify-center gap-x-4 gap-y-2"></div>
+    </div>
+    <div id="game-controls" class="w-full max-w-sm bg-white p-6 rounded-2xl shadow-xl space-y-4 flex flex-col">
+        <h2 class="text-2xl font-bold text-center"><span data-lang-key="player_turn">Tura Gracza</span>: <span id="current-player-name"></span></h2>
+        <div id="player-scores" class="flex-grow overflow-y-auto space-y-2"></div>
+        <div id="dice-result" class="text-center font-semibold text-lg p-4 bg-gray-100 rounded-lg flex flex-col items-center gap-4">
+            <span data-lang-key="roll_to_start">Rzuć kostką, aby rozpocząć!</span>
+            <div class="dice-container">
+                <div id="dice" class="dice">
+                    <div class="face front">1</div><div class="face back">6</div><div class="face right">4</div>
+                    <div class="face left">3</div><div class="face top">2</div><div class="face bottom">5</div>
+                </div>
+            </div>
+        </div>
+        <button id="roll-dice-btn" data-lang-key="roll_dice_btn" class="w-full py-3 px-4 rounded-md shadow-sm text-lg font-bold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Rzuć Kostką</button>
+        <div id="game-message" class="text-center font-medium text-red-600 h-6"></div>
+    </div>
+</div>
+
+<div id="question-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl space-y-6 transform transition-all scale-95 opacity-0" id="modal-content">
+        <div class="flex justify-between items-center">
+            <h3 class="text-xl font-bold" id="question-category"></h3>
+            <button id="regenerate-question-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors" title="Nowe pytanie">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9c-4.97 0-9-4.03-9-9s4.03-9 9-9"/><path d="M21 3v5h-5"/><path d="M3 12a9 9 0 0 1 9-9c1.61 0 3.11.42 4.47 1.17L21 3"/></svg>
+            </button>
+        </div>
+        <div id="llm-loader" class="hidden flex flex-col items-center justify-center gap-4 py-8">
+            <div class="flex space-x-2">
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce"></div>
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+            </div>
+            <span data-lang-key="generating_question" class="text-gray-600">Generuję pytanie...</span>
+        </div>
+        <div id="question-content" class="hidden">
+            <p id="question-text" class="text-lg text-center"></p>
+            <div id="mcq-options-container" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 mt-4"></div>
+            <div id="answer-section" class="mt-4">
+                <input type="text" id="answer-input" data-lang-key="answer_placeholder" placeholder="Wpisz swoją odpowiedź..." class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                <button id="submit-answer-btn" data-lang-key="submit_answer_btn" class="mt-4 w-full py-2 px-4 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Zatwierdź Odpowiedź</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="category-choice-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg space-y-4">
+        <h3 data-lang-key="choose_category_title" class="text-2xl font-bold text-center">Wybierz kategorię</h3>
+        <div id="category-choice-buttons" class="grid grid-cols-2 gap-4"></div>
+    </div>
+</div>
+
+<div id="answer-popup" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 bg-white rounded-xl shadow-2xl z-50 max-w-md w-full text-center opacity-0 scale-90">
+    <div id="answer-popup-content">
+        <h3 id="answer-popup-title" class="text-2xl font-bold mb-4 text-gray-800"></h3>
+        <div class="text-left space-y-3">
+            <div>
+                <p class="text-sm font-medium text-gray-500" data-lang-key="player_answer_was">Odpowiedź gracza:</p>
+                <p id="player-answer-text" class="p-2 bg-gray-100 rounded-md"></p>
+            </div>
+            <div id="incorrect-explanation-container" class="hidden">
+                <p class="text-sm font-medium text-red-500" data-lang-key="your_answer_explanation">Uzasadnienie błędu:</p>
+                <p id="incorrect-explanation-text" class="p-2 bg-red-100 rounded-md"></p>
+                <div id="incorrect-explanation-loader" class="hidden text-center p-2">
+                    <span class="text-sm text-gray-500">Analizuję Twoją odpowiedź...</span>
+                </div>
+            </div>
+            <div id="correct-answer-container">
+                <p class="text-sm font-medium text-gray-500" data-lang-key="correct_answer_is">Poprawna odpowiedź:</p>
+                <p id="correct-answer-text" class="p-2 bg-green-100 rounded-md"></p>
+            </div>
+            <div id="explanation-container" class="hidden">
+                <p class="text-sm font-medium text-gray-500" data-lang-key="explanation">Wyjaśnienie poprawnej odpowiedzi:</p>
+                <p id="explanation-text" class="p-2 bg-yellow-100 rounded-md"></p>
+            </div>
+        </div>
+    </div>
+    <div id="manual-verification-buttons" class="mt-4 flex gap-4">
+        <button id="reject-answer-btn" data-lang-key="reject_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors">Niepoprawna</button>
+        <button id="accept-answer-btn" data-lang-key="accept_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Poprawna</button>
+    </div>
+    <div id="post-verification-buttons" class="hidden mt-4 flex gap-4">
+        <button id="popup-regenerate-btn" data-lang-key="regenerate_question_btn" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors">Nowe pytanie</button>
+        <button id="close-popup-btn" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 active:bg-gray-800 transition-colors"></button>
+    </div>
+</div>
+
+<div id="winner-screen" class="hidden flex-col items-center justify-center space-y-6 p-8 bg-white rounded-2xl shadow-xl">
+    <h1 data-lang-key="congratulations" class="text-4xl font-bold text-yellow-500">Gratulacje!</h1>
+    <p class="text-2xl"><span data-lang-key="winner_is">Zwycięzcą jest</span> <span id="winner-name" class="font-bold"></span>!</p>
+    <button id="play-again-btn" data-lang-key="play_again_btn" class="py-3 px-6 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Zagraj Ponownie</button>
+</div>
+
+<script type="module" src="./game_gemini.js"></script>
+</body>
+</html>
