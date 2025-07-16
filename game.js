@@ -129,10 +129,9 @@ const translations = {
     category_generation_prompt: {
         pl: `Jesteś kreatywnym mistrzem gry. Twoim zadaniem jest stworzenie zestawu 6 świeżych i unikalnych kategorii do quizu na podstawie motywu: "{theme}".
 
-    Kryteria:
-    1.  **Unikalność**: Kategorie nie mogą być typowe ani oczywiste. Szukaj niekonwencjonalnych, ale logicznych powiązań z tematem.
-    2.  **Zwięzłość**: Każda nazwa kategorii nie może przekraczać 5 słów.
-    3.  **Różnorodność**: Unikaj generowania kategorii, które już istnieją.
+     Kryteria:
+    1.  **Zwięzłość**: Każda nazwa kategorii musi zawierać od jednego do trzech słów. Preferuj jedno słowo, o ile pozwala precyzyjnie określić temat.
+    2.  **Różnorodność**: Unikaj generowania kategorii, które już istnieją.
     
     Istniejące kategorie, których należy unikać: {existing_categories}
 
@@ -142,9 +141,9 @@ const translations = {
         en: `You are a creative game master. Your task is to create a set of 6 fresh and unique quiz categories based on the theme: "{theme}".
 
     Criteria:
-    1.  **Uniqueness**: The categories must not be typical or obvious. Look for unconventional but logical connections to the theme.
-    2.  **Brevity**: Each category name must not exceed 5 words.
-    3.  **Variety**: Avoid generating categories that already exist.
+    1.  **Brevity**: Each category name must contain from one to three words. Prefer one word, as long as it allows to precisely define topic.
+    2.  **Variety**: Avoid generating categories that already exist.
+    
     
     Existing categories to avoid: {existing_categories}
 
@@ -457,9 +456,11 @@ async function generateCategories() {
     generateCategoriesBtn.textContent = translations.generating_categories[gameState.currentLanguage];
     generateCategoriesBtn.disabled = true;
 
+    let defaultCategories = translations.default_categories[gameState.currentLanguage].split(', ');
     const existingCategories = Array.from(document.querySelectorAll('#categories-container .category-input'))
         .map(input => input.value.trim())
-        .filter(c => c !== '');
+        .filter(c => c !== '')
+        .filter(c => !defaultCategories.includes(c));
     const existingCategoriesPrompt = existingCategories.length > 0 ? `"${existingCategories.join('", "')}"` : "brak";
 
     try {
@@ -468,14 +469,23 @@ async function generateCategories() {
             .replace('{theme}', theme)
             .replace('{existing_categories}', existingCategoriesPrompt)
             .replace('{random_id}', randomId);
-            
-        const modelId = modelSelect.value;
+
         const temperature = parseFloat(temperatureSlider.value);
-        const response = await callGeminiApiWithRetries(apiKey, modelId, temperature, prompt, true);
+        const response = await callLmStudioApi(lmStudioUrl, temperature, prompt, true);
         const generatedCats = response.categories;
 
         if (Array.isArray(generatedCats) && generatedCats.length >= 6) {
-            updateCategoryInputs(generatedCats.slice(0, 6));
+            // KLUCZOWA ZMIANA: Zapisz nowo wygenerowane kategorie do globalnej historii
+            const categoriesToSave = generatedCats.slice(0, 6);
+            const currentHistory = JSON.parse(localStorage.getItem('globalQuizHistory')) || {};
+            categoriesToSave.forEach(cat => {
+                if (!currentHistory[cat]) {
+                    currentHistory[cat] = []; // Inicjalizuj z pustą historią słów kluczowych
+                }
+            });
+            localStorage.setItem('globalQuizHistory', JSON.stringify(currentHistory));
+
+            updateCategoryInputs(categoriesToSave);
         } else {
             throw new Error("Invalid format received from Gemini.");
         }
