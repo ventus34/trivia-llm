@@ -1,16 +1,9 @@
-import { initializeApp } from './game_core.js';
+import { initializeApp, gameState, translations } from './game_core.js';
 
 // --- ELEMENTY UI SPECIFICZNE DLA GEMINI ---
 const geminiApiKeyInput = document.getElementById('gemini-api-key');
 const modelSelect = document.getElementById('model-select');
 const refreshModelsBtn = document.getElementById('refresh-models-btn');
-
-// --- TŁUMACZENIA (tylko te, które są potrzebne w tym pliku) ---
-const translations = {
-    api_error: { pl: "Błąd API", en: "API Error" },
-    api_key_alert: { pl: "Proszę podać klucz API Gemini.", en: "Please provide a Gemini API key." },
-    fetch_models_error: { pl: "Nie udało się pobrać listy modeli. Sprawdź klucz API i spróbuj ponownie.", en: "Failed to fetch model list. Check your API key and try again." },
-};
 
 /**
  * Wywołuje API Gemini z logiką ponawiania prób.
@@ -151,7 +144,7 @@ const geminiApiAdapter = {
 
     isConfigured() {
         const apiKey = geminiApiKeyInput.value.trim();
-        const lang = document.documentElement.lang || 'pl';
+        const lang = gameState.currentLanguage;
         this.configErrorMsg = translations.api_key_alert[lang];
         return !!apiKey;
     },
@@ -160,9 +153,6 @@ const geminiApiAdapter = {
         localStorage.setItem('quizGameSettings_gemini', JSON.stringify({
             apiKey: geminiApiKeyInput.value,
             model: modelSelect.value,
-            temperature: document.getElementById('temperature-slider').value,
-            includeTheme: document.getElementById('include-theme-toggle').checked,
-            mutateCategories: document.getElementById('mutate-categories-toggle').checked
         }));
     },
 
@@ -173,12 +163,11 @@ const geminiApiAdapter = {
             const settings = JSON.parse(savedSettings);
             if (settings.apiKey) geminiApiKeyInput.value = settings.apiKey;
             if (settings.model) modelSelect.value = settings.model;
-            // Pozostałe ustawienia są ładowane przez game_core
         }
     },
 
     async generateCategories(theme) {
-        const lang = document.documentElement.lang;
+        const lang = gameState.currentLanguage;
         const prompt = translations.category_generation_prompt[lang]
             .replace('{theme}', theme)
             .replace('{existing_categories}', "brak")
@@ -188,9 +177,7 @@ const geminiApiAdapter = {
     },
 
     async generateQuestion(category) {
-        // Logika konstruowania promptu jest w game_core, tutaj tylko wywołanie
-        const lang = document.documentElement.lang;
-        const gameState = window.getGameState(); // Potrzebujemy dostępu do stanu
+        const lang = gameState.currentLanguage;
         const history = gameState.categoryTopicHistory[category] || [];
         const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
         const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
@@ -211,8 +198,7 @@ const geminiApiAdapter = {
     },
 
     async getIncorrectAnswerExplanation() {
-        const lang = document.documentElement.lang;
-        const gameState = window.getGameState();
+        const lang = gameState.currentLanguage;
         const prompt = translations.incorrect_answer_explanation_prompt[lang]
             .replace('{question}', gameState.currentQuestionData.question)
             .replace('{correct_answer}', gameState.currentQuestionData.answer)
@@ -222,7 +208,7 @@ const geminiApiAdapter = {
     },
 
     async getCategoryMutationChoices(oldCategory) {
-        const lang = document.documentElement.lang;
+        const lang = gameState.currentLanguage;
         const prompt = translations.category_mutation_prompt[lang]
             .replace('{old_category}', oldCategory)
             .replace('{random_id}', Math.floor(Math.random() * 1000000));
@@ -232,20 +218,8 @@ const geminiApiAdapter = {
 };
 
 // --- INICJALIZACJA ---
-// Ustawienie nasłuchiwaczy specyficznych dla Gemini
 geminiApiKeyInput.addEventListener('input', geminiApiAdapter.saveSettings);
 modelSelect.addEventListener('change', geminiApiAdapter.saveSettings);
 refreshModelsBtn.addEventListener('click', fetchModels);
 
-// Udostępnienie stanu globalnie dla adaptera
-window.getGameState = () => {
-    // To jest uproszczenie. W większej aplikacji użylibyśmy innego wzorca.
-    // Musimy zaimportować `gameState` z `game_core.js` lub przekazać go inaczej.
-    // Na razie załóżmy, że `game_core` go wyeksportuje lub udostępni.
-    // Z powodu ograniczeń modułów ES6, najprościej będzie, jeśli `game_core`
-    // przypisze `gameState` do `window`.
-    return window.gameState;
-}
-
-// Inicjalizacja głównej aplikacji z naszym adapterem
 initializeApp(geminiApiAdapter);

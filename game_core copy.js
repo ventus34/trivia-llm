@@ -9,7 +9,6 @@ const CONFIG = {
 };
 
 // --- ELEMENTY UI ---
-// Ta sekcja pobiera wszystkie elementy DOM, aby były dostępne globalnie w tym module.
 const setupScreen = document.getElementById('setup-screen');
 const gameScreen = document.getElementById('game-screen');
 const winnerScreen = document.getElementById('winner-screen');
@@ -74,6 +73,7 @@ const playAgainBtn = document.getElementById('play-again-btn');
 const notificationContainer = document.getElementById('notification-container');
 
 // --- STAN GRY I TŁUMACZENIA ---
+// ZMIANA: Eksportujemy stan i tłumaczenia, aby były dostępne w modułach adapterów.
 export let gameState = { currentLanguage: 'pl' };
 export const translations = {
     setup_title: { pl: "Ustawienia Zaawansowane", en: "Advanced Settings" },
@@ -183,16 +183,9 @@ export const translations = {
 
 // --- LOGIKA GRY ---
 
-/**
- * Wyświetla powiadomienie na ekranie.
- * @param {object} message - Obiekt z polami `title` i `body`.
- * @param {string} type - Typ powiadomienia ('info', 'success', 'error').
- * @param {number} duration - Czas wyświetlania w ms.
- */
 function showNotification(message, type = 'info', duration = 5000) {
     const notif = document.createElement('div');
     notif.className = `notification ${type}`;
-    // ... reszta implementacji bez zmian
     const iconContainer = document.createElement('div');
     iconContainer.className = 'flex-shrink-0';
 
@@ -221,10 +214,6 @@ function showNotification(message, type = 'info', duration = 5000) {
     }, duration);
 }
 
-/**
- * Ustawia język interfejsu i aktualizuje wszystkie teksty.
- * @param {string} lang - Kod języka ('pl' lub 'en').
- */
 function setLanguage(lang) {
     gameState.currentLanguage = lang;
     document.documentElement.lang = lang;
@@ -244,7 +233,6 @@ function setLanguage(lang) {
             }
         }
     });
-    // Ręczne ustawienie placeholderów, które mogą nie mieć `data-lang-key`
     const geminiKeyInput = document.getElementById('gemini-api-key');
     if (geminiKeyInput) geminiKeyInput.placeholder = translations.gemini_api_key_placeholder[lang];
     
@@ -256,19 +244,12 @@ function setLanguage(lang) {
     updateDescriptions();
 }
 
-/**
- * Aktualizuje opisy pod selectami trybu gry i poziomu wiedzy.
- */
 function updateDescriptions() {
     const lang = gameState.currentLanguage;
     gameModeDescription.textContent = translations[`game_mode_desc_${gameModeSelect.value}`][lang];
     knowledgeLevelDescription.textContent = translations[`knowledge_desc_${knowledgeLevelSelect.value}`][lang];
 }
 
-/**
- * Generuje pola do wpisywania nazw kategorii.
- * @param {string[]} cats - Tablica z nazwami kategorii.
- */
 function updateCategoryInputs(cats) {
     categoriesContainer.innerHTML = '';
     for (let i = 0; i < 6; i++) {
@@ -281,9 +262,6 @@ function updateCategoryInputs(cats) {
     }
 }
 
-/**
- * Generuje pola do wpisywania imion graczy.
- */
 function updatePlayerNameInputs() {
     const count = parseInt(playerCountInput.value);
     playerNamesContainer.innerHTML = '';
@@ -329,9 +307,6 @@ function updatePlayerNameInputs() {
     }
 }
 
-/**
- * Wywołuje API do wygenerowania nowych kategorii na podstawie motywu.
- */
 async function generateCategories() {
     const theme = themeInput.value.trim();
     if (!theme) return;
@@ -357,9 +332,6 @@ async function generateCategories() {
     }
 }
 
-/**
- * Tworzy strukturę danych planszy.
- */
 function createBoardLayout() {
     const layout = [];
     const center = 50;
@@ -437,9 +409,6 @@ function createBoardLayout() {
     gameState.board = layout;
 }
 
-/**
- * Inicjalizuje stan gry i przechodzi do ekranu rozgrywki.
- */
 function initializeGame() {
     if (!gameState.api.isConfigured()) {
         showNotification({ title: translations.api_error[gameState.currentLanguage], body: gameState.api.configErrorMsg }, 'error');
@@ -500,12 +469,8 @@ function initializeGame() {
     gameScreen.classList.remove('hidden');
 }
 
-/**
- * Renderuje planszę (pola i połączenia).
- */
 function renderBoard() {
     boardElement.innerHTML = '';
-    // Dodajemy kontener SVG na połączenia
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute('class', 'board-connections');
@@ -537,7 +502,6 @@ function renderBoard() {
         squareEl.addEventListener('click', () => handleSquareClick(square.id));
         boardElement.appendChild(squareEl);
 
-        // Rysowanie połączeń
         square.connections.forEach(connId => {
             const key1 = `${square.id}-${connId}`;
             const key2 = `${connId}-${square.id}`;
@@ -555,10 +519,6 @@ function renderBoard() {
     });
 }
 
-
-/**
- * Renderuje legendę kategorii.
- */
 function renderCategoryLegend() {
     categoryLegend.innerHTML = '';
     gameState.categories.forEach((cat, i) => {
@@ -570,9 +530,6 @@ function renderCategoryLegend() {
     });
 }
 
-/**
- * Renderuje pionki graczy na planszy.
- */
 function renderPlayerTokens() {
     document.querySelectorAll('.player-token').forEach(token => token.remove());
     gameState.players.forEach((player, playerIndex) => {
@@ -589,9 +546,6 @@ function renderPlayerTokens() {
     });
 }
 
-/**
- * Aktualizuje cały interfejs gry (tura, wyniki, pionki).
- */
 function updateUI() {
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     currentPlayerNameSpan.textContent = currentPlayer.name;
@@ -612,10 +566,6 @@ function updateUI() {
     renderPlayerTokens();
 }
 
-/**
- * Ustawia ściankę kostki 3D.
- * @param {number} roll - Wynik rzutu (1-6).
- */
 function setDiceFace(roll) {
     const rotations = {
         1: 'rotateY(0deg) rotateX(0deg)', 2: 'rotateX(-90deg)', 3: 'rotateY(90deg)',
@@ -624,9 +574,6 @@ function setDiceFace(roll) {
     diceElement.style.transform = rotations[roll];
 }
 
-/**
- * Obsługuje rzut kostką.
- */
 function rollDice() {
     if (gameState.isAwaitingMove) return;
     gameMessageDiv.textContent = '';
@@ -652,12 +599,6 @@ function rollDice() {
     }
 }
 
-/**
- * Znajduje wszystkie możliwe do osiągnięcia pola.
- * @param {number} startId - ID pola startowego.
- * @param {number} steps - Liczba kroków.
- * @returns {object} - Obiekt z możliwymi ścieżkami.
- */
 function findPossibleMoves(startId, steps) {
     let queue = [[startId, [startId]]];
     const finalPaths = {};
@@ -683,9 +624,6 @@ function findPossibleMoves(startId, steps) {
     return finalPaths;
 }
 
-/**
- * Wyświetla modal z wyborem kategorii.
- */
 function promptCategoryChoice() {
     categoryChoiceButtons.innerHTML = '';
     gameState.categories.forEach((cat, index) => {
@@ -702,10 +640,6 @@ function promptCategoryChoice() {
     categoryChoiceModal.classList.remove('hidden');
 }
 
-/**
- * Animuje ruch pionka po planszy.
- * @param {number[]} path - Ścieżka ruchu.
- */
 async function animatePawnMovement(path) {
     const playerIndex = gameState.currentPlayerIndex;
     const tokenEl = document.getElementById(`token-${playerIndex}`);
@@ -718,10 +652,6 @@ async function animatePawnMovement(path) {
     }
 }
 
-/**
- * Obsługuje kliknięcie na pole planszy.
- * @param {number} squareId - ID klikniętego pola.
- */
 async function handleSquareClick(squareId) {
     if (!gameState.isAwaitingMove) return;
 
@@ -749,10 +679,6 @@ async function handleSquareClick(squareId) {
     }
 }
 
-/**
- * Pyta o pytanie z API i wyświetla je w modalu.
- * @param {number|null} forcedCategoryIndex - Indeks kategorii do wymuszenia.
- */
 async function askQuestion(forcedCategoryIndex = null) {
     gameState.currentForcedCategoryIndex = forcedCategoryIndex;
     const player = gameState.players[gameState.currentPlayerIndex];
@@ -806,18 +732,11 @@ async function askQuestion(forcedCategoryIndex = null) {
     }
 }
 
-/**
- * Obsługuje odpowiedź w trybie MCQ.
- * @param {string} selectedOption - Wybrana opcja.
- */
 function handleMcqAnswer(selectedOption) {
     hideModal();
     setTimeout(() => showVerificationPopup(selectedOption, gameState.currentQuestionData.answer), 300);
 }
 
-/**
- * Obsługuje odpowiedź w trybie otwartym.
- */
 function handleOpenAnswer() {
     const userAnswer = answerInput.value.trim();
     if (!userAnswer) {
@@ -828,11 +747,6 @@ function handleOpenAnswer() {
     setTimeout(() => showVerificationPopup(userAnswer, gameState.currentQuestionData.answer), 300);
 }
 
-/**
- * Wyświetla popup do weryfikacji odpowiedzi.
- * @param {string} playerAnswer - Odpowiedź gracza.
- * @param {string} correctAnswer - Poprawna odpowiedź.
- */
 function showVerificationPopup(playerAnswer, correctAnswer) {
     playerAnswerText.textContent = playerAnswer;
     correctAnswerText.textContent = correctAnswer;
@@ -850,10 +764,6 @@ function showVerificationPopup(playerAnswer, correctAnswer) {
     showAnswerPopup();
 }
 
-/**
- * Obsługuje ręczną weryfikację odpowiedzi przez graczy.
- * @param {boolean} isCorrect - Czy odpowiedź była poprawna.
- */
 async function handleManualVerification(isCorrect) {
     gameState.lastAnswerWasCorrect = isCorrect;
     const player = gameState.players[gameState.currentPlayerIndex];
@@ -861,7 +771,6 @@ async function handleManualVerification(isCorrect) {
     const categoryIndex = gameState.currentForcedCategoryIndex !== null ? gameState.currentForcedCategoryIndex : square.categoryIndex;
     const category = gameState.categories[categoryIndex];
 
-    // Zapisz słowa kluczowe do historii, aby unikać powtórzeń
     if (category && gameState.currentQuestionData.keywords) {
         const history = gameState.categoryTopicHistory[category];
         gameState.currentQuestionData.keywords.forEach(kw => {
@@ -873,7 +782,6 @@ async function handleManualVerification(isCorrect) {
         localStorage.setItem('globalQuizHistory', JSON.stringify(gameState.categoryTopicHistory));
     }
 
-    // Usprawniony flow: ukryj przyciski weryfikacji i pokaż wyjaśnienia
     verificationButtons.classList.add('hidden');
     postVerificationButtons.classList.remove('hidden');
     explanationContainer.classList.remove('hidden');
@@ -884,7 +792,11 @@ async function handleManualVerification(isCorrect) {
             if(category && !player.wedges.includes(category)){
                 player.wedges.push(category);
                 if (gameState.mutateCategories) {
+                    // Zamykamy bieżący popup, żeby otworzyć nowy do mutacji
+                    answerPopup.classList.add('opacity-0', 'scale-90');
+                    setTimeout(() => answerPopup.classList.add('hidden'), 500);
                     await mutateCategory(categoryIndex);
+                    return; // Zakończ funkcję tutaj, reszta logiki w handleMutationChoice
                 }
             }
         }
@@ -903,10 +815,6 @@ async function handleManualVerification(isCorrect) {
     }
 }
 
-/**
- * Rozpoczyna proces mutacji kategorii.
- * @param {number} categoryIndex - Indeks kategorii do zmutowania.
- */
 async function mutateCategory(categoryIndex) {
     const oldCategory = gameState.categories[categoryIndex];
     try {
@@ -929,21 +837,14 @@ async function mutateCategory(categoryIndex) {
 
     } catch (error) {
         console.error("Category mutation failed:", error);
-        // W razie błędu po prostu nie mutujemy kategorii
+        closePopupAndContinue(); // W razie błędu po prostu kontynuuj grę
     }
 }
 
-/**
- * Obsługuje wybór nowej kategorii przez gracza.
- * @param {number} categoryIndex - Indeks mutowanej kategorii.
- * @param {string} oldCategory - Stara nazwa kategorii.
- * @param {string} newCategory - Nowa, wybrana nazwa kategorii.
- */
 function handleMutationChoice(categoryIndex, oldCategory, newCategory) {
     categoryMutationModal.classList.add('hidden');
     gameState.categories[categoryIndex] = newCategory;
     
-    // Zaktualizuj historię i UI
     delete gameState.categoryTopicHistory[oldCategory];
     if (!gameState.categoryTopicHistory[newCategory]) {
         gameState.categoryTopicHistory[newCategory] = [];
@@ -955,11 +856,11 @@ function handleMutationChoice(categoryIndex, oldCategory, newCategory) {
         title: translations.category_mutated[gameState.currentLanguage],
         body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategory)
     }, 'info');
+
+    // Po mutacji, kontynuuj normalny tok gry
+    closePopupAndContinue();
 }
 
-/**
- * Wyświetla popup z odpowiedzią.
- */
 function showAnswerPopup() {
     answerPopup.classList.remove('hidden');
     setTimeout(() => {
@@ -967,9 +868,6 @@ function showAnswerPopup() {
     }, 10);
 }
 
-/**
- * Zamyka popup i kontynuuje grę.
- */
 function closePopupAndContinue() {
     answerPopup.classList.add('opacity-0', 'scale-90');
     setTimeout(() => answerPopup.classList.add('hidden'), 500);
@@ -985,9 +883,6 @@ function closePopupAndContinue() {
     checkWinCondition();
 }
 
-/**
- * Przechodzi do tury następnego gracza.
- */
 function nextTurn() {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
     updateUI();
@@ -996,9 +891,6 @@ function nextTurn() {
     rollDiceBtn.classList.remove('opacity-50');
 }
 
-/**
- * Sprawdza, czy któryś z graczy wygrał.
- */
 function checkWinCondition() {
     const winner = gameState.players.find(p => p.wedges.length === gameState.categories.length);
     if (winner) {
@@ -1008,10 +900,6 @@ function checkWinCondition() {
     }
 }
 
-/**
- * Pokazuje lub ukrywa modal pytania.
- * @param {boolean} show - Czy pokazać modal.
- */
 function showModal(show) {
     if (show) {
         questionModal.classList.remove('hidden');
@@ -1024,16 +912,9 @@ function showModal(show) {
 
 function hideModal() { showModal(false); }
 
-
-// --- GŁÓWNA FUNKCJA INICJALIZUJĄCA ---
-/**
- * Inicjalizuje całą grę, ustawia nasłuchiwacze i przekazuje adapter API.
- * @param {object} apiAdapter - Obiekt z metodami do komunikacji z API.
- */
 export function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
     
-    // --- EVENT LISTENERS ---
     window.addEventListener('DOMContentLoaded', () => {
         setLanguage('pl');
         if (gameState.api.loadSettings) {
@@ -1077,7 +958,6 @@ export function initializeApp(apiAdapter) {
     playAgainBtn.addEventListener('click', () => {
         winnerScreen.classList.add('hidden');
         setupScreen.classList.remove('hidden');
-        // Usunięcie SVG z połączeniami przy restarcie
         const oldSvg = boardWrapper.querySelector('.board-connections');
         if (oldSvg) oldSvg.remove();
     });

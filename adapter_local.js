@@ -1,13 +1,7 @@
-import { initializeApp } from './game_core.js';
+import { initializeApp, gameState, translations } from './game_core.js';
 
 // --- ELEMENTY UI SPECIFICZNE DLA LM STUDIO ---
 const lmStudioUrlInput = document.getElementById('lmstudio-url-input');
-
-// --- TŁUMACZENIA (tylko te, które są potrzebne w tym pliku) ---
-const translations = {
-    api_error: { pl: "Błąd Połączenia", en: "Connection Error" },
-    lm_studio_url_alert: { pl: "Proszę podać adres serwera LM Studio.", en: "Please provide the LM Studio server URL." },
-};
 
 /**
  * Wywołuje API serwera LM Studio z logiką ponawiania prób.
@@ -78,7 +72,7 @@ const localApiAdapter = {
 
     isConfigured() {
         const url = lmStudioUrlInput.value.trim();
-        const lang = document.documentElement.lang || 'pl';
+        const lang = gameState.currentLanguage;
         this.configErrorMsg = translations.lm_studio_url_alert[lang];
         return !!url;
     },
@@ -86,9 +80,6 @@ const localApiAdapter = {
     saveSettings() {
         localStorage.setItem('quizGameSettings_local', JSON.stringify({
             lmStudioUrl: lmStudioUrlInput.value,
-            temperature: document.getElementById('temperature-slider').value,
-            includeTheme: document.getElementById('include-theme-toggle').checked,
-            mutateCategories: document.getElementById('mutate-categories-toggle').checked
         }));
     },
 
@@ -102,10 +93,8 @@ const localApiAdapter = {
         }
     },
     
-    // Implementacje metod API są niemal identyczne jak w adapterze Gemini,
-    // różnią się tylko wywoływaną funkcją (callLmStudioApi vs callGeminiApiWithRetries)
     async generateCategories(theme) {
-        const lang = document.documentElement.lang;
+        const lang = gameState.currentLanguage;
         const prompt = translations.category_generation_prompt[lang]
             .replace('{theme}', theme)
             .replace('{existing_categories}', "brak")
@@ -115,8 +104,7 @@ const localApiAdapter = {
     },
 
     async generateQuestion(category) {
-        const lang = document.documentElement.lang;
-        const gameState = window.getGameState();
+        const lang = gameState.currentLanguage;
         const history = gameState.categoryTopicHistory[category] || [];
         const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
         const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
@@ -137,8 +125,7 @@ const localApiAdapter = {
     },
 
     async getIncorrectAnswerExplanation() {
-        const lang = document.documentElement.lang;
-        const gameState = window.getGameState();
+        const lang = gameState.currentLanguage;
         const prompt = translations.incorrect_answer_explanation_prompt[lang]
             .replace('{question}', gameState.currentQuestionData.question)
             .replace('{correct_answer}', gameState.currentQuestionData.answer)
@@ -148,7 +135,7 @@ const localApiAdapter = {
     },
 
     async getCategoryMutationChoices(oldCategory) {
-        const lang = document.documentElement.lang;
+        const lang = gameState.currentLanguage;
         const prompt = translations.category_mutation_prompt[lang]
             .replace('{old_category}', oldCategory)
             .replace('{random_id}', Math.floor(Math.random() * 1000000));
@@ -159,7 +146,5 @@ const localApiAdapter = {
 
 // --- INICJALIZACJA ---
 lmStudioUrlInput.addEventListener('input', localApiAdapter.saveSettings);
-
-window.getGameState = () => window.gameState;
 
 initializeApp(localApiAdapter);
