@@ -171,30 +171,50 @@ export const translations = {
         en: `You are a VERY creative game master. Your task is to create a set of 6 fresh, surprising, and unique quiz categories based on the theme: "{theme}". Avoid typical, obvious associations.\n\nCriteria:\n1.  **Brevity**: Each category name must contain from one to three words.\n2.  **Variety**: Avoid generating categories that already exist.\n\nExisting categories to avoid: {existing_categories}\n\nCreative Catalyst (use as inspiration to create something unique): {creative_word}\n\nReturn the response ONLY as a JSON object with a single key "categories". Example: {"categories": ["A", "B", "C", "D", "E", "F"]}`
     },
     question_prompt: {
-        pl: [
-            // Szablon 1 (klasyczny ekspert)
-            `Jesteś ekspertem w tworzeniu angażujących pytań do quizów. Twoim zadaniem jest stworzenie pytania, które jest precycyjne, unikalne, nieoczywiste i stanowi wyzwanie.\n\n# KROK 1: Analiza\n- Kategoria: "{category}"\n- Poziom trudności: {knowledge_prompt}\n- Tryb gry: {game_mode_prompt}\n- Kontekst tematyczny: {theme_context}\n- Historia słów kluczowych (unikać): {history_prompt}\n\n# KROK 2: Generowanie i Formatowanie\nStwórz pytanie spełniające kryteria i zwróć je WYŁĄCZNIE jako obiekt JSON w formacie:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}\nWAŻNE: Klucz "options" dołącz tylko dla trybu MCQ. Jedna z opcji MUSI być poprawną odpowiedzią.`,
-            // Szablon 2 (bezpośrednie polecenie)
-            `Potrzebuję jednego, pomysłowego pytania do quizu. Bądź kreatywny, ale trzymaj się faktów.\n\n# Dane wejściowe:\n- Kategoria: "{category}"\n- Poziom wiedzy: {knowledge_prompt}\n- Tryb gry: {game_mode_prompt}\n- Motyw przewodni: {theme_context}\n- Unikaj tematów: {history_prompt}\n\n# Wymagany format wyjściowy (TYLKO JSON):\n{\n  "question": "Tekst pytania",\n  "answer": "Prawidłowa odpowiedź",\n  "explanation": "Krótkie wyjaśnienie",\n  "keywords": ["klucz1", "klucz2"],\n  "options": ["opcjaA", "opcjaB", "opcjaC", "opcjaD"]\n}\nUwaga: Pole "options" jest wymagane tylko dla pytań zamkniętych (MCQ) i musi zawierać poprawną odpowiedź.`,
-            // Szablon 3 (jako mistrz gry)
-            `Wciel się w rolę mistrza teleturnieju. Twoja misja: sformułuj jedno podchwytliwe, ale jednoznaczne pytanie.\n\n# Specyfikacja pytania:\n- Dziedzina: "{category}"\n- Poziom trudności: {knowledge_prompt}\n- Forma: {game_mode_prompt}\n- Dodatkowy kontekst: {theme_context}\n- Pominięte zagadnienia: {history_prompt}\n\nZwróć wynik jako czysty obiekt JSON, bez żadnych dodatkowych opisów, o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}\nW przypadku MCQ, jedna z opcji musi być identyczna z odpowiedzią.`,
-            // Szablon 4 (analityk danych)
-            `ZADANIE: Generowanie Pytania Quizowego.\n\n# PAKIET DANYCH WEJŚCIOWYCH:\n- "kategoria": "{category}"\n- "poziom": "{knowledge_prompt}"\n- "format": "{game_mode_prompt}"\n- "kontekst": "{theme_context}"\n- "wykluczenia": "{history_prompt}"\n\n# STRUKTURA WYJŚCIOWA (JSON):\n- "question": string\n- "answer": string\n- "explanation": string\n- "keywords": string[]\n- "options"?: string[]\n\n# REGUŁY:\n1. Pytanie musi być jednoznaczne i oparte na faktach.\n2. Pole "options" generuj tylko dla formatu MCQ; musi zawierać poprawną odpowiedź.`,
-            // Szablon 5 (nauczyciel)
-            `Jesteś nauczycielem tworzącym test. Twoim celem jest nie tylko sprawdzić wiedzę, ale i czegoś nauczyć. Stwórz jedno pytanie z dziedziny "{category}" ({knowledge_prompt}). Najważniejsza jest wartość edukacyjna w polu "explanation".\n\n- Kontekst dodatkowy: {theme_context}\n- Format pytania: {game_mode_prompt}\n- Tematy do uniknięcia: {history_prompt}\n\nZwróć tylko JSON w formacie: {"question":"...", "answer":"...", "explanation":"...", "keywords":[...], "options":[...]}`
-        ],
-        en: [
-            // Template 1 (classic expert)
-            `You are an expert in creating engaging quiz questions. Your task is to create a question that is precise, unique, non-obvious, and challenging.\n\n# STEP 1: Analysis\n- Category: "{category}"\n- Difficulty Level: {knowledge_prompt}\n- Game Mode: {game_mode_prompt}\n- Thematic Context: {theme_context}\n- Keyword History (to avoid): {history_prompt}\n\n# STEP 2: Generation and Formatting\nCreate a question that meets the criteria and return it ONLY as a JSON object in the format:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}\nIMPORTANT: Include the "options" key only for MCQ mode. One of the options MUST be the correct answer.`,
-            // Template 2 (direct command)
-            `I need one, inventive quiz question. Be creative, but stick to the facts.\n\n# Input Data:\n- Category: "{category}"\n- Knowledge Level: {knowledge_prompt}\n- Game Mode: {game_mode_prompt}\n- Main Theme: {theme_context}\n- Avoid Topics: {history_prompt}\n\n# Required Output Format (JSON ONLY):\n{\n  "question": "Question text",\n  "answer": "Correct answer",\n  "explanation": "Short explanation",\n  "keywords": ["key1", "key2"],\n  "options": ["optionA", "optionB", "optionC", "optionD"]\n}\nNote: The "options" field is required only for multiple-choice questions (MCQ) and must contain the correct answer.`,
-            // Template 3 (as a game master)
-            `Embody the role of a quiz show master. Your mission: formulate one tricky but unambiguous question.\n\n# Question Specification:\n- Field: "{category}"\n- Difficulty Level: {knowledge_prompt}\n- Format: {game_mode_prompt}\n- Additional Context: {theme_context}\n- Omitted Subjects: {history_prompt}\n\nReturn the result as a pure JSON object, without any additional descriptions, with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}\nIn the case of MCQ, one of the options must be identical to the answer.`,
-            // Template 4 (data analyst)
-            `TASK: Quiz Question Generation.\n\n# INPUT DATA PACKET:\n- "category": "{category}"\n- "level": "{knowledge_prompt}"\n- "format": "{game_mode_prompt}"\n- "context": "{theme_context}"\n- "exclusions": "{history_prompt}"\n\n# OUTPUT STRUCTURE (JSON):\n- "question": string\n- "answer": string\n- "explanation": string\n- "keywords": string[]\n- "options"?: string[]\n\n# RULES:\n1. The question must be unambiguous and fact-based.\n2. Generate the "options" field only for MCQ format; it must contain the correct answer.`,
-            // Template 5 (teacher)
-            `You are a teacher creating a test. Your goal is not only to test knowledge but also to teach something. Create one question from the field of "{category}" ({knowledge_prompt}). The educational value in the "explanation" field is most important.\n\n- Additional Context: {theme_context}\n- Question Format: {game_mode_prompt}\n- Topics to avoid: {history_prompt}\n\nReturn only JSON in the format: {"question":"...", "answer":"...", "explanation":"...", "keywords":[...], "options":[...]}`
-        ]
+        pl: {
+            persona: "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości pytania quizowego.",
+            chain_of_thought: `\n# PROCES MYŚLOWY (Chain of Thought):\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępne pomysły na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. To kluczowy balans. Następnie udoskonal go, upewniając się, że jest jednoznaczny i spełnia wszystkie pozostałe reguły.`,
+            context_header: "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
+            context_lines: [
+                "- Kategoria: \"{category}\"",
+                "- Poziom trudności: {knowledge_prompt}",
+                "- Tryb gry: {game_mode_prompt}",
+                "- Motyw przewodni: {theme_context}",
+                "- Słowa-inspiracje (użyj jako luźnego skojarzenia): {inspirational_words}"
+            ],
+            rules: [
+                "Klucz \"options\" dołącz tylko dla trybu MCQ. Jedna z opcji MUSI być poprawną odpowiedzią.",
+                "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
+                "**SPÓJNOŚĆ:** Pytanie musi ściśle trzymać się podanej kategorii i wszystkich pozostałych wytycznych.",
+                "**PRECYZYJNE SŁOWA KLUCZOWE:** Słowa kluczowe muszą być bardzo specyficzne dla danego pytania i odpowiedzi.",
+                "**ZAKAZ POWTÓRZEŃ:** Pytanie nie może dotyczyć następujących, już omówionych zagadnień: {history_prompt}. Wygeneruj coś zupełnie nowego."
+            ],
+            output_format: `\n# OSTATECZNY WYNIK:\nPo zakończeniu wewnętrznego procesu myślowego, zwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}`
+        },
+        en: { 
+            persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality quiz question.",
+            chain_of_thought: `\n# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. This is a key balance. Then, refine it, ensuring it is unambiguous and meets all other rules.`,
+            context_header: "\n# CONTEXT AND RULES TO APPLY:",
+            context_lines: [
+                "- Category: \"{category}\"",
+                "- Difficulty Level: {knowledge_prompt}",
+                "- Game Mode: {game_mode_prompt}",
+                "- Main Theme: {theme_context}",
+                "- Inspirational Words (use as a loose association): {inspirational_words}"
+            ],
+            rules: [
+                "Include the \"options\" key only for MCQ mode. One of the options MUST be the correct answer.",
+                "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
+                "**CONSISTENCY:** The question must strictly adhere to the given category and all other guidelines.",
+                "**PRECISE KEYWORDS:** Keywords must be very specific to the given question and answer.",
+                "**NO REPETITION:** The question must not be about the following, already covered topics: {history_prompt}. You must generate something completely new."
+            ],
+            output_format: `\n# FINAL OUTPUT:\nAfter completing your internal thought process, return the response ONLY as a single, clean JSON object with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}`
+        }
+    },
+    inspirational_words: {
+        pl: ['Wiele', 'Mało', 'Odległe', 'Bliskie', 'Nowe', 'Stare', 'Pierwsze', 'Ostatnie', 'Ukryte', 'Oczywiste', 'Proste', 'Złożone', 'Wielkie', 'Drobne', 'Szybkie', 'Wolne', 'Głośne', 'Ciche', 'Publiczne', 'Prywatne'],
+        en: ['Many', 'Few', 'Distant', 'Close', 'New', 'Old', 'First', 'Last', 'Hidden', 'Obvious', 'Simple', 'Complex', 'Great', 'Tiny', 'Fast', 'Slow', 'Loud', 'Quiet', 'Public', 'Private']
     },
     incorrect_answer_explanation_prompt: {
         pl: `Jesteś pomocnym nauczycielem w grze quizowej. Gracz właśnie odpowiedział niepoprawnie. Twoim zadaniem jest wyjaśnienie mu, dlaczego jego odpowiedź była błędna. Bądź zwięzły, empatyczny i edukacyjny.\n\nKontekst:\n- Pytanie: "{question}"\n- Poprawna odpowiedź: "{correct_answer}"\n- Błędna odpowiedź gracza: "{player_answer}"\n\nZadanie:\nNapisz krótkie (1-2 zdania) wyjaśnienie, dlaczego odpowiedź gracza jest niepoprawna. Skup się na błędzie w rozumowaniu gracza lub wskaż kluczową różnicę.\n\nZwróć odpowiedź jako obiekt JSON w formacie: {"explanation": "Twoje wyjaśnienie..."}`,
@@ -948,9 +968,16 @@ async function handleManualVerification(isCorrect) {
     // Zapisz słowa kluczowe do historii, aby unikać powtórzeń
     if (category && gameState.currentQuestionData.keywords) {
         const history = gameState.categoryTopicHistory[category];
-        gameState.currentQuestionData.keywords.forEach(kw => {
-            if (!history.includes(kw)) history.push(kw);
+
+        const keywordsToStore = gameState.currentQuestionData.keywords.slice(0, 5);
+
+        // Dodajemy tylko te 5 (lub mniej) słów do historii
+        keywordsToStore.forEach(kw => {
+            if (!history.includes(kw)) {
+                history.push(kw);
+            }
         });
+
         if (history.length > CONFIG.MAX_KEYWORD_HISTORY) {
             gameState.categoryTopicHistory[category] = history.slice(-CONFIG.MAX_KEYWORD_HISTORY);
         }

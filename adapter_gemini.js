@@ -5,6 +5,13 @@ const geminiApiKeyInput = document.getElementById('gemini-api-key');
 const modelSelect = document.getElementById('model-select');
 const refreshModelsBtn = document.getElementById('refresh-models-btn');
 
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 /**
  * Wywołuje API Gemini z logiką ponawiania prób.
  * @param {string} prompt - Pełny prompt dla modelu.
@@ -168,66 +175,60 @@ const geminiApiAdapter = {
         }
     },
 
-    async generateCategories(theme) {
-        const lang = gameState.currentLanguage;
-        const generatedCats = [];
-        let attempts = 0;
-        const maxAttempts = 15; 
-
-        while (generatedCats.length < 6 && attempts < maxAttempts) {
-            attempts++;
-            const existingCategoriesStr = generatedCats.length > 0 ? `"${generatedCats.join('", "')}"` : "brak";
-
-            // Używamy nowego, precyzyjnego promptu
-            const prompt = translations.broad_single_category_prompt[lang]
-                .replace('{theme}', theme)
-                .replace('{existing_categories}', existingCategoriesStr);
-
-            try {
-                const response = await callGeminiApiWithRetries(prompt, true);
-                if (response && response.category && !generatedCats.includes(response.category)) {
-                    generatedCats.push(response.category);
-                } else {
-                    console.warn("Pominięto pustą lub zduplikowaną kategorię. Próbuję ponownie.");
-                }
-            } catch (error) {
-                console.error(`Błąd podczas generowania kategorii #${generatedCats.length + 1}:`, error);
-                throw new Error(`Failed to generate category #${generatedCats.length + 1}.`);
-            }
-        }
-
-        if (generatedCats.length < 6) {
-            console.error(`Wygenerowano tylko ${generatedCats.length} unikalnych kategorii po ${maxAttempts} próbach.`);
-            throw new Error('Nie udało się wygenerować pełnego zestawu 6 unikalnych kategorii.');
-        }
-
-        return generatedCats;
-    },
-
     async generateQuestion(category) {
         const lang = gameState.currentLanguage;
-        // 1. Pobieramy tablicę szablonów
-        const promptTemplates = translations.question_prompt[lang];
-        // 2. Losujemy JEDEN szablon z tablicy
-        const basePrompt = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
-        
-        const history = gameState.categoryTopicHistory[category] || [];
+        const promptStructure = translations.question_prompt[lang];
+
+        let history = [...(gameState.categoryTopicHistory[category] || [])];
+        shuffleArray(history);
         const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
+
+        const inspirationalWords = [...translations.inspirational_words[lang]];
+        shuffleArray(inspirationalWords);
+        const twoInspirationalWords = inspirationalWords.slice(0, 2).join(', ');
+
+        // Łączymy i tasujemy kontekst z regułami
+        const shuffledContextAndRules = [...promptStructure.context_lines, ...promptStructure.rules];
+        shuffleArray(shuffledContextAndRules);
+
+        // Budujemy dynamiczny prompt
+        let basePrompt = [
+            promptStructure.persona,
+            promptStructure.chain_of_thought,
+            promptStructure.context_header,
+            ...shuffledContextAndRules,
+            promptStructure.output_format
+        ].join('\n');
+        
         const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
 
-        // 3. Wywołujemy .replace() na wylosowanym szablonie (stringu)
         const prompt = basePrompt
             .replace(/{category}/g, category)
             .replace(/{theme_context}/g, themeContext)
             .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
             .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
-            .replace(/{history_prompt}/g, historyPrompt);
+            .replace(/{history_prompt}/g, historyPrompt)
+            .replace(/{inspirational_words}/g, twoInspirationalWords);
 
-        const data = await callGeminiApiWithRetries(prompt, true);
-        if (gameState.gameMode === 'mcq' && (!data.options || !data.options.some(opt => opt.toLowerCase() === data.answer.toLowerCase()))) {
-            data.options[Math.floor(Math.random() * data.options.length)] = data.answer;
+        const response = await callGeminiApiWithRetries(prompt, true);
+
+        const chosenQuestion = response;
+
+        if (!chosenQuestion || typeof chosenQuestion.question !== 'string') {
+            console.error("API nie zwróciło prawidłowego obiektu pytania.", response);
+            throw new Error("Nie udało się wygenerować pytania.");
         }
-        return data;
+
+        if (chosenQuestion && Array.isArray(chosenQuestion.keywords)) {
+            chosenQuestion.keywords = chosenQuestion.keywords.slice(0, 5);
+        }
+
+        if (gameState.gameMode === 'mcq' && (!chosenQuestion.options || !chosenQuestion.options.some(opt => opt.toLowerCase() === chosenQuestion.answer.toLowerCase()))) {
+            if (!chosenQuestion.options) chosenQuestion.options = ["A", "B", "C", "D"];
+            chosenQuestion.options[Math.floor(Math.random() * chosenQuestion.options.length)] = chosenQuestion.answer;
+        }
+        
+        return chosenQuestion;
     },
 
     async getIncorrectAnswerExplanation() {

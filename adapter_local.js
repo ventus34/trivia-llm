@@ -3,6 +3,13 @@ import { initializeApp, gameState, translations } from './game_core.js';
 // --- ELEMENTY UI SPECIFICZNE DLA LM STUDIO ---
 const lmStudioUrlInput = document.getElementById('lmstudio-url-input');
 
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 /**
  * Wywołuje API serwera LM Studio z logiką ponawiania prób.
  * @param {string} prompt - Pełny prompt dla modelu.
@@ -94,14 +101,32 @@ const localApiAdapter = {
         }
     },
     
+
     async generateQuestion(category) {
         const lang = gameState.currentLanguage;
-        // LOSOWANIE SZABLONU
-        const promptTemplates = translations.question_prompt[lang];
-        const basePrompt = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
-        
-        const history = gameState.categoryTopicHistory[category] || [];
+        const promptStructure = translations.question_prompt[lang];
+
+        let history = [...(gameState.categoryTopicHistory[category] || [])];
+        shuffleArray(history);
         const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
+
+        const inspirationalWords = [...translations.inspirational_words[lang]];
+        shuffleArray(inspirationalWords);
+        const twoInspirationalWords = inspirationalWords.slice(0, 2).join(', ');
+
+        // Łączymy i tasujemy kontekst z regułami
+        const shuffledContextAndRules = [...promptStructure.context_lines, ...promptStructure.rules];
+        shuffleArray(shuffledContextAndRules);
+
+        // Budujemy dynamiczny prompt
+        let basePrompt = [
+            promptStructure.persona,
+            promptStructure.chain_of_thought,
+            promptStructure.context_header,
+            ...shuffledContextAndRules,
+            promptStructure.output_format
+        ].join('\n');
+        
         const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
 
         const prompt = basePrompt
@@ -109,39 +134,28 @@ const localApiAdapter = {
             .replace(/{theme_context}/g, themeContext)
             .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
             .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
-            .replace(/{history_prompt}/g, historyPrompt);
+            .replace(/{history_prompt}/g, historyPrompt)
+            .replace(/{inspirational_words}/g, twoInspirationalWords);
 
-        const data = await callLmStudioApi(prompt, true);
-        if (gameState.gameMode === 'mcq' && (!data.options || !data.options.some(opt => opt.toLowerCase() === data.answer.toLowerCase()))) {
-            data.options[Math.floor(Math.random() * data.options.length)] = data.answer;
-        }
-        return data;
-    },
-
-    async generateQuestion(category) {
-        const lang = gameState.currentLanguage;
-        // 1. Pobieramy tablicę szablonów
-        const promptTemplates = translations.question_prompt[lang];
-        // 2. Losujemy JEDEN szablon z tablicy
-        const basePrompt = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
+        const response = await callLmStudioApi(prompt, true);
         
-        const history = gameState.categoryTopicHistory[category] || [];
-        const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
-        const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
+        const chosenQuestion = response;
 
-        // 3. Wywołujemy .replace() na wylosowanym szablonie (stringu)
-        const prompt = basePrompt
-            .replace(/{category}/g, category)
-            .replace(/{theme_context}/g, themeContext)
-            .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
-            .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
-            .replace(/{history_prompt}/g, historyPrompt);
-
-        const data = await callLmStudioApi(prompt, true);
-        if (gameState.gameMode === 'mcq' && (!data.options || !data.options.some(opt => opt.toLowerCase() === data.answer.toLowerCase()))) {
-            data.options[Math.floor(Math.random() * data.options.length)] = data.answer;
+        if (!chosenQuestion || typeof chosenQuestion.question !== 'string') {
+            console.error("API nie zwróciło prawidłowego obiektu pytania.", response);
+            throw new Error("Nie udało się wygenerować pytania.");
         }
-        return data;
+
+        if (chosenQuestion && Array.isArray(chosenQuestion.keywords)) {
+            chosenQuestion.keywords = chosenQuestion.keywords.slice(0, 5);
+        }
+
+        if (gameState.gameMode === 'mcq' && (!chosenQuestion.options || !chosenQuestion.options.some(opt => opt.toLowerCase() === chosenQuestion.answer.toLowerCase()))) {
+            if (!chosenQuestion.options) chosenQuestion.options = ["A", "B", "C", "D"];
+            chosenQuestion.options[Math.floor(Math.random() * chosenQuestion.options.length)] = chosenQuestion.answer;
+        }
+        
+        return chosenQuestion;
     },
 
     async getIncorrectAnswerExplanation() {
