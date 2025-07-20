@@ -1,0 +1,251 @@
+import { initializeApp } from './game_core.js';
+
+// --- ELEMENTY UI SPECIFICZNE DLA GEMINI ---
+const geminiApiKeyInput = document.getElementById('gemini-api-key');
+const modelSelect = document.getElementById('model-select');
+const refreshModelsBtn = document.getElementById('refresh-models-btn');
+
+// --- TŁUMACZENIA (tylko te, które są potrzebne w tym pliku) ---
+const translations = {
+    api_error: { pl: "Błąd API", en: "API Error" },
+    api_key_alert: { pl: "Proszę podać klucz API Gemini.", en: "Please provide a Gemini API key." },
+    fetch_models_error: { pl: "Nie udało się pobrać listy modeli. Sprawdź klucz API i spróbuj ponownie.", en: "Failed to fetch model list. Check your API key and try again." },
+};
+
+/**
+ * Wywołuje API Gemini z logiką ponawiania prób.
+ * @param {string} prompt - Pełny prompt dla modelu.
+ * @param {boolean} expectJson - Czy odpowiedź powinna być parsowana jako JSON.
+ * @returns {Promise<any>} - Wynik z API.
+ */
+async function callGeminiApiWithRetries(prompt, expectJson = true) {
+    const maxRetries = 3;
+    const apiKey = geminiApiKeyInput.value.trim();
+    const modelId = modelSelect.value;
+    const temperature = parseFloat(document.getElementById('temperature-slider').value);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
+    
+    console.log('Gemini API Prompt:', prompt);
+
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const generationConfig = { temperature };
+            if (expectJson && (modelId.startsWith('gemini') || modelId.startsWith('gemma-2'))) {
+                generationConfig.response_mime_type = "application/json";
+            }
+            const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig };
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API Error: ${response.status} - ${errorBody}`);
+            }
+
+            const data = await response.json();
+            console.log('Gemini API Response:', data);
+
+            if (data.candidates && data.candidates[0].content?.parts?.[0]) {
+                let content = data.candidates[0].content.parts[0].text;
+                if (expectJson) {
+                    try {
+                        const firstBracket = content.indexOf('{');
+                        const lastBracket = content.lastIndexOf('}');
+                        if (firstBracket === -1 || lastBracket === -1) {
+                            throw new Error("No JSON object found in the response.");
+                        }
+                        const jsonString = content.substring(firstBracket, lastBracket + 1);
+                        return JSON.parse(jsonString);
+                    } catch (e) {
+                        console.error("JSON parsing error:", e, "Original content:", content);
+                        throw new Error("Failed to parse JSON from API response.");
+                    }
+                }
+                return content;
+            } else {
+                throw new Error("Invalid or empty response from API.");
+            }
+        } catch (error) {
+            console.error(`Attempt ${i + 1} failed:`, error);
+            if (i === maxRetries - 1) throw error;
+        }
+    }
+}
+
+/**
+ * Pobiera listę dostępnych modeli Gemini.
+ */
+async function fetchModels() {
+    const apiKey = geminiApiKeyInput.value.trim();
+    const lang = document.documentElement.lang || 'pl';
+    if (!apiKey) {
+        alert(translations.api_key_alert[lang]);
+        return;
+    }
+
+    const refreshIcon = document.getElementById('refresh-icon');
+    const loadingSpinner = document.getElementById('loading-spinner');
+
+    refreshModelsBtn.disabled = true;
+    refreshIcon.classList.add('hidden');
+    loadingSpinner.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        const data = await response.json();
+        const supportedModels = data.models
+            .filter(model => model.supportedGenerationMethods.includes('generateContent'))
+            .map(model => ({
+                id: model.name.replace('models/', ''),
+                displayName: model.displayName
+            }));
+        populateModelsDropdown(supportedModels);
+    } catch (error) {
+        console.error("Fetch models error:", error);
+        alert(translations.fetch_models_error[lang]);
+        populateModelsDropdown();
+    } finally {
+        refreshModelsBtn.disabled = false;
+        refreshIcon.classList.remove('hidden');
+        loadingSpinner.classList.add('hidden');
+    }
+}
+
+/**
+ * Wypełnia listę rozwijaną modelami.
+ * @param {object[]} models - Lista modeli z API.
+ */
+function populateModelsDropdown(models = []) {
+    const defaultModels = [
+        { id: 'gemma-3-27b-it', displayName: 'Gemma 3 27B' },
+        { id: 'gemini-2.5-flash-latest', displayName: 'Gemini 2.5 Flash' },
+        { id: 'gemini-2.5-pro-latest', displayName: 'Gemini 2.5 Pro' }
+    ];
+
+    const allModels = [...defaultModels, ...models];
+    const uniqueModels = allModels.filter((model, index, self) =>
+        index === self.findIndex((m) => m.id === model.id)
+    );
+
+    const savedModel = localStorage.getItem('quizGameSettings_gemini') ? JSON.parse(localStorage.getItem('quizGameSettings_gemini')).model : 'gemini-2.5-flash-latest';
+
+    modelSelect.innerHTML = '';
+    uniqueModels.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = model.displayName;
+        if (model.id === savedModel) {
+            option.selected = true;
+        }
+        modelSelect.appendChild(option);
+    });
+}
+
+// --- OBIEKT ADAPTERA API DLA GEMINI ---
+const geminiApiAdapter = {
+    configErrorMsg: '',
+
+    isConfigured() {
+        const apiKey = geminiApiKeyInput.value.trim();
+        const lang = document.documentElement.lang || 'pl';
+        this.configErrorMsg = translations.api_key_alert[lang];
+        return !!apiKey;
+    },
+    
+    saveSettings() {
+        localStorage.setItem('quizGameSettings_gemini', JSON.stringify({
+            apiKey: geminiApiKeyInput.value,
+            model: modelSelect.value,
+            temperature: document.getElementById('temperature-slider').value,
+            includeTheme: document.getElementById('include-theme-toggle').checked,
+            mutateCategories: document.getElementById('mutate-categories-toggle').checked
+        }));
+    },
+
+    loadSettings() {
+        populateModelsDropdown();
+        const savedSettings = localStorage.getItem('quizGameSettings_gemini');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (settings.apiKey) geminiApiKeyInput.value = settings.apiKey;
+            if (settings.model) modelSelect.value = settings.model;
+            // Pozostałe ustawienia są ładowane przez game_core
+        }
+    },
+
+    async generateCategories(theme) {
+        const lang = document.documentElement.lang;
+        const prompt = translations.category_generation_prompt[lang]
+            .replace('{theme}', theme)
+            .replace('{existing_categories}', "brak")
+            .replace('{random_id}', Math.floor(Math.random() * 1000000));
+        const response = await callGeminiApiWithRetries(prompt, true);
+        return response.categories;
+    },
+
+    async generateQuestion(category) {
+        // Logika konstruowania promptu jest w game_core, tutaj tylko wywołanie
+        const lang = document.documentElement.lang;
+        const gameState = window.getGameState(); // Potrzebujemy dostępu do stanu
+        const history = gameState.categoryTopicHistory[category] || [];
+        const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
+        const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
+
+        const prompt = translations.question_prompt[lang]
+            .replace('{category}', category)
+            .replace('{theme_context}', themeContext)
+            .replace('{knowledge_prompt}', translations.knowledge_prompts[gameState.knowledgeLevel][lang])
+            .replace('{game_mode_prompt}', translations.game_mode_prompts[gameState.gameMode][lang])
+            .replace('{history_prompt}', historyPrompt)
+            .replace('{random_id}', Math.floor(Math.random() * 1000000));
+
+        const data = await callGeminiApiWithRetries(prompt, true);
+        if (gameState.gameMode === 'mcq' && (!data.options || !data.options.some(opt => opt.toLowerCase() === data.answer.toLowerCase()))) {
+            data.options[Math.floor(Math.random() * data.options.length)] = data.answer;
+        }
+        return data;
+    },
+
+    async getIncorrectAnswerExplanation() {
+        const lang = document.documentElement.lang;
+        const gameState = window.getGameState();
+        const prompt = translations.incorrect_answer_explanation_prompt[lang]
+            .replace('{question}', gameState.currentQuestionData.question)
+            .replace('{correct_answer}', gameState.currentQuestionData.answer)
+            .replace('{player_answer}', gameState.currentPlayerAnswer);
+        const data = await callGeminiApiWithRetries(prompt, true);
+        return data.explanation;
+    },
+
+    async getCategoryMutationChoices(oldCategory) {
+        const lang = document.documentElement.lang;
+        const prompt = translations.category_mutation_prompt[lang]
+            .replace('{old_category}', oldCategory)
+            .replace('{random_id}', Math.floor(Math.random() * 1000000));
+        const data = await callGeminiApiWithRetries(prompt, true);
+        return data.choices;
+    }
+};
+
+// --- INICJALIZACJA ---
+// Ustawienie nasłuchiwaczy specyficznych dla Gemini
+geminiApiKeyInput.addEventListener('input', geminiApiAdapter.saveSettings);
+modelSelect.addEventListener('change', geminiApiAdapter.saveSettings);
+refreshModelsBtn.addEventListener('click', fetchModels);
+
+// Udostępnienie stanu globalnie dla adaptera
+window.getGameState = () => {
+    // To jest uproszczenie. W większej aplikacji użylibyśmy innego wzorca.
+    // Musimy zaimportować `gameState` z `game_core.js` lub przekazać go inaczej.
+    // Na razie załóżmy, że `game_core` go wyeksportuje lub udostępni.
+    // Z powodu ograniczeń modułów ES6, najprościej będzie, jeśli `game_core`
+    // przypisze `gameState` do `window`.
+    return window.gameState;
+}
+
+// Inicjalizacja głównej aplikacji z naszym adapterem
+initializeApp(geminiApiAdapter);

@@ -14,6 +14,23 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Kontener na połączenia SVG */
+.board-connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Pod polami */
+}
+
+.board-connections line {
+    stroke: #9ca3af; /* gray-400 */
+    stroke-width: 3;
+    stroke-linecap: round;
+}
+
+
 /* Kontener planszy */
 .board-container {
     width: 100%;
