@@ -299,9 +299,7 @@ body {
     .board-wrapper {
         width: 90%;
         aspect-ratio: 1 / 1;
-        /* KLUCZOWA ZMIANA: Usuwamy stary limit 800px, który blokował powiększanie */
         max-width: none; 
-        /* Teraz jedynym ograniczeniem jest wysokość ekranu, co pozwala planszy rosnąć */
         max-height: 92vh; 
         margin: 0;
     }

@@ -206,19 +206,22 @@ const geminiApiAdapter = {
 
     async generateQuestion(category) {
         const lang = gameState.currentLanguage;
-        const creativeWords = translations.creative_words[lang];
-        const creativeWord = creativeWords[Math.floor(Math.random() * creativeWords.length)];
+        // 1. Pobieramy tablicę szablonów
+        const promptTemplates = translations.question_prompt[lang];
+        // 2. Losujemy JEDEN szablon z tablicy
+        const basePrompt = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
+        
         const history = gameState.categoryTopicHistory[category] || [];
         const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
         const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
 
-        const prompt = translations.question_prompt[lang]
-            .replace('{category}', category)
-            .replace('{theme_context}', themeContext)
-            .replace('{knowledge_prompt}', translations.knowledge_prompts[gameState.knowledgeLevel][lang])
-            .replace('{game_mode_prompt}', translations.game_mode_prompts[gameState.gameMode][lang])
-            .replace('{history_prompt}', historyPrompt)
-            .replace('{creative_word}', creativeWord);
+        // 3. Wywołujemy .replace() na wylosowanym szablonie (stringu)
+        const prompt = basePrompt
+            .replace(/{category}/g, category)
+            .replace(/{theme_context}/g, themeContext)
+            .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
+            .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
+            .replace(/{history_prompt}/g, historyPrompt);
 
         const data = await callGeminiApiWithRetries(prompt, true);
         if (gameState.gameMode === 'mcq' && (!data.options || !data.options.some(opt => opt.toLowerCase() === data.answer.toLowerCase()))) {
@@ -239,17 +242,18 @@ const geminiApiAdapter = {
 
     async getCategoryMutationChoices(oldCategory) {
         const lang = gameState.currentLanguage;
-        // Pobieramy motyw gry; jeśli nie istnieje, używamy "ogólny" jako fallback
+        // LOSOWANIE SZABLONU
+        const promptTemplates = translations.category_mutation_prompt[lang];
+        const basePrompt = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
+
         const theme = gameState.theme || translations.default_categories[lang]; 
-        
-        // Pobieramy listę wszystkich kategorii Z WYJĄTKIEM tej, którą mutujemy
         const otherCategories = gameState.categories.filter(c => c !== oldCategory);
         const existingCategoriesStr = `"${otherCategories.join('", "')}"`;
 
-        const prompt = translations.category_mutation_prompt[lang]
-            .replace(/{old_category}/g, oldCategory) // Używamy regex /g, na wypadek wielokrotnego wystąpienia
+        const prompt = basePrompt
+            .replace(/{old_category}/g, oldCategory)
             .replace(/{theme}/g, theme)
-            .replace('{existing_categories}', existingCategoriesStr);
+            .replace(/{existing_categories}/g, existingCategoriesStr);
             
         const data = await callGeminiApiWithRetries(prompt, true);
         return data.choices;
