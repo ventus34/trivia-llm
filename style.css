@@ -241,3 +241,118 @@ body {
 .notification.info {
     border-left: 4px solid #3b82f6; /* blue-500 */
 }
+
+/* === SEKCJA RESPONSIVE === */
+
+/* Zapewnia, że ekran gry może się rozciągać w pionie, zamiast mieć stałą wysokość */
+#game-screen {
+    height: auto;
+    min-height: 100dvh; /* Używa dynamicznej wysokości viewportu */
+}
+
+/* Dynamiczne skalowanie planszy, aby zawsze mieściła się w ekranie */
+.board-wrapper {
+    width: min(85vh, 90vw);
+    height: min(85vh, 90vw);
+    margin: 1rem auto; /* Lepsze centrowanie w elastycznym kontenerze */
+}
+
+/* Płynny rozmiar czcionki dla tekstu pytania */
+#question-text {
+    /* Min. 16px, skaluje się z 4% szerokości viewportu, maks. 20px */
+    font-size: clamp(1rem, 4vw, 1.25rem); 
+    line-height: 1.6;
+}
+
+/* Płynny rozmiar czcionki i padding dla przycisków odpowiedzi */
+#mcq-options-container button {
+    font-size: clamp(0.9rem, 3.5vw, 1rem);
+    padding: clamp(0.75rem, 3vw, 1rem); /* Skalowanie wewnętrznego odstępu */
+}
+
+/* Lepsze skalowanie tekstu w okienku z wynikiem odpowiedzi */
+#answer-popup .text-left p {
+    font-size: clamp(0.875rem, 3vw, 1rem);
+}
+
+/* Lepsza siatka na małych ekranach w panelu ustawień */
+@media (max-width: 640px) {
+    #setup-screen .grid-cols-1.sm\\:grid-cols-2 {
+        grid-template-columns: 1fr; /* Wszystko w jednej kolumnie na małych ekranach */
+    }
+}
+
+@media (min-width: 1024px) {
+    /* Używamy nowej klasy, aby style siatki dotyczyły WYŁĄCZNIE ekranu gry */
+    .js-game-grid-layout {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+    }
+
+    .js-game-grid-layout > div:first-child {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .board-wrapper {
+        width: 90%;
+        aspect-ratio: 1 / 1;
+        /* KLUCZOWA ZMIANA: Usuwamy stary limit 800px, który blokował powiększanie */
+        max-width: none; 
+        /* Teraz jedynym ograniczeniem jest wysokość ekranu, co pozwala planszy rosnąć */
+        max-height: 92vh; 
+        margin: 0;
+    }
+
+    .js-game-grid-layout #game-controls {
+        height: fit-content;
+        max-height: 90vh;
+        justify-self: start;
+    }
+
+    /* Powiększone okienka pozostają bez zmian */
+    #question-modal .bg-white, #answer-popup {
+        max-width: 1024px;
+    }
+    #question-modal #question-text, #answer-popup h3 {
+        font-size: 1.75rem;
+    }
+    #mcq-options-container button, #answer-popup .text-left p {
+        font-size: 1.125rem;
+    }
+}
+
+/* Dodanie ramki i cienia do przycisków odpowiedzi dla lepszego kontrastu */
+#mcq-options-container button {
+    border: 1px solid #e5e7eb; /* Jasnoszara ramka */
+    transition: all 0.2s ease-in-out;
+}
+
+/* Wyraźniejszy efekt po najechaniu myszką */
+#mcq-options-container button:hover {
+    border-color: #6366f1; /* Kolor indygo, pasujący do motywu */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Dodanie miejsca na kolorową ramkę na górze okna z pytaniem */
+#modal-content {
+    border-top: 8px solid transparent;
+    transition: border-color 0.3s ease-in-out;
+}
+
+/* Zwiększenie odstępów w oknie z pytaniem */
+#question-content {
+    padding-top: 0.5rem;
+}
+#mcq-options-container {
+    gap: 1rem; /* Zwiększamy odstęp między przyciskami */
+    margin-top: 2rem; /* Zwiększamy odstęp między pytaniem a odpowiedziami */
+}
+
+/* Lekkie zwiększenie czcionki w przyciskach dla lepszej czytelności */
+#mcq-options-container button {
+    font-size: clamp(1rem, 3.5vw, 1.125rem); /* Zwiększamy minimalny i maksymalny rozmiar */
+}

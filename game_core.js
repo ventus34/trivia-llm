@@ -793,11 +793,20 @@ async function askQuestion(forcedCategoryIndex = null) {
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = forcedCategoryIndex !== null ? forcedCategoryIndex : square.categoryIndex;
+     // Zabezpieczenie na wypadek braku kategorii na danym polu
+     if (categoryIndex === null || categoryIndex === undefined) {
+        console.error("Błędny indeks kategorii na aktualnym polu:", square);
+        nextTurn(); // Przejdź do następnej tury, aby uniknąć zawieszenia gry
+        return;
+    }
+    
     const category = gameState.categories[categoryIndex];
+    
+    const categoryColor = CONFIG.CATEGORY_COLORS[categoryIndex];
 
     questionCategoryH3.textContent = translations.category_title[gameState.currentLanguage].replace('{category}', category);
-    questionCategoryH3.style.color = CONFIG.CATEGORY_COLORS[categoryIndex];
-    answerInput.value = '';
+    questionCategoryH3.style.color = categoryColor;
+    modalContent.style.borderTopColor = categoryColor;
 
     showModal(true);
     llmLoader.classList.remove('hidden');
@@ -1057,7 +1066,10 @@ function showModal(show) {
     }
 }
 
-function hideModal() { showModal(false); }
+function hideModal() { 
+    showModal(false); 
+    setTimeout(() => { if(modalContent) modalContent.style.borderTopColor = 'transparent'; }, 300);
+}
 
 
 // --- GŁÓWNA FUNKCJA INICJALIZUJĄCA ---
