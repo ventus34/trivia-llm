@@ -173,7 +173,7 @@ export const translations = {
     question_prompt: {
         pl: {
             persona: "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości pytania quizowego.",
-            chain_of_thought: `\n# PROCES MYŚLOWY (Chain of Thought):\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępne pomysły na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. To kluczowy balans. Następnie udoskonal go, upewniając się, że jest jednoznaczny i spełnia wszystkie pozostałe reguły.`,
+            chain_of_thought: `\n# PROCES MYŚLOWY:\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępne pomysły na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. To kluczowy balans. Następnie udoskonal go, upewniając się, że jest jednoznaczny i spełnia wszystkie pozostałe reguły.`,
             context_header: "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
             context_lines: [
                 "- Kategoria: \"{category}\"",
