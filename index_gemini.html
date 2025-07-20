@@ -85,7 +85,7 @@
                 
                 <div class="space-y-2">
                      <div class="flex items-center">
-                        <input id="include-theme-toggle" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <input id="include-theme-toggle" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" checked>
                         <label for="include-theme-toggle" data-lang-key="include_theme_label" class="ml-2 block text-sm text-gray-900">Dodaj temat generacji do pytań</label>
                     </div>
                     <div class="flex items-center">
@@ -116,6 +116,24 @@
     
     <div class="flex-shrink-0 pt-6">
         <button id="start-game-btn" data-lang-key="start_game_btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Rozpocznij Grę</button>
+    </div>
+    <div id="info-box" class="mt-4 p-4 bg-slate-100 rounded-lg text-left text-sm text-slate-700">
+        <h4 class="font-bold mb-3 flex items-center text-slate-800">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="inline-block mr-2 text-slate-500" viewBox="0 0 16 16">
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+            </svg>
+            <span data-lang-key="infobox_title">Jak działają te opcje?</span>
+        </h4>
+        <dl>
+            <dt class="font-semibold" data-lang-key="infobox_temp_title">🌡️ Temperatura</dt>
+            <dd class="mt-1 mb-2 text-slate-600" data-lang-key="infobox_temp_desc">Kontroluje "kreatywność" modelu AI. Niska wartość (np. 0.2) tworzy bardziej przewidywalne i zachowawcze pytania. Wysoka wartość (np. 1.2) zachęca do tworzenia bardziej zróżnicowanych i nieoczekiwanych treści, co może czasem prowadzić do dziwnych wyników.</dd>
+    
+            <dt class="font-semibold" data-lang-key="infobox_mutation_title">🧬 Mutacja Kategorii</dt>
+            <dd class="mt-1 mb-2 text-slate-600" data-lang-key="infobox_mutation_desc">Gdy ta opcja jest włączona, po zdobyciu "cząstki" w danej kategorii (pole-matka), kategoria ta zostanie zastąpiona nową, spokrewnioną tematycznie. Utrzymuje to grę świeżą i dynamiczną.</dd>
+    
+            <dt class="font-semibold" data-lang-key="infobox_theme_title">📝 Dodaj Temat do Pytań</dt>
+            <dd class="mt-1 text-slate-600" data-lang-key="infobox_theme_desc">Jeśli wpisano temat w polu "Temat do generacji kategorii", zaznaczenie tej opcji sprawi, że model AI będzie musiał tworzyć pytania, które są związane nie tylko z kategorią (np. "Historia"), ale również z głównym motywem gry (np. "Władca Pierścieni").</dd>
+        </dl>
     </div>
 </div>
 

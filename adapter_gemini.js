@@ -19,6 +19,7 @@ async function callGeminiApiWithRetries(prompt, expectJson = true) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
     
     console.log('Gemini API Prompt:', prompt);
+    console.log('Temperature:', temperature);
 
     for (let i = 0; i < maxRetries; i++) {
         try {

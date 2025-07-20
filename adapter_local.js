@@ -15,6 +15,7 @@ async function callLmStudioApi(prompt, expectJson = true) {
     const temperature = parseFloat(document.getElementById('temperature-slider').value);
     
     console.log('LM Studio Prompt:', prompt);
+    console.log('Temperature:', temperature);
 
     const payload = {
         messages: [{ role: 'user', content: prompt }],
