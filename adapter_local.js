@@ -95,16 +95,44 @@ const localApiAdapter = {
     
     async generateCategories(theme) {
         const lang = gameState.currentLanguage;
-        const prompt = translations.category_generation_prompt[lang]
-            .replace('{theme}', theme)
-            .replace('{existing_categories}', "brak")
-            .replace('{random_id}', Math.floor(Math.random() * 1000000));
-        const response = await callLmStudioApi(prompt, true);
-        return response.categories;
+        const generatedCats = [];
+        let attempts = 0;
+        const maxAttempts = 15;
+
+        while (generatedCats.length < 6 && attempts < maxAttempts) {
+            attempts++;
+            const existingCategoriesStr = generatedCats.length > 0 ? `"${generatedCats.join('", "')}"` : "brak";
+
+            // Używamy nowego, precyzyjnego promptu
+            const prompt = translations.broad_single_category_prompt[lang]
+                .replace('{theme}', theme)
+                .replace('{existing_categories}', existingCategoriesStr);
+
+            try {
+                const response = await callLmStudioApi(prompt, true);
+                if (response && response.category && !generatedCats.includes(response.category)) {
+                    generatedCats.push(response.category);
+                } else {
+                    console.warn("Pominięto pustą lub zduplikowaną kategorię. Próbuję ponownie.");
+                }
+            } catch (error) {
+                console.error(`Błąd podczas generowania kategorii #${generatedCats.length + 1}:`, error);
+                throw new Error(`Failed to generate category #${generatedCats.length + 1}.`);
+            }
+        }
+        
+        if (generatedCats.length < 6) {
+            console.error(`Wygenerowano tylko ${generatedCats.length} unikalnych kategorii po ${maxAttempts} próbach.`);
+            throw new Error('Nie udało się wygenerować pełnego zestawu 6 unikalnych kategorii.');
+        }
+
+        return generatedCats;
     },
 
     async generateQuestion(category) {
         const lang = gameState.currentLanguage;
+        const creativeWords = translations.creative_words[lang];
+        const creativeWord = creativeWords[Math.floor(Math.random() * creativeWords.length)];
         const history = gameState.categoryTopicHistory[category] || [];
         const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
         const themeContext = gameState.includeCategoryTheme && gameState.theme ? translations.main_theme_context_prompt[lang].replace('{theme}', gameState.theme) : "Brak dodatkowego motywu.";
@@ -115,7 +143,7 @@ const localApiAdapter = {
             .replace('{knowledge_prompt}', translations.knowledge_prompts[gameState.knowledgeLevel][lang])
             .replace('{game_mode_prompt}', translations.game_mode_prompts[gameState.gameMode][lang])
             .replace('{history_prompt}', historyPrompt)
-            .replace('{random_id}', Math.floor(Math.random() * 1000000));
+            .replace('{creative_word}', creativeWord);
 
         const data = await callLmStudioApi(prompt, true);
         if (gameState.gameMode === 'mcq' && (!data.options || !data.options.some(opt => opt.toLowerCase() === data.answer.toLowerCase()))) {
@@ -125,6 +153,7 @@ const localApiAdapter = {
     },
 
     async getIncorrectAnswerExplanation() {
+        // Bez zmian
         const lang = gameState.currentLanguage;
         const prompt = translations.incorrect_answer_explanation_prompt[lang]
             .replace('{question}', gameState.currentQuestionData.question)
@@ -136,9 +165,18 @@ const localApiAdapter = {
 
     async getCategoryMutationChoices(oldCategory) {
         const lang = gameState.currentLanguage;
+        // Pobieramy motyw gry; jeśli nie istnieje, używamy "ogólny" jako fallback
+        const theme = gameState.theme || translations.default_categories[lang];
+        
+        // Pobieramy listę wszystkich kategorii Z WYJĄTKIEM tej, którą mutujemy
+        const otherCategories = gameState.categories.filter(c => c !== oldCategory);
+        const existingCategoriesStr = `"${otherCategories.join('", "')}"`;
+
         const prompt = translations.category_mutation_prompt[lang]
-            .replace('{old_category}', oldCategory)
-            .replace('{random_id}', Math.floor(Math.random() * 1000000));
+            .replace(/{old_category}/g, oldCategory) // Używamy regex /g, na wypadek wielokrotnego wystąpienia
+            .replace(/{theme}/g, theme)
+            .replace('{existing_categories}', existingCategoriesStr);
+            
         const data = await callLmStudioApi(prompt, true);
         return data.choices;
     }
