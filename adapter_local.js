@@ -107,38 +107,20 @@ const localApiAdapter = {
     
     async generateCategories(theme) {
         const lang = gameState.currentLanguage;
-        const generatedCats = [];
-        let attempts = 0;
-        const maxAttempts = 15;
 
-        while (generatedCats.length < 6 && attempts < maxAttempts) {
-            attempts++;
-            const existingCategoriesStr = generatedCats.length > 0 ? `"${generatedCats.join('", "')}"` : "brak";
+        const prompt = translations.batch_category_prompt_cot[lang]
+            .replace('{theme}', theme);
 
-            // Używamy nowego, precyzyjnego promptu
-            const prompt = translations.broad_single_category_prompt[lang]
-                .replace('{theme}', theme)
-                .replace('{existing_categories}', existingCategoriesStr);
+        const response = await callLmStudioApi(prompt, true);
 
-            try {
-                const response = await callLmStudioApi(prompt, true);
-                if (response && response.category && !generatedCats.includes(response.category)) {
-                    generatedCats.push(response.category);
-                } else {
-                    console.warn("Pominięto pustą lub zduplikowaną kategorię. Próbuję ponownie.");
-                }
-            } catch (error) {
-                console.error(`Błąd podczas generowania kategorii #${generatedCats.length + 1}:`, error);
-                throw new Error(`Failed to generate category #${generatedCats.length + 1}.`);
-            }
+        // Walidacja odpowiedzi
+        if (!response || !Array.isArray(response.categories) || response.categories.length < 6) {
+            console.error("API did not return a valid array of 6 categories.", response);
+            throw new Error("Failed to generate a complete set of categories.");
         }
         
-        if (generatedCats.length < 6) {
-            console.error(`Wygenerowano tylko ${generatedCats.length} unikalnych kategorii po ${maxAttempts} próbach.`);
-            throw new Error('Nie udało się wygenerować pełnego zestawu 6 unikalnych kategorii.');
-        }
-
-        return generatedCats;
+        // Zwracamy tablicę 6 kategorii
+        return response.categories.slice(0, 6);
     },
 
     async generateQuestion(category) {

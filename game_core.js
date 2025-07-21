@@ -221,6 +221,34 @@ export const translations = {
             output_format: `\n# FINAL OUTPUT:\nAfter completing your internal thought process, return the response ONLY as a single, clean JSON object with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precise subcategory...",\n  "options": ["...", "...", "...", "..."]\n}`
         }
     },
+    batch_category_prompt_cot: {
+        pl: `Jesteś kreatywnym mistrzem teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich, ciekawych i intuicyjnych kategorii do quizu na podstawie podanego motywu.
+
+# PROCES MYŚLOWY (Chain of Thought):
+Zanim sformułujesz ostateczny JSON, przeprowadź wewnętrzny proces myślowy:
+1.  **Analiza Motywu:** Głęboko przeanalizuj motyw: "{theme}". Jakie są jego kluczowe aspekty, postacie, miejsca, koncepcje?
+2.  **Burza Mózgów:** Wypisz listę 10-12 potencjalnych pomysłów na kategorie.
+3.  **Selekcja i Dywersyfikacja:** Z tej listy wybierz 6 NAJLEPSZYCH opcji. Upewnij się, że są one od siebie RÓŻNORODNE, nie pokrywają się zbytnio tematycznie i są wystarczająco szerokie dla ogólnego quizu.
+
+# OSTATECZNY WYNIK:
+Po zakończeniu procesu myślowego, najpierw wypisz swoje myśli w tagach <thinking>...</thinking>. Następnie, w nowej linii, bez żadnych dodatkowych słów, zwróć ostateczną odpowiedź jako jeden, czysty obiekt JSON o strukturze:
+{
+  "categories": ["Kategoria 1", "Kategoria 2", "Kategoria 3", "Kategoria 4", "Kategoria 5", "Kategoria 6"]
+}`,
+        en: `You are a creative quiz show master. Your task is to create ONE set of 6 broad, interesting, and intuitive quiz categories based on the provided theme.
+
+# CHAIN OF THOUGHT PROCESS:
+Before you formulate the final JSON, conduct an internal thought process:
+1.  **Theme Analysis:** Deeply analyze the theme: "{theme}". What are its key aspects, characters, places, concepts?
+2.  **Brainstorm:** Write a list of 10-12 potential category ideas.
+3.  **Selection & Diversification:** From this list, select the 6 BEST options. Ensure they are DIVERSE, do not overlap too much thematically, and are broad enough for a general quiz.
+
+# FINAL OUTPUT:
+After your thought process, first write out your thoughts inside <thinking>...</thinking> tags. Then, on a new line, without any other words, return the final answer as a single, clean JSON object with the structure:
+{
+  "categories": ["Category 1", "Category 2", "Category 3", "Category 4", "Category 5", "Category 6"]
+}`
+    },
     inspirational_words: {
         pl: ['Wiele', 'Mało', 'Odległe', 'Bliskie', 'Nowe', 'Stare', 'Pierwsze', 'Ostatnie', 'Ukryte', 'Oczywiste', 'Proste', 'Złożone', 'Wielkie', 'Drobne', 'Szybkie', 'Wolne', 'Głośne', 'Ciche', 'Publiczne', 'Prywatne'],
         en: ['Many', 'Few', 'Distant', 'Close', 'New', 'Old', 'First', 'Last', 'Hidden', 'Obvious', 'Simple', 'Complex', 'Great', 'Tiny', 'Fast', 'Slow', 'Loud', 'Quiet', 'Public', 'Private']
