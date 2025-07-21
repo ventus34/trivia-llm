@@ -287,6 +287,7 @@ body {
     .js-game-grid-layout {
         display: grid;
         grid-template-columns: 1fr 420px;
+        align-items: stretch; 
     }
 
     .js-game-grid-layout > div:first-child {
@@ -305,7 +306,6 @@ body {
     }
 
     .js-game-grid-layout #game-controls {
-        height: fit-content;
         max-height: 90vh;
         justify-self: start;
     }
@@ -353,4 +353,17 @@ body {
 /* Lekkie zwiększenie czcionki w przyciskach dla lepszej czytelności */
 #mcq-options-container button {
     font-size: clamp(1rem, 3.5vw, 1.125rem); /* Zwiększamy minimalny i maksymalny rozmiar */
+}
+
+/* Style dla historii promptów */
+#history-content pre {
+    max-height: 300px; /* Ogranicza wysokość, aby długie prompty nie zdominowały widoku */
+}
+
+/* Poprawka widoczności modalu historii */
+#history-modal {
+    display: none; /* Domyślnie ukryty */
+}
+#history-modal.visible {
+    display: flex; /* Klasa .visible go pokazuje */
 }

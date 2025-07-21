@@ -59,7 +59,9 @@ async function callGeminiApiWithRetries(prompt, expectJson = true) {
                             throw new Error("No JSON object found in the response.");
                         }
                         const jsonString = content.substring(firstBracket, lastBracket + 1);
-                        return JSON.parse(jsonString);
+                        const parsedJson = JSON.parse(jsonString);
+                        gameState.promptHistory.push({ prompt, response: JSON.stringify(parsedJson, null, 2) });
+                        return parsedJson;
                     } catch (e) {
                         console.error("JSON parsing error:", e, "Original content:", content);
                         throw new Error("Failed to parse JSON from API response.");
@@ -233,6 +235,8 @@ const geminiApiAdapter = {
             promptStructure.chain_of_thought,
             promptStructure.context_header,
             ...shuffledContextAndRules,
+            promptStructure.few_shot_example_header,
+            promptStructure.few_shot_example,
             promptStructure.output_format
         ].join('\n');
         

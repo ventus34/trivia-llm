@@ -72,9 +72,14 @@ const closePopupBtn = document.getElementById('close-popup-btn');
 const winnerNameSpan = document.getElementById('winner-name');
 const playAgainBtn = document.getElementById('play-again-btn');
 const notificationContainer = document.getElementById('notification-container');
+const showHistoryBtn = document.getElementById('show-history-btn');
+const historyModal = document.getElementById('history-modal');
+const closeHistoryBtn = document.getElementById('close-history-btn');
+const historyContent = document.getElementById('history-content');
+const historyModalTitle = document.getElementById('history-modal-title')
 
 // --- STAN GRY I TŁUMACZENIA ---
-export let gameState = { currentLanguage: 'pl' };
+export let gameState = { currentLanguage: 'pl', promptHistory: [] };
 export const translations = {
     setup_title: { pl: "Ustawienia Zaawansowane", en: "Advanced Settings" },
     gemini_api_key_label: { pl: "Klucz API Google Gemini:", en: "Google Gemini API Key:" },
@@ -172,44 +177,50 @@ export const translations = {
     },
     question_prompt: {
         pl: {
-            persona: "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości pytania quizowego.",
-            chain_of_thought: `\n# PROCES MYŚLOWY:\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępne pomysły na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. To kluczowy balans. Następnie udoskonal go, upewniając się, że jest jednoznaczny i spełnia wszystkie pozostałe reguły.`,
+            persona: "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego.",
+            chain_of_thought: "\n# PROCES MYŚLOWY:\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. Udoskonal go, upewniając się, że jest jednoznaczny.\n4.  **Walidacja:** Sprawdź finalne pytanie i odpowiedź pod kątem WSZYSTKICH reguł z sekcji \"KONTEKST I REGUŁY\", a zwłaszcza zasady krytycznej.",
             context_header: "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
             context_lines: [
                 "- Kategoria: \"{category}\"",
                 "- Poziom trudności: {knowledge_prompt}",
                 "- Tryb gry: {game_mode_prompt}",
                 "- Motyw przewodni: {theme_context}",
-                "- Słowa-inspiracje (użyj jako luźnego skojarzenia): {inspirational_words}"
+                "- Słowa-inspiracje (użyj jako luźnego skojarzenia, nie musisz używać ich bezpośrednio): {inspirational_words}"
             ],
             rules: [
-                "Klucz \"options\" dołącz tylko dla trybu MCQ. Jedna z opcji MUSI być poprawną odpowiedzią.",
                 "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
+                "**JAKOŚĆ OPCJI (dla MCQ):** Dołącz klucz \"options\" tylko dla trybu MCQ. Błędne opcje (dystraktory) muszą być wiarygodne i bazować na częstych pomyłkach lub blisko powiązanych, ale nieprawidłowych faktach. Jedna opcja MUSI być poprawna.",
+                "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź. Unikaj subiektywności.",
                 "**SPÓJNOŚĆ:** Pytanie musi ściśle trzymać się podanej kategorii i wszystkich pozostałych wytycznych.",
                 "**PRECYZYJNE SŁOWA KLUCZOWE:** Słowa kluczowe muszą być bardzo specyficzne dla danego pytania i odpowiedzi.",
                 "**ZAKAZ POWTÓRZEŃ:** Pytanie nie może dotyczyć następujących, już omówionych zagadnień: {history_prompt}. Wygeneruj coś zupełnie nowego."
             ],
-            output_format: `\n# OSTATECZNY WYNIK:\nPo zakończeniu wewnętrznego procesu myślowego, zwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}`
+            few_shot_example_header: "\n# PRZYKŁAD WYKONANIA (DLA KATEGORII 'ASTRONOMIA'):",
+            few_shot_example: "## PROCES MYŚLOWY:\n1. **Analiza Kontekstu:** Kategoria: 'Astronomia', Trudność: 'dla znawców', Tryb: 'MCQ', Motyw: 'odkrycia', Słowa-inspiracje: 'granica, cień, horyzont'. Historia: 'czarne dziury, Droga Mleczna'.\n2. **Burza Mózgów:** a) Pytanie o paradoks Olbersa. b) Pytanie o Obłok Oorta. c) Pytanie o granicę Roche'a. d) Pytanie o Wielki Atraktor.\n3. **Selekcja:** Pomysły a, b, d są dobre, ale 'granica Roche'a' (c) świetnie pasuje do słów-inspiracji ('granica') i jest odległe od historii. Udoskonalę je.\n4. **Walidacja:** Pytanie: 'Jak nazywa się teoretyczna strefa wokół ciała niebieskiego, wewnątrz której siły pływowe tego ciała są tak silne, że rozerwą każdego satelitę utrzymywanego jedynie przez własną grawitację?'. Odpowiedź: 'Granica Roche'a'. Pytanie nie zawiera słów 'granica' ani 'Roche'a'. Opcje są wiarygodne. Zgodne z kategorią. OK.\n## OSTATECZNY WYNIK:\n```json\n{\n  \"question\": \"Jak nazywa się teoretyczna strefa wokół ciała niebieskiego, wewnątrz której siły pływowe tego ciała są tak silne, że rozerwą każdego satelitę utrzymywanego jedynie przez własną grawitację?\",\n  \"answer\": \"Granica Roche'a\",\n  \"explanation\": \"To Granica Roche'a, która definiuje minimalną odległość, na jakiej może krążyć naturalny satelita, zanim zostanie zniszczony. Strefa Hilla to obszar dominacji grawitacyjnej, a prędkość kosmiczna dotyczy ucieczki z pola grawitacyjnego.\",\n  \"keywords\": [\"granica Roche'a\", \"siły pływowe\", \"mechanika nieba\", \"satelita\"],\n  \"options\": [\"Granica Roche'a\", \"Strefa Hilla\", \"Prędkość kosmiczna\", \"Horyzont zdarzeń\"]\n}\n```",
+            output_format: "\n# OSTATECZNY WYNIK:\nPo zakończeniu wewnętrznego procesu myślowego, zwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"Krótkie wyjaśnienie, dlaczego poprawna odpowiedź jest właściwa i co czyni inne opcje wiarygodnymi, ale błędnymi pułapkami.\",\n  \"keywords\": [\"...\", \"...\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
         },
-        en: { 
-            persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality quiz question.",
-            chain_of_thought: `\n# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. This is a key balance. Then, refine it, ensuring it is unambiguous and meets all other rules.`,
+        en: {
+            persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
+            chain_of_thought: "\n# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. Refine it, ensuring it is unambiguous.\n4.  **Validation:** Check the final question and answer against ALL the rules in the \"CONTEXT AND RULES\" section, especially the critical rule.",
             context_header: "\n# CONTEXT AND RULES TO APPLY:",
             context_lines: [
                 "- Category: \"{category}\"",
                 "- Difficulty Level: {knowledge_prompt}",
                 "- Game Mode: {game_mode_prompt}",
                 "- Main Theme: {theme_context}",
-                "- Inspirational Words (use as a loose association): {inspirational_words}"
+                "- Inspirational Words (use as a loose association; you don't have to use them directly): {inspirational_words}"
             ],
             rules: [
-                "Include the \"options\" key only for MCQ mode. One of the options MUST be the correct answer.",
                 "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
+                "**OPTION QUALITY (for MCQ):** Include the \"options\" key only for MCQ mode. Incorrect options (distractors) must be plausible and based on common misconceptions or closely related but incorrect facts. One option MUST be correct.",
+                "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer. Avoid subjectivity.",
                 "**CONSISTENCY:** The question must strictly adhere to the given category and all other guidelines.",
                 "**PRECISE KEYWORDS:** Keywords must be very specific to the given question and answer.",
                 "**NO REPETITION:** The question must not be about the following, already covered topics: {history_prompt}. You must generate something completely new."
             ],
-            output_format: `\n# FINAL OUTPUT:\nAfter completing your internal thought process, return the response ONLY as a single, clean JSON object with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "keywords": ["...", "..."],\n  "options": ["...", "...", "...", "..."]\n}`
+            few_shot_example_header: "\n# EXECUTION EXAMPLE (FOR CATEGORY 'ASTRONOMY'):",
+            few_shot_example: "## CHAIN OF THOUGHT PROCESS:\n1. **Analyze Context:** Category: 'Astronomy', Difficulty: 'for experts', Mode: 'MCQ', Theme: 'discoveries', Inspirational words: 'boundary, shadow, horizon'. History: 'black holes, Milky Way'.\n2. **Brainstorm:** a) Question about Olbers's paradox. b) Question about the Oort Cloud. c) Question about the Roche limit. d) Question about the Great Attractor.\n3. **Select & Refine:** Ideas a, b, d are good, but 'Roche limit' (c) fits the inspirational words ('boundary') perfectly and is distant from the history topics. I will refine it.\n4. **Validation:** Question: 'What is the name for the theoretical zone around a celestial body within which the body's tidal forces are strong enough to tear apart any satellite held together only by its own gravity?'. Answer: 'Roche limit'. The question does not contain 'Roche' or 'limit'. The options are plausible. It fits the category. OK.\n## FINAL OUTPUT:\n```json\n{\n  \"question\": \"What is the name for the theoretical zone around a celestial body within which the body's tidal forces are strong enough to tear apart any satellite held together only by its own gravity?\",\n  \"answer\": \"Roche limit\",\n  \"explanation\": \"This is the Roche limit, which defines the minimum distance at which a natural satellite can orbit before being destroyed. The Hill sphere is the region of gravitational dominance, and escape velocity relates to escaping a gravitational field.\",\n  \"keywords\": [\"Roche limit\", \"tidal forces\", \"celestial mechanics\", \"satellite\"],\n  \"options\": [\"Roche limit\", \"Hill sphere\", \"Escape velocity\", \"Event horizon\"]\n}\n```",
+            output_format: "\n# FINAL OUTPUT:\nAfter completing your internal thought process, return the response ONLY as a single, clean JSON object with the structure:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"A brief explanation of why the correct answer is right and what makes the other options plausible but incorrect decoys.\",\n  \"keywords\": [\"...\", \"...\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
         }
     },
     inspirational_words: {
@@ -272,7 +283,11 @@ export const translations = {
     fetch_models_error: { pl: "Nie udało się pobrać listy modeli. Sprawdź klucz API i spróbuj ponownie.", en: "Failed to fetch model list. Check your API key and try again." },
     generate_categories_error: { pl: "Nie udało się wygenerować kategorii. Sprawdź ustawienia API i spróbuj ponownie.", en: "Failed to generate categories. Check API settings and try again." },
     category_mutated: { pl: "Kategoria zmutowała!", en: "Category has mutated!" },
-    new_category_msg: { pl: '"{old_cat}" zmienia się w "{new_cat}"!', en: '"{old_cat}" changes into "{new_cat}"!' }
+    new_category_msg: { pl: '"{old_cat}" zmienia się w "{new_cat}"!', en: '"{old_cat}" changes into "{new_cat}"!' },
+    history_modal_title: { pl: "Historia Promptów", en: "Prompt History" },
+    history_prompt_title: { pl: "Wysłany Prompt", en: "Sent Prompt" },
+    history_response_title: { pl: "Otrzymana Odpowiedź", en: "Received Response" },
+    history_empty: { pl: "Historia jest jeszcze pusta.", en: "History is empty." }
 };
 
 
@@ -1138,6 +1153,63 @@ function hideModal() {
     setTimeout(() => { if(modalContent) modalContent.style.borderTopColor = 'transparent'; }, 300);
 }
 
+/**
+ * Renderuje historię promptów w modalu.
+ */
+function renderPromptHistory() {
+    historyContent.innerHTML = ''; // Wyczyść stary kontent
+    const lang = gameState.currentLanguage;
+
+    if (gameState.promptHistory.length === 0) {
+        historyContent.textContent = translations.history_empty[lang];
+        return;
+    }
+
+    // Tworzymy fragment, aby zminimalizować operacje na DOM
+    const fragment = document.createDocumentFragment();
+
+    // Iterujemy od końca, aby najnowsze były na górze
+    gameState.promptHistory.slice().reverse().forEach((entry, index) => {
+        const entryDiv = document.createElement('div');
+        entryDiv.className = 'p-4 border rounded-lg bg-gray-50';
+
+        const promptTitle = document.createElement('h4');
+        promptTitle.className = 'font-semibold text-gray-800';
+        promptTitle.textContent = `${translations.history_prompt_title[lang]} #${gameState.promptHistory.length - index}`;
+        
+        const promptPre = document.createElement('pre');
+        promptPre.className = 'mt-2 p-3 bg-gray-200 text-sm text-gray-700 rounded-md overflow-x-auto whitespace-pre-wrap';
+        const promptCode = document.createElement('code');
+        promptCode.textContent = entry.prompt; // Bezpieczne wstawienie tekstu
+        promptPre.appendChild(promptCode);
+
+        const responseTitle = document.createElement('h4');
+        responseTitle.className = 'mt-4 font-semibold text-gray-800';
+        responseTitle.textContent = translations.history_response_title[lang];
+
+        const responsePre = document.createElement('pre');
+        responsePre.className = 'mt-2 p-3 bg-blue-100 text-sm text-blue-800 rounded-md overflow-x-auto whitespace-pre-wrap';
+        const responseCode = document.createElement('code');
+        responseCode.textContent = entry.response; // Bezpieczne wstawienie tekstu
+        responsePre.appendChild(responseCode);
+        
+        entryDiv.append(promptTitle, promptPre, responseTitle, responsePre);
+        fragment.appendChild(entryDiv);
+    });
+
+    historyContent.appendChild(fragment); // Dodajemy wszystko naraz
+}
+
+function showHistoryModal() {
+    historyModalTitle.textContent = translations.history_modal_title[gameState.currentLanguage];
+    renderPromptHistory();
+    historyModal.classList.add('visible');
+}
+
+function hideHistoryModal() {
+    historyModal.classList.remove('visible');
+}
+
 
 // --- GŁÓWNA FUNKCJA INICJALIZUJĄCA ---
 /**
@@ -1187,6 +1259,8 @@ export function initializeApp(apiAdapter) {
     acceptAnswerBtn.addEventListener('click', () => handleManualVerification(true));
     rejectAnswerBtn.addEventListener('click', () => handleManualVerification(false));
     closePopupBtn.addEventListener('click', closePopupAndContinue);
+    showHistoryBtn.addEventListener('click', showHistoryModal);
+    closeHistoryBtn.addEventListener('click', hideHistoryModal);
     
     playAgainBtn.addEventListener('click', () => {
         winnerScreen.classList.add('hidden');
