@@ -10,31 +10,14 @@ function shuffleArray(array) {
     }
 }
 
-/**
- * Wywołuje API serwera LM Studio z logiką ponawiania prób.
- * @param {string} prompt - Pełny prompt dla modelu.
- * @param {boolean} expectJson - Czy odpowiedź powinna być parsowana jako JSON.
- * @returns {Promise<any>} - Wynik z API.
- */
-async function callLmStudioApi(prompt, expectJson = true) {
+async function callApi(prompt, expectJson = true, url, headers, getPayload) {
     const maxRetries = 3;
-    const url = lmStudioUrlInput.value.trim();
-    const temperature = parseFloat(document.getElementById('temperature-slider').value);
-    
-    console.log('LM Studio Prompt:', prompt);
-    console.log('Temperature:', temperature);
-
-    const payload = {
-        messages: [{ role: 'user', content: prompt }],
-        temperature: temperature,
-        stream: false,
-    };
-
     for (let i = 0; i < maxRetries; i++) {
         try {
+            const payload = getPayload(prompt);
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(payload),
             });
 
@@ -44,38 +27,57 @@ async function callLmStudioApi(prompt, expectJson = true) {
             }
 
             const data = await response.json();
-            console.log('LM Studio Response:', data);
+            console.log('API Response:', data);
 
-            if (data.choices && data.choices[0].message?.content) {
-                let content = data.choices[0].message.content;
-                if (expectJson) {
-                    try {
-                        const firstBracket = content.indexOf('{');
-                        const lastBracket = content.lastIndexOf('}');
-                        if (firstBracket === -1 || lastBracket === -1) {
-                            throw new Error("No JSON object found in the response string.");
-                        }
-                        const jsonString = content.substring(firstBracket, lastBracket + 1);
-                        const parsedJson = JSON.parse(jsonString);
-                        gameState.promptHistory.push({ prompt, response: JSON.stringify(parsedJson, null, 2) });
-                        return parsedJson;
-                    } catch (e) {
-                        console.error("JSON parsing error:", e, "Original content:", content);
-                        throw new Error("Failed to parse JSON from API response.");
-                    }
-                }
-                return content;
-            } else {
-                throw new Error("Invalid or empty response from LM Studio API.");
+            // Pobieramy całą treść odpowiedzi (może zawierać CoT i JSON)
+            const content = data.candidates?.[0]?.content?.parts?.[0]?.text || data.choices?.[0]?.message?.content || '';
+
+            if (!content) {
+                throw new Error("Invalid or empty response from API.");
             }
+
+            // Zapisujemy pełną odpowiedź (z CoT) do historii
+            gameState.promptHistory.push({ prompt, response: content });
+
+            if (expectJson) {
+                // Nowa, niezawodna metoda ekstrakcji JSON
+                const jsonRegex = /```json\s*([\s\S]*?)\s*```|({[\s\S]*})/;
+                const match = content.match(jsonRegex);
+
+                if (!match) {
+                    throw new Error("No JSON object found in the response string.");
+                }
+                
+                // Bierzemy pierwszą pasującą grupę (albo z bloku ```json, albo ogólny {...})
+                const jsonString = match[1] || match[2];
+                return JSON.parse(jsonString);
+            }
+
+            return content; // Zwróć surowy tekst, jeśli nie oczekujemy JSON
         } catch (error) {
             console.error(`Attempt ${i + 1} failed:`, error);
             if (i === maxRetries - 1) throw error;
-            await new Promise(res => setTimeout(res, 1000));
         }
     }
 }
 
+/**
+ * Wywołuje API serwera LM Studio z logiką ponawiania prób.
+ * @param {string} prompt - Pełny prompt dla modelu.
+ * @param {boolean} expectJson - Czy odpowiedź powinna być parsowana jako JSON.
+ * @returns {Promise<any>} - Wynik z API.
+ */
+async function callLmStudioApi(prompt, expectJson = true) {
+    const url = lmStudioUrlInput.value.trim();
+    const headers = { 'Content-Type': 'application/json' };
+
+    const getPayload = (p) => {
+        const temperature = parseFloat(document.getElementById('temperature-slider').value);
+        return { messages: [{ role: 'user', content: p }], temperature: temperature, stream: false };
+    };
+    
+    return callApi(prompt, expectJson, url, headers, getPayload);
+}
 // --- OBIEKT ADAPTERA API DLA LM STUDIO ---
 const localApiAdapter = {
     configErrorMsg: '',
@@ -141,6 +143,7 @@ const localApiAdapter = {
 
     async generateQuestion(category) {
         const lang = gameState.currentLanguage;
+        const languageName = lang === 'pl' ? 'polskim' : 'English';
         const promptStructure = translations.question_prompt[lang];
 
         let history = [...(gameState.categoryTopicHistory[category] || [])];
@@ -174,6 +177,7 @@ const localApiAdapter = {
             .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
             .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
             .replace(/{history_prompt}/g, historyPrompt)
+            .replace(/{language_name}/g, languageName)
             .replace(/{inspirational_words}/g, twoInspirationalWords);
 
         const response = await callLmStudioApi(prompt, true);
@@ -183,10 +187,6 @@ const localApiAdapter = {
         if (!chosenQuestion || typeof chosenQuestion.question !== 'string') {
             console.error("API nie zwróciło prawidłowego obiektu pytania.", response);
             throw new Error("Nie udało się wygenerować pytania.");
-        }
-
-        if (chosenQuestion && Array.isArray(chosenQuestion.keywords)) {
-            chosenQuestion.keywords = chosenQuestion.keywords.slice(0, 5);
         }
 
         if (gameState.gameMode === 'mcq' && (!chosenQuestion.options || !chosenQuestion.options.some(opt => opt.toLowerCase() === chosenQuestion.answer.toLowerCase()))) {

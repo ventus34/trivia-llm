@@ -4,7 +4,7 @@ const CONFIG = {
     CATEGORY_COLORS: ['#3b82f6', '#ef4444', '#22c55e', '#f97316', '#8b5cf6', '#facc15'],
     SQUARE_TYPES: { HQ: 'HEADQUARTERS', SPOKE: 'SPOKE', RING: 'RING', HUB: 'HUB', ROLL_AGAIN: 'ROLL_AGAIN' },
     ANIMATION_DELAY_MS: 50,
-    MAX_KEYWORD_HISTORY: 25,
+    MAX_SUBCATEGORY_HISTORY: 10,
     EMOJI_OPTIONS: ['😀', '🚀', '🦄', '🤖', '🦊', '🧙', '👽', '👾', '👻', '👑', '💎', '🍕', '🍔', '⚽️', '🏀', '🎸', '🎨', '🎭', '🎬', '🎤', '🎮', '💻', '💡', '🧪', '🌍', '🏛️', '🏰', '🗿', '🛸']
 };
 
@@ -178,49 +178,47 @@ export const translations = {
     question_prompt: {
         pl: {
             persona: "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego.",
-            chain_of_thought: "\n# PROCES MYŚLOWY:\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. Udoskonal go, upewniając się, że jest jednoznaczny.\n4.  **Walidacja:** Sprawdź finalne pytanie i odpowiedź pod kątem WSZYSTKICH reguł z sekcji \"KONTEKST I REGUŁY\", a zwłaszcza zasady krytycznej.",
+            chain_of_thought: "\n# PROCES MYŚLOWY (Chain of Thought):\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. To kluczowy balans. Następnie udoskonal go, upewniając się, że jest jednoznaczny i spełnia wszystkie pozostałe reguły.",
             context_header: "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
             context_lines: [
                 "- Kategoria: \"{category}\"",
                 "- Poziom trudności: {knowledge_prompt}",
                 "- Tryb gry: {game_mode_prompt}",
                 "- Motyw przewodni: {theme_context}",
-                "- Słowa-inspiracje (użyj jako luźnego skojarzenia, nie musisz używać ich bezpośrednio): {inspirational_words}"
+                "- Słowa-inspiracje (użyj jako luźnego skojarzenia): {inspirational_words}"
             ],
             rules: [
+                "**JĘZYK WYJŚCIOWY:** Cała zawartość finalnego obiektu JSON (pytanie, odpowiedź, opcje, wyjaśnienie) MUSI być w języku {language_name}.",
+                "**DEFINIUJ SUBKATEGORIĘ:** Dla każdego pytania zdefiniuj jedno- lub dwuwyrazową, precyzyjną subkategorię (np. dla 'Historii' -> 'Starożytny Rzym').",
+                "**ZAKAZ POWTÓRZEŃ:** Pytanie nie może dotyczyć następujących, ostatnio użytych subkategorii: {history_prompt}. Wygeneruj pytanie z zupełnie innej subkategorii.",
                 "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
-                "**JAKOŚĆ OPCJI (dla MCQ):** Dołącz klucz \"options\" tylko dla trybu MCQ. Błędne opcje (dystraktory) muszą być wiarygodne i bazować na częstych pomyłkach lub blisko powiązanych, ale nieprawidłowych faktach. Jedna opcja MUSI być poprawna.",
-                "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź. Unikaj subiektywności.",
-                "**SPÓJNOŚĆ:** Pytanie musi ściśle trzymać się podanej kategorii i wszystkich pozostałych wytycznych.",
-                "**PRECYZYJNE SŁOWA KLUCZOWE:** Słowa kluczowe muszą być bardzo specyficzne dla danego pytania i odpowiedzi.",
-                "**ZAKAZ POWTÓRZEŃ:** Pytanie nie może dotyczyć następujących, już omówionych zagadnień: {history_prompt}. Wygeneruj coś zupełnie nowego."
+                "**JAKOŚĆ OPCJI (dla MCQ):** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
+                "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź.",
+                "**SPÓJNOŚĆ:** Pytanie musi ściśle trzymać się podanej kategorii."
             ],
-            few_shot_example_header: "\n# PRZYKŁAD WYKONANIA (DLA KATEGORII 'ASTRONOMIA'):",
-            few_shot_example: "## PROCES MYŚLOWY:\n1. **Analiza Kontekstu:** Kategoria: 'Astronomia', Trudność: 'dla znawców', Tryb: 'MCQ', Motyw: 'odkrycia', Słowa-inspiracje: 'granica, cień, horyzont'. Historia: 'czarne dziury, Droga Mleczna'.\n2. **Burza Mózgów:** a) Pytanie o paradoks Olbersa. b) Pytanie o Obłok Oorta. c) Pytanie o granicę Roche'a. d) Pytanie o Wielki Atraktor.\n3. **Selekcja:** Pomysły a, b, d są dobre, ale 'granica Roche'a' (c) świetnie pasuje do słów-inspiracji ('granica') i jest odległe od historii. Udoskonalę je.\n4. **Walidacja:** Pytanie: 'Jak nazywa się teoretyczna strefa wokół ciała niebieskiego, wewnątrz której siły pływowe tego ciała są tak silne, że rozerwą każdego satelitę utrzymywanego jedynie przez własną grawitację?'. Odpowiedź: 'Granica Roche'a'. Pytanie nie zawiera słów 'granica' ani 'Roche'a'. Opcje są wiarygodne. Zgodne z kategorią. OK.\n## OSTATECZNY WYNIK:\n```json\n{\n  \"question\": \"Jak nazywa się teoretyczna strefa wokół ciała niebieskiego, wewnątrz której siły pływowe tego ciała są tak silne, że rozerwą każdego satelitę utrzymywanego jedynie przez własną grawitację?\",\n  \"answer\": \"Granica Roche'a\",\n  \"explanation\": \"To Granica Roche'a, która definiuje minimalną odległość, na jakiej może krążyć naturalny satelita, zanim zostanie zniszczony. Strefa Hilla to obszar dominacji grawitacyjnej, a prędkość kosmiczna dotyczy ucieczki z pola grawitacyjnego.\",\n  \"keywords\": [\"granica Roche'a\", \"siły pływowe\", \"mechanika nieba\", \"satelita\"],\n  \"options\": [\"Granica Roche'a\", \"Strefa Hilla\", \"Prędkość kosmiczna\", \"Horyzont zdarzeń\"]\n}\n```",
-            output_format: "\n# OSTATECZNY WYNIK:\nPo zakończeniu wewnętrznego procesu myślowego, zwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"Krótkie wyjaśnienie, dlaczego poprawna odpowiedź jest właściwa i co czyni inne opcje wiarygodnymi, ale błędnymi pułapkami.\",\n  \"keywords\": [\"...\", \"...\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
+            output_format: `\n# OSTATECZNY WYNIK:\nPo zakończeniu wewnętrznego procesu myślowego, zwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precyzyjna subkategoria...",\n  "options": ["...", "...", "...", "..."]\n}`
         },
-        en: {
+        en: { 
             persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
-            chain_of_thought: "\n# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. Refine it, ensuring it is unambiguous.\n4.  **Validation:** Check the final question and answer against ALL the rules in the \"CONTEXT AND RULES\" section, especially the critical rule.",
+            chain_of_thought: `\n# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. This is a key balance. Then, refine it, ensuring it is unambiguous and meets all other rules.`,
             context_header: "\n# CONTEXT AND RULES TO APPLY:",
             context_lines: [
                 "- Category: \"{category}\"",
                 "- Difficulty Level: {knowledge_prompt}",
                 "- Game Mode: {game_mode_prompt}",
                 "- Main Theme: {theme_context}",
-                "- Inspirational Words (use as a loose association; you don't have to use them directly): {inspirational_words}"
+                "- Inspirational Words (use as a loose association): {inspirational_words}"
             ],
             rules: [
+                "**OUTPUT LANGUAGE:** The entire content of the final JSON object (question, answer, options, explanation) MUST be in {language_name}.",
+                "**DEFINE SUBCATEGORY:** For each question, define a precise, one or two-word subcategory (e.g., for 'History' -> 'Ancient Rome').",
+                "**NO REPETITION:** The question must not be about the following, recently used subcategories: {history_prompt}. Generate a question from a completely different subcategory.",
                 "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
-                "**OPTION QUALITY (for MCQ):** Include the \"options\" key only for MCQ mode. Incorrect options (distractors) must be plausible and based on common misconceptions or closely related but incorrect facts. One option MUST be correct.",
-                "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer. Avoid subjectivity.",
-                "**CONSISTENCY:** The question must strictly adhere to the given category and all other guidelines.",
-                "**PRECISE KEYWORDS:** Keywords must be very specific to the given question and answer.",
-                "**NO REPETITION:** The question must not be about the following, already covered topics: {history_prompt}. You must generate something completely new."
+                "**OPTION QUALITY (for MCQ):** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
+                "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer.",
+                "**CONSISTENCY:** The question must strictly adhere to the given category."
             ],
-            few_shot_example_header: "\n# EXECUTION EXAMPLE (FOR CATEGORY 'ASTRONOMY'):",
-            few_shot_example: "## CHAIN OF THOUGHT PROCESS:\n1. **Analyze Context:** Category: 'Astronomy', Difficulty: 'for experts', Mode: 'MCQ', Theme: 'discoveries', Inspirational words: 'boundary, shadow, horizon'. History: 'black holes, Milky Way'.\n2. **Brainstorm:** a) Question about Olbers's paradox. b) Question about the Oort Cloud. c) Question about the Roche limit. d) Question about the Great Attractor.\n3. **Select & Refine:** Ideas a, b, d are good, but 'Roche limit' (c) fits the inspirational words ('boundary') perfectly and is distant from the history topics. I will refine it.\n4. **Validation:** Question: 'What is the name for the theoretical zone around a celestial body within which the body's tidal forces are strong enough to tear apart any satellite held together only by its own gravity?'. Answer: 'Roche limit'. The question does not contain 'Roche' or 'limit'. The options are plausible. It fits the category. OK.\n## FINAL OUTPUT:\n```json\n{\n  \"question\": \"What is the name for the theoretical zone around a celestial body within which the body's tidal forces are strong enough to tear apart any satellite held together only by its own gravity?\",\n  \"answer\": \"Roche limit\",\n  \"explanation\": \"This is the Roche limit, which defines the minimum distance at which a natural satellite can orbit before being destroyed. The Hill sphere is the region of gravitational dominance, and escape velocity relates to escaping a gravitational field.\",\n  \"keywords\": [\"Roche limit\", \"tidal forces\", \"celestial mechanics\", \"satellite\"],\n  \"options\": [\"Roche limit\", \"Hill sphere\", \"Escape velocity\", \"Event horizon\"]\n}\n```",
-            output_format: "\n# FINAL OUTPUT:\nAfter completing your internal thought process, return the response ONLY as a single, clean JSON object with the structure:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"A brief explanation of why the correct answer is right and what makes the other options plausible but incorrect decoys.\",\n  \"keywords\": [\"...\", \"...\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
+            output_format: `\n# FINAL OUTPUT:\nAfter completing your internal thought process, return the response ONLY as a single, clean JSON object with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precise subcategory...",\n  "options": ["...", "...", "...", "..."]\n}`
         }
     },
     inspirational_words: {
@@ -980,21 +978,16 @@ async function handleManualVerification(isCorrect) {
     const categoryIndex = gameState.currentForcedCategoryIndex !== null ? gameState.currentForcedCategoryIndex : square.categoryIndex;
     const category = gameState.categories[categoryIndex];
 
-    // Zapisz słowa kluczowe do historii, aby unikać powtórzeń
-    if (category && gameState.currentQuestionData.keywords) {
+    if (category && gameState.currentQuestionData.subcategory) {
         const history = gameState.categoryTopicHistory[category];
+        const newSubcategory = gameState.currentQuestionData.subcategory;
 
-        const keywordsToStore = gameState.currentQuestionData.keywords.slice(0, 5);
-
-        // Dodajemy tylko te 5 (lub mniej) słów do historii
-        keywordsToStore.forEach(kw => {
-            if (!history.includes(kw)) {
-                history.push(kw);
-            }
-        });
-
-        if (history.length > CONFIG.MAX_KEYWORD_HISTORY) {
-            gameState.categoryTopicHistory[category] = history.slice(-CONFIG.MAX_KEYWORD_HISTORY);
+        if (!history.includes(newSubcategory)) {
+            history.push(newSubcategory);
+        }
+        
+        if (history.length > CONFIG.MAX_SUBCATEGORY_HISTORY) {
+            gameState.categoryTopicHistory[category] = history.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY);
         }
         localStorage.setItem('globalQuizHistory', JSON.stringify(gameState.categoryTopicHistory));
     }
