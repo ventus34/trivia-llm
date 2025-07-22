@@ -269,20 +269,19 @@ const geminiApiAdapter = {
 
     async getCategoryMutationChoices(oldCategory) {
         const lang = gameState.currentLanguage;
-        // LOSOWANIE SZABLONU
-        const promptTemplates = translations.category_mutation_prompt[lang];
-        const basePrompt = promptTemplates[Math.floor(Math.random() * promptTemplates.length)];
-
-        const theme = gameState.theme || translations.default_categories[lang]; 
+        const basePrompt = translations.category_mutation_prompt[lang];
+    
+        const theme = gameState.theme || "-"; 
         const otherCategories = gameState.categories.filter(c => c !== oldCategory);
         const existingCategoriesStr = `"${otherCategories.join('", "')}"`;
-
+    
         const prompt = basePrompt
             .replace(/{old_category}/g, oldCategory)
             .replace(/{theme}/g, theme)
             .replace(/{existing_categories}/g, existingCategoriesStr);
-            
+    
         const data = await callGeminiApiWithRetries(prompt, true);
+    
         return data.choices;
     }
 };

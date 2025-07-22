@@ -51,8 +51,10 @@ const submitAnswerBtn = document.getElementById('submit-answer-btn');
 const llmLoader = document.getElementById('llm-loader');
 const categoryChoiceModal = document.getElementById('category-choice-modal');
 const categoryChoiceButtons = document.getElementById('category-choice-buttons');
-const categoryMutationModal = document.getElementById('category-mutation-modal');
-const categoryMutationButtons = document.getElementById('category-mutation-buttons');
+const standardPopupContent = document.getElementById('standard-popup-content');
+const mutationContent = document.getElementById('mutation-content');
+const mutationLoader = document.getElementById('mutation-loader');
+const mutationButtons = document.getElementById('mutation-buttons');
 const answerPopup = document.getElementById('answer-popup');
 const answerPopupTitle = document.getElementById('answer-popup-title');
 const playerAnswerText = document.getElementById('player-answer-text');
@@ -264,26 +266,24 @@ After your thought process, first write out your thoughts inside <thinking>...</
         en: `You are a helpful teacher in a quiz game. A player has just answered incorrectly. Your task is to explain to them why their answer was wrong. Be concise, empathetic, and educational.\n\nContext:\n- Question: "{question}"\n- Correct answer: "{correct_answer}"\n- Player's incorrect answer: "{player_answer}"\n\nTask:\nWrite a short (1-2 sentences) explanation for why the player's answer is incorrect. Focus on the player's reasoning error or point out the key difference.\n\nReturn the response as a JSON object in the format: {"explanation": "Your explanation..."}`
     },
     category_mutation_prompt: {
-        pl: [
-            // Szablon 1 (klasyczny mistrz gry)
-            `Jesteś mistrzem gry. Twoim zadaniem jest zaproponowanie TRZECH alternatywnych kategorii, które zastąpią starą kategorię: "{old_category}".\n\n# Kontekst Gry:\n- Główny motyw quizu: "{theme}"\n- Pozostałe kategorie w grze (nie powtarzaj ich): {existing_categories}\n\n# Wymagania:\n1.  Nowe propozycje MUSZĄ pasować do motywu gry.\n2.  Powinny być tematycznie spokrewnione z zastępowaną kategorią.\n3.  Muszą być unikalne.\n\nZwróć odpowiedź WYŁĄCZNIE jako obiekt JSON w formacie: {"choices": ["Propozycja 1", "Propozycja 2", "Propozycja 3"]}`,
-            // Szablon 2 (bezpośrednie polecenie)
-            `Kategoria "{old_category}" jest już ograna. Wygeneruj 3 nowe propozycje na jej miejsce. Muszą być powiązane z nią tematycznie oraz pasować do głównego motywu gry, którym jest "{theme}". Nie mogą to być kategorie, które już istnieją w grze: {existing_categories}.\n\nOdpowiedź zwróć jako czysty JSON: {"choices": ["...", "...", "..."]}`,
-            // Szablon 3 (ewolucja)
-            `Kategoria "{old_category}" ewoluuje! Zaproponuj trzy kolejne etapy jej rozwoju. Nowe kategorie muszą być logicznym, ale ciekawym rozwinięciem poprzedniej, pasującym do motywu gry: "{theme}". Unikaj powtórzeń z istniejących kategorii: {existing_categories}.\n\nZwróć JSON: {"choices": ["Ewolucja 1", "Ewolucja 2", "Ewolucja 3"]}`,
-            // Szablon 4 (burza mózgów)
-            `Potrzebuję pomocy w burzy mózgów. Znajdź trzy kreatywne alternatywy dla kategorii quizowej "{old_category}". Kontekst to gra o tematyce "{theme}". Pozostałe kategorie to {existing_categories}, więc nie mogą się powtarzać. Szukam świeżych, ale powiązanych pomysłów.\n\nFormat wyjściowy to wyłącznie JSON: {"choices": ["...", "...", "..."]}`
-        ],
-        en: [
-            // Template 1 (classic game master)
-            `You are a game master. Your task is to propose THREE alternative categories to replace the old category: "{old_category}".\n\n# Game Context:\n- Main quiz theme: "{theme}"\n- Other categories in play (do not repeat them): {existing_categories}\n\n# Requirements:\n1. The new proposals MUST fit the game's theme.\n2. They should be thematically related to the category being replaced.\n3. They must be unique.\n\nReturn the response ONLY as a JSON object in the format: {"choices": ["Proposal 1", "Proposal 2", "Proposal 3"]}`,
-            // Template 2 (direct command)
-            `The category "{old_category}" is played out. Generate 3 new proposals to replace it. They must be thematically related to it and fit the main game theme, which is "{theme}". They cannot be categories that already exist in the game: {existing_categories}.\n\nReturn the response as pure JSON: {"choices": ["...", "...", "..."]}`,
-            // Template 3 (evolution)
-            `The category "{old_category}" is evolving! Propose three next stages of its development. The new categories must be a logical but interesting evolution of the previous one, fitting the game's theme: "{theme}". Avoid repetitions from existing categories: {existing_categories}.\n\nReturn JSON: {"choices": ["Evolution 1", "Evolution 2", "Evolution 3"]}`,
-            // Template 4 (brainstorm assistant)
-            `I need help brainstorming. Find three creative alternatives for the quiz category "{old_category}". The context is a game with the theme "{theme}". The other categories are {existing_categories}, so they cannot be repeated. I'm looking for fresh but related ideas.\n\nOutput format is exclusively JSON: {"choices": ["...", "...", "..."]}`
-        ]
+        pl: `Jesteś mistrzem gry. Twoim zadaniem jest zaproponowanie TRZECH alternatywnych kategorii, które zastąpią starą kategorię: "{old_category}".
+
+# PROCES MYŚLOWY (Chain of Thought):
+1.  **Analiza:** Jaka jest esencja kategorii "{old_category}" i jej związek z motywem gry: "{theme}"?
+2.  **Burza Mózgów:** Wypisz 5-6 pomysłów na kategorie, które są rozwinięciem lub alternatywą dla "{old_category}".
+3.  **Selekcja:** Wybierz 3 najlepsze pomysły. Upewnij się, że nie powtarzają pozostałych kategorii w grze ({existing_categories}) i że są od siebie różne. Dla każdego sformułuj zwięzły opis.
+
+# OSTATECZNY WYNIK:
+Po procesie myślowym zwróć WYŁĄCZNIE obiekt JSON w formacie: {"choices": [{"name": "Nazwa 1", "description": "Opis 1"}, ...]}`,
+        en: `You are a game master. Your task is to propose THREE alternative categories to replace the old category: "{old_category}".
+
+# CHAIN OF THOUGHT PROCESS:
+1.  **Analysis:** What is the essence of the category "{old_category}" and its relation to the game theme: "{theme}"?
+2.  **Brainstorm:** List 5-6 ideas for categories that are an evolution or alternative to "{old_category}".
+3.  **Selection:** Choose the 3 best ideas. Ensure they do not repeat the other categories in the game ({existing_categories}) and are distinct from each other. Formulate a concise description for each.
+
+# FINAL OUTPUT:
+After your thought process, return ONLY a JSON object in the format: {"choices": [{"name": "Name 1", "description": "Description 1"}, ...]}`
     },
     main_theme_context_prompt: {
         pl: "Pytanie musi dotyczyć motywu: {theme}.",
@@ -1148,114 +1148,105 @@ function showVerificationPopup(playerAnswer, correctAnswer) {
     showAnswerPopup();
 }
 
-/**
- * Obsługuje ręczną weryfikację odpowiedzi przez graczy.
- * @param {boolean} isCorrect - Czy odpowiedź była poprawna.
- */
 async function handleManualVerification(isCorrect) {
     gameState.lastAnswerWasCorrect = isCorrect;
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = gameState.currentForcedCategoryIndex !== null ? gameState.currentForcedCategoryIndex : square.categoryIndex;
-    const category = gameState.categories[categoryIndex];
+    const oldCategory = gameState.categories[categoryIndex]; // Zapisujemy starą nazwę
 
-    if (category && gameState.currentQuestionData.subcategory) {
-        const history = gameState.categoryTopicHistory[category];
+    // Zapis subkategorii do historii (bez zmian)
+    if (oldCategory && gameState.currentQuestionData.subcategory) {
+        const history = gameState.categoryTopicHistory[oldCategory];
         const newSubcategory = gameState.currentQuestionData.subcategory;
-
         if (!history.includes(newSubcategory)) {
             history.push(newSubcategory);
         }
-
         if (history.length > CONFIG.MAX_SUBCATEGORY_HISTORY) {
-            gameState.categoryTopicHistory[category] = history.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY);
+            gameState.categoryTopicHistory[oldCategory] = history.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY);
         }
         localStorage.setItem('globalQuizHistory', JSON.stringify(gameState.categoryTopicHistory));
     }
 
-    // Usprawniony flow: ukryj przyciski weryfikacji i pokaż wyjaśnienia
     verificationButtons.classList.add('hidden');
     postVerificationButtons.classList.remove('hidden');
-    explanationContainer.classList.remove('hidden');
-    closePopupBtn.textContent = translations.continue_btn[gameState.currentLanguage];
 
-    if (isCorrect) {
-        if (square.type === CONFIG.SQUARE_TYPES.HQ) {
-            if (category && !player.wedges.includes(category)) {
-                player.wedges.push(category);
-                if (gameState.mutateCategories) {
-                    await mutateCategory(categoryIndex);
-                }
-            }
+    const shouldMutate = isCorrect &&
+                         square.type === CONFIG.SQUARE_TYPES.HQ &&
+                         !player.wedges.includes(oldCategory) &&
+                         gameState.mutateCategories;
+
+    if (shouldMutate) {
+        // Nie przyznajemy jeszcze punktu! Czekamy na wybór nowej kategorii.
+        standardPopupContent.classList.add('hidden');
+        mutationContent.classList.remove('hidden');
+        mutationLoader.classList.remove('hidden');
+        mutationButtons.classList.add('hidden');
+        closePopupBtn.classList.add('hidden');
+
+        try {
+            const choices = await gameState.api.getCategoryMutationChoices(oldCategory);
+            mutationLoader.classList.add('hidden');
+            mutationButtons.classList.remove('hidden');
+            mutationButtons.innerHTML = '';
+            
+            if (!Array.isArray(choices)) throw new Error("Invalid choices received from API");
+
+            choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.className = 'w-full p-4 text-white rounded-lg transition-transform hover:scale-105 text-left';
+                button.style.backgroundColor = CONFIG.CATEGORY_COLORS[categoryIndex];
+                button.innerHTML = `<span class="block font-bold text-lg">${choice.name || ""}</span><p class="text-sm font-normal opacity-90 mt-1">${choice.description || ""}</p>`;
+                button.onclick = () => {
+                    const newCategoryName = choice.name;
+                    // KROK 1: Aktualizujemy nazwę kategorii w grze
+                    gameState.categories[categoryIndex] = newCategoryName;
+                    
+                    // KROK 2: Przyznajemy graczowi punkt za NOWĄ kategorię
+                    player.wedges.push(newCategoryName);
+
+                    // KROK 3: Aktualizujemy legendę, aby pokazać nową nazwę
+                    renderCategoryLegend();
+
+                    // Logika czyszczenia historii i powiadomienia (bez zmian)
+                    delete gameState.categoryTopicHistory[oldCategory];
+                    if (!gameState.categoryTopicHistory[newCategoryName]) {
+                        gameState.categoryTopicHistory[newCategoryName] = [];
+                    }
+                    showNotification({ title: translations.category_mutated[gameState.currentLanguage], body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategoryName) }, 'info');
+                    
+                    closePopupAndContinue();
+                };
+                mutationButtons.appendChild(button);
+            });
+        } catch (error) {
+            console.error("Category mutation failed:", error);
+            player.wedges.push(oldCategory); // W razie błędu, przyznaj punkt za starą kategorię
+            showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.mutation_error[gameState.currentLanguage] }, 'error');
+            closePopupAndContinue();
         }
     } else {
-        incorrectExplanationContainer.classList.remove('hidden');
-        incorrectExplanationLoader.classList.remove('hidden');
-        try {
-            const explanation = await gameState.api.getIncorrectAnswerExplanation();
-            incorrectExplanationText.textContent = explanation;
-        } catch (error) {
-            console.error("Incorrect answer explanation error:", error);
-            incorrectExplanationText.textContent = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
-        } finally {
-            incorrectExplanationLoader.classList.add('hidden');
+        // Standardowy przepływ (bez mutacji)
+        if (isCorrect && square.type === CONFIG.SQUARE_TYPES.HQ) {
+            if (oldCategory && !player.wedges.includes(oldCategory)) player.wedges.push(oldCategory);
+        }
+        explanationContainer.classList.remove('hidden');
+        if (!isCorrect) {
+            incorrectExplanationContainer.classList.remove('hidden');
+            incorrectExplanationLoader.classList.remove('hidden');
+            try {
+                const explanation = await gameState.api.getIncorrectAnswerExplanation();
+                incorrectExplanationText.textContent = explanation;
+            } catch (error) {
+                console.error("Incorrect answer explanation error:", error);
+                incorrectExplanationText.textContent = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
+            } finally {
+                incorrectExplanationLoader.classList.add('hidden');
+            }
         }
     }
 }
 
-/**
- * Rozpoczyna proces mutacji kategorii.
- * @param {number} categoryIndex - Indeks kategorii do zmutowania.
- */
-async function mutateCategory(categoryIndex) {
-    const oldCategory = gameState.categories[categoryIndex];
-    try {
-        const choices = await gameState.api.getCategoryMutationChoices(oldCategory);
-
-        categoryMutationButtons.innerHTML = '';
-        categoryMutationModal.querySelector('h3').textContent = translations.choose_mutation_title[gameState.currentLanguage];
-
-        choices.forEach(choice => {
-            const button = document.createElement('button');
-            button.textContent = choice;
-            button.className = 'w-full p-3 text-white font-semibold rounded-lg transition-transform hover:scale-105';
-            button.style.backgroundColor = CONFIG.CATEGORY_COLORS[categoryIndex];
-            button.onclick = () => {
-                handleMutationChoice(categoryIndex, oldCategory, choice);
-            };
-            categoryMutationButtons.appendChild(button);
-        });
-        categoryMutationModal.classList.remove('hidden');
-
-    } catch (error) {
-        console.error("Category mutation failed:", error);
-        // W razie błędu po prostu nie mutujemy kategorii
-    }
-}
-
-/**
- * Obsługuje wybór nowej kategorii przez gracza.
- * @param {number} categoryIndex - Indeks mutowanej kategorii.
- * @param {string} oldCategory - Stara nazwa kategorii.
- * @param {string} newCategory - Nowa, wybrana nazwa kategorii.
- */
-function handleMutationChoice(categoryIndex, oldCategory, newCategory) {
-    categoryMutationModal.classList.add('hidden');
-    gameState.categories[categoryIndex] = newCategory;
-
-    // Zaktualizuj historię i UI
-    delete gameState.categoryTopicHistory[oldCategory];
-    if (!gameState.categoryTopicHistory[newCategory]) {
-        gameState.categoryTopicHistory[newCategory] = [];
-    }
-    const legendItem = document.getElementById(`legend-cat-${categoryIndex}`);
-    legendItem.querySelector('span').textContent = newCategory;
-
-    showNotification({
-        title: translations.category_mutated[gameState.currentLanguage],
-        body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategory)
-    }, 'info');
-}
 
 /**
  * Wyświetla popup z odpowiedzią.
@@ -1272,18 +1263,24 @@ function showAnswerPopup() {
  */
 function closePopupAndContinue() {
     answerPopup.classList.add('opacity-0', 'scale-90');
-    setTimeout(() => answerPopup.classList.add('hidden'), 500);
+    setTimeout(() => {
+        answerPopup.classList.add('hidden');
+        // Resetujemy wygląd pop-upu do domyślnego
+        standardPopupContent.classList.remove('hidden');
+        mutationContent.classList.add('hidden');
+        closePopupBtn.classList.remove('hidden');
+    }, 500);
 
     if (gameState.lastAnswerWasCorrect) {
         diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
         rollDiceBtn.disabled = false;
         rollDiceBtn.classList.remove('opacity-50');
-        saveGameState();
     } else {
         nextTurn();
     }
     updateUI();
     checkWinCondition();
+    saveGameState();
 }
 
 /**

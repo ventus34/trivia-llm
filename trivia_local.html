@@ -205,15 +205,8 @@
     </div>
 </div>
 
-<div id="category-mutation-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg space-y-4">
-        <h3 data-lang-key="choose_mutation_title" class="text-2xl font-bold text-center">Kategoria mutuje! Wybierz nową:</h3>
-        <div id="category-mutation-buttons" class="grid grid-cols-1 gap-4"></div>
-    </div>
-</div>
-
 <div id="answer-popup" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 bg-white rounded-xl shadow-2xl z-50 max-w-md w-full text-center opacity-0 scale-90">
-    <div>
+    <div id="standard-popup-content">
         <h3 id="answer-popup-title" class="text-2xl font-bold mb-4 text-gray-800"></h3>
         <div class="text-left space-y-3">
             <div>
@@ -223,9 +216,7 @@
             <div id="incorrect-explanation-container" class="hidden">
                 <p class="text-sm font-medium text-red-500" data-lang-key="your_answer_explanation">Uzasadnienie błędu:</p>
                 <p id="incorrect-explanation-text" class="p-2 bg-red-100 rounded-md"></p>
-                <div id="incorrect-explanation-loader" class="hidden text-center p-2">
-                    <span class="text-sm text-gray-500">Analizuję Twoją odpowiedź...</span>
-                </div>
+                <div id="incorrect-explanation-loader" class="hidden text-center p-2"><span class="text-sm text-gray-500">Analizuję...</span></div>
             </div>
             <div id="correct-answer-container">
                 <p class="text-sm font-medium text-gray-500" data-lang-key="correct_answer_is">Poprawna odpowiedź:</p>
@@ -237,6 +228,20 @@
             </div>
         </div>
     </div>
+
+    <div id="mutation-content" class="hidden">
+        <h3 data-lang-key="choose_mutation_title" class="text-2xl font-bold text-center mb-4"></h3>
+        <div id="mutation-loader" class="flex flex-col items-center justify-center gap-4 py-8">
+            <div class="flex space-x-2">
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce"></div>
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+            </div>
+            <span data-lang-key="generating_mutation" class="text-gray-600">Generuję nowe kategorie...</span>
+        </div>
+        <div id="mutation-buttons" class="hidden grid grid-cols-1 gap-4"></div>
+    </div>
+
     <div id="verification-buttons" class="mt-4 flex gap-4">
         <button id="reject-answer-btn" data-lang-key="reject_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors">Niepoprawna</button>
         <button id="accept-answer-btn" data-lang-key="accept_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Poprawna</button>
