@@ -29,33 +29,16 @@
         <div class="flex flex-col lg:flex-row gap-8">
             <div class="flex-1 space-y-6">
                 <div>
-                    <label for="gemini-api-key" data-lang-key="gemini_api_key_label" class="block text-sm font-medium text-gray-700">Klucz API Google Gemini:</label>
-                    <input type="password" id="gemini-api-key" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" placeholder="Wklej swój klucz API">
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-xs text-indigo-600 hover:underline" data-lang-key="gemini_api_key_help">Gdzie znaleźć klucz?</a>
+                    <label for="lmstudio-url-input" data-lang-key="lm_studio_url_label" class="block text-sm font-medium text-gray-700">Adres serwera LM Studio:</label>
+                    <input type="text" id="lmstudio-url-input" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" placeholder="np. http://localhost:1234/v1/chat/completions">
+                    <p class="text-xs text-gray-500 mt-1" data-lang-key="lm_studio_help">Upewnij się, że serwer LM Studio jest uruchomiony. Sugerowany model: Gemma 3 (>=4B)</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="model-select" data-lang-key="model_label" class="block text-sm font-medium text-gray-700">Model Językowy:</label>
-                        <div class="flex items-end gap-2">
-                            <select id="model-select" class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                                </select>
-                            <button id="refresh-models-btn" class="p-2 mb-1 rounded-md hover:bg-gray-200" data-lang-key="refresh_models_title" title="Odśwież listę modeli">
-                                <svg id="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-cw"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 1 1.6-5.2"/></svg>
-                                <svg id="loading-spinner" class="hidden animate-spin h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </button>
-                        </div>
+                        <label for="temperature-slider" data-lang-key="temperature_label" class="block text-sm font-medium text-gray-700">Temperatura: <span id="temperature-value">0.7</span></label>
+                        <input type="range" id="temperature-slider" min="0" max="2" step="0.1" value="0.7" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2" style="--thumb-color: #4f46e5;">
                     </div>
-                    <div>
-                        <label for="temperature-slider" data-lang-key="temperature_label" class="block text-sm font-medium text-gray-700">Temperatura: <span id="temperature-value">1.0</span></label>
-                        <input type="range" id="temperature-slider" min="0" max="2" step="0.1" value="1.0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2" style="--thumb-color: #4f46e5;">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="game-mode" data-lang-key="game_mode_label" class="block text-sm font-medium text-gray-700">Tryb Gry:</label>
                         <select id="game-mode" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
@@ -64,7 +47,10 @@
                         </select>
                         <p id="game-mode-description" class="mt-1 text-xs text-gray-500"></p>
                     </div>
-                    <div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div>
                         <label for="knowledge-level" data-lang-key="knowledge_level_label" class="block text-sm font-medium text-gray-700">Poziom Wiedzy:</label>
                         <select id="knowledge-level" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
                             <option value="basic" data-lang-key="knowledge_level_basic">Podstawowy</option>
@@ -73,13 +59,12 @@
                         </select>
                         <p id="knowledge-level-description" class="mt-1 text-xs text-gray-500"></p>
                     </div>
-                </div>
-
-                <div>
-                    <label data-lang-key="category_theme_label" class="block text-sm font-medium text-gray-700">Temat do generacji kategorii (opcjonalnie)</label>
-                    <div class="flex gap-2 mt-1">
-                        <input type="text" id="theme-input" data-lang-key="category_theme_placeholder" placeholder="Wpisz motyw, np. Władca Pierścieni" class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                        <button id="generate-categories-btn" data-lang-key="category_generator_btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Generuj</button>
+                    <div>
+                        <label data-lang-key="category_theme_label" class="block text-sm font-medium text-gray-700">Temat do generacji kategorii (opcjonalnie)</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="text" id="theme-input" data-lang-key="category_theme_placeholder" placeholder="Wpisz motyw, np. Władca Pierścieni" class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                            <button id="generate-categories-btn" data-lang-key="category_generator_btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Generuj</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -128,6 +113,9 @@
         
                 <dt class="font-semibold" data-lang-key="infobox_theme_title">📝 Dodaj Temat do Pytań</dt>
                 <dd class="mt-1 text-slate-600" data-lang-key="infobox_theme_desc">Jeśli wpisano temat w polu "Temat do generacji kategorii", zaznaczenie tej opcji sprawi, że model AI będzie musiał tworzyć pytania, które są związane nie tylko z kategorią (np. "Historia"), ale również z głównym motywem gry (np. "Władca Pierścieni").</dd>
+                
+                <dt class="font-semibold mt-2 text-amber-700" data-lang-key="infobox_cors_title">🚨 Ważne dla LM Studio (CORS)</dt>
+                <dd class="mt-1 text-slate-600" data-lang-key="infobox_cors_desc">Aby ta aplikacja mogła komunikować się z Twoim lokalnym serwerem LM Studio, musisz włączyć w nim obsługę CORS. W LM Studio przejdź do zakładki 'Developer', a następnie w sekcji 'Settings' zaznacz pole 'Enable CORS'. Użytkownicy przeglądarki Safari mogą nadal napotykać problemy, nawet po włączeniu tej opcji.</dd>
             </dl>
         </div>
     </div>
@@ -137,8 +125,7 @@
     </div>
 </div>
 
-
-<div id="game-screen" class="js-game-grid-layout hidden w-full min-h-screen p-4 lg:p-8 flex flex-col lg:flex-row items-center lg:items-stretch justify-center lg:justify-between gap-8 lg:gap-12">
+<div id="game-screen" class="js-game-grid-layout hidden w-full min-h-screen p-4 lg:p-8 flex flex-col lg:flex-row items-center lg:items-stretch justify-center lg:justify-between gap-8 lg:gap-8">
     <div class="flex flex-col items-center gap-4">
         <div class="board-wrapper">
             <div id="board" class="board-container"></div>
@@ -164,9 +151,21 @@
         <button id="roll-dice-btn" data-lang-key="roll_dice_btn" class="w-full py-3 px-4 rounded-md shadow-sm text-lg font-bold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Rzuć Kostką</button>
         <div id="category-legend" class="flex flex-wrap justify-center gap-x-4 gap-y-2"></div>
         <div id="game-message" class="text-center font-medium text-red-600 h-6"></div>
-        <button id="restart-game-btn" class="w-full mt-2 py-2 px-4 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors">
-            Zacznij od nowa
-        </button>
+        <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+            <div class="flex gap-2">
+                <label for="upload-state-input" id="upload-state-btn" class="w-full text-center py-2 px-4 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors cursor-pointer">
+                    Wczytaj grę
+                </label>
+                <input type="file" id="upload-state-input" class="hidden" accept=".json">
+        
+                <button id="download-state-btn" class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 active:bg-gray-800 transition-colors">
+                    Pobierz zapis
+                </button>
+            </div>
+            <button id="restart-game-btn" class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors">
+                Zacznij od nowa
+            </button>
+        </div>
     </div>
 </div>
     </div>
@@ -268,9 +267,9 @@
 </div>
 
 <script type="module">
-    // Importujemy główną logikę i adapter dla Gemini
+    // Importujemy główną logikę i adapter dla LM Studio
     import { initializeApp } from './game_core.js';
-    import './adapter_gemini.js';
+    import './adapter_local.js';
 </script>
 </body>
 </html>

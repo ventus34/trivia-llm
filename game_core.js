@@ -78,6 +78,9 @@ const closeHistoryBtn = document.getElementById('close-history-btn');
 const historyContent = document.getElementById('history-content');
 const historyModalTitle = document.getElementById('history-modal-title');
 const restartGameBtn = document.getElementById('restart-game-btn');
+const downloadStateBtn = document.getElementById('download-state-btn');
+const uploadStateInput = document.getElementById('upload-state-input');
+const uploadStateBtn = document.getElementById('upload-state-btn');
 
 // --- STAN GRY I TŁUMACZENIA ---
 export let gameState = { currentLanguage: 'pl', promptHistory: [] };
@@ -316,7 +319,11 @@ After your thought process, first write out your thoughts inside <thinking>...</
     history_modal_title: { pl: "Historia Promptów", en: "Prompt History" },
     history_prompt_title: { pl: "Wysłany Prompt", en: "Sent Prompt" },
     history_response_title: { pl: "Otrzymana Odpowiedź", en: "Received Response" },
-    history_empty: { pl: "Historia jest jeszcze pusta.", en: "History is empty." }
+    history_empty: { pl: "Historia jest jeszcze pusta.", en: "History is empty." },
+    download_state_btn: { pl: "Pobierz zapis (JSON)", en: "Download State (JSON)" },
+    upload_state_btn: { pl: "Wczytaj grę (JSON)", en: "Load Game (JSON)" },
+    game_loaded_success: { pl: "Gra wczytana pomyślnie!", en: "Game loaded successfully!" },
+    game_loaded_error: { pl: "Błąd wczytywania pliku. Upewnij się, że to poprawny plik zapisu.", en: "Error loading file. Make sure it's a valid save file." }
 };
 
 
@@ -577,16 +584,12 @@ function createBoardLayout() {
 }
 
 /**
- * Zapisuje aktualny stan gry w localStorage.
+ * Zapisuje kluczowy i oczyszczony stan gry w localStorage.
  */
 function saveGameState() {
-    // Tworzymy kopię stanu, aby uniknąć problemów z referencjami
-    const stateToSave = { ...gameState };
-    // Usuwamy obiekty, których nie można serializować (jak adapter API)
-    delete stateToSave.api; 
-
+    const stateToSave = getCleanedState();
     localStorage.setItem('savedQuizGame', JSON.stringify(stateToSave));
-    console.log("Gra zapisana.", new Date().toLocaleTimeString());
+    console.log("Gra zapisana (stan zoptymalizowany).", new Date().toLocaleTimeString());
 }
 
 /**
@@ -610,6 +613,117 @@ function restartGame() {
         localStorage.removeItem('savedQuizGame');
         window.location.reload();
     }
+}
+
+/**
+ * Uruchamia pobieranie zoptymalizowanego stanu gry jako pliku JSON z poprawnym kodowaniem.
+ */
+function downloadGameState() {
+    const stateToSave = getCleanedState();
+    const jsonString = JSON.stringify(stateToSave, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json;charset=utf-8" });
+    
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, "-");
+    link.download = `trivia_save_${timestamp}.json`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+/**
+ * Obsługuje wgranie pliku JSON ze stanem gry z poprawnym kodowaniem.
+ */
+function handleStateUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const loadedState = JSON.parse(e.target.result);
+            if (loadedState && loadedState.players && loadedState.categories) {
+                restoreGameState(loadedState);
+                showNotification({ title: "Sukces", body: translations.game_loaded_success[gameState.currentLanguage] }, 'success');
+            } else {
+                throw new Error("Invalid game state format.");
+            }
+        } catch (error) {
+            console.error("Failed to load or parse game state:", error);
+            showNotification({ title: "Błąd", body: translations.game_loaded_error[gameState.currentLanguage] }, 'error');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    // POPRAWKA KODOWANIA: Jawnie odczytujemy plik jako UTF-8
+    reader.readAsText(file, 'UTF-8');
+}
+
+
+/**
+ * Przywraca stan gry, odtwarza planszę i odświeża interfejs.
+ * @param {object} stateToRestore - Obiekt stanu gry do wczytania.
+ */
+function restoreGameState(stateToRestore) {
+    Object.assign(gameState, stateToRestore);
+    
+    // Resetujemy stan tury dla czystego wznowienia
+    gameState.isAwaitingMove = false;
+    gameState.lastAnswerWasCorrect = false;
+    
+    // Odtwarzamy planszę, ponieważ nie ma jej w pliku zapisu
+    createBoardLayout();
+
+    setLanguage(gameState.currentLanguage);
+    
+    setupScreen.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    
+    const oldSvg = boardWrapper.querySelector('.board-connections');
+    if (oldSvg) oldSvg.remove();
+    
+    renderBoard();
+    renderCategoryLegend();
+    updateUI();
+
+    rollDiceBtn.disabled = false;
+    rollDiceBtn.classList.remove('opacity-50');
+    diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
+    gameMessageDiv.textContent = '';
+}
+
+/**
+ * Tworzy "czystą" wersję stanu gry, gotową do zapisu.
+ * Usuwa dane tymczasowe, deweloperskie i możliwe do odtworzenia.
+ * @returns {object} - Oczyszczony obiekt stanu gry.
+ */
+function getCleanedState() {
+    // Tworzymy głęboką kopię, aby nie modyfikować aktualnego stanu gry
+    const stateToSave = JSON.parse(JSON.stringify(gameState));
+
+    // 1. Wykluczamy klucze, których nie trzeba zapisywać
+    const excludeKeys = [
+        'api', 'promptHistory', 'possiblePaths', 'currentQuestionData',
+        'currentForcedCategoryIndex', 'currentPlayerAnswer', 'isAwaitingMove',
+        'lastAnswerWasCorrect', 'board' // <- Dodano 'board' do wykluczeń
+    ];
+    excludeKeys.forEach(key => delete stateToSave[key]);
+
+    // 2. Czyścimy historię subkategorii, zostawiając tylko aktywne kategorie
+    if (stateToSave.categoryTopicHistory && stateToSave.categories) {
+        const currentCategories = new Set(stateToSave.categories);
+        const cleanedHistory = {};
+        for (const categoryName in stateToSave.categoryTopicHistory) {
+            if (currentCategories.has(categoryName)) {
+                cleanedHistory[categoryName] = stateToSave.categoryTopicHistory[categoryName];
+            }
+        }
+        stateToSave.categoryTopicHistory = cleanedHistory;
+    }
+
+    return stateToSave;
 }
 
 /**
@@ -1283,30 +1397,13 @@ export function initializeApp(apiAdapter) {
 
     // --- EVENT LISTENERS ---
     window.addEventListener('DOMContentLoaded', () => {
-        const savedGame = loadGameState();
+        const savedGame = loadGameState(); // Wczytanie z localStorage
         if (savedGame) {
-            // Wznów grę
-            Object.assign(gameState, savedGame);
-            setLanguage(gameState.currentLanguage);
-    
-            // Przywróć UI do stanu gry
-            setupScreen.classList.add('hidden');
-            gameScreen.classList.remove('hidden');
-            renderBoard();
-            renderCategoryLegend();
-            updateUI();
-    
-            // Ustaw przyciski i komunikaty
-            rollDiceBtn.disabled = gameState.isAwaitingMove;
-            if(gameState.isAwaitingMove) rollDiceBtn.classList.add('opacity-50');
-            gameMessageDiv.textContent = gameState.isAwaitingMove ? translations.choose_move[gameState.currentLanguage] : '';
-    
+            restoreGameState(savedGame); // Użycie nowej funkcji
         } else {
-            // Rozpocznij nową grę
             setLanguage('pl');
         }
     
-        // Zawsze wczytuj ustawienia API
         if (gameState.api.loadSettings) {
             gameState.api.loadSettings();
         }
@@ -1347,6 +1444,8 @@ export function initializeApp(apiAdapter) {
     showHistoryBtn.addEventListener('click', showHistoryModal);
     closeHistoryBtn.addEventListener('click', hideHistoryModal);
     restartGameBtn.addEventListener('click', restartGame);
+    downloadStateBtn.addEventListener('click', downloadGameState);
+    uploadStateInput.addEventListener('change', handleStateUpload);
 
     playAgainBtn.addEventListener('click', () => {
         winnerScreen.classList.add('hidden');
