@@ -76,7 +76,8 @@ const showHistoryBtn = document.getElementById('show-history-btn');
 const historyModal = document.getElementById('history-modal');
 const closeHistoryBtn = document.getElementById('close-history-btn');
 const historyContent = document.getElementById('history-content');
-const historyModalTitle = document.getElementById('history-modal-title')
+const historyModalTitle = document.getElementById('history-modal-title');
+const restartGameBtn = document.getElementById('restart-game-btn');
 
 // --- STAN GRY I TŁUMACZENIA ---
 export let gameState = { currentLanguage: 'pl', promptHistory: [] };
@@ -133,8 +134,8 @@ export const translations = {
     submit_answer_btn: { pl: "Zatwierdź Odpowiedź", en: "Submit Answer" },
     empty_answer_error: { pl: "Proszę wpisać odpowiedź.", en: "Please enter an answer." },
     answer_evaluation: { pl: "Oceń odpowiedź", en: "Evaluate Answer" },
-    player_answer_was: { pl: "Odpowiedź gracza:", en: "Player's answer:"},
-    correct_answer_is: { pl: "Poprawna odpowiedź:", en: "Correct answer:"},
+    player_answer_was: { pl: "Odpowiedź gracza:", en: "Player's answer:" },
+    correct_answer_is: { pl: "Poprawna odpowiedź:", en: "Correct answer:" },
     explanation: { pl: "Wyjaśnienie poprawnej odpowiedzi:", en: "Explanation of the correct answer:" },
     your_answer_explanation: { pl: "Uzasadnienie Twojego błędu:", en: "Reasoning for your error:" },
     incorrect_answer_analysis_error: { pl: "Nie udało się przeanalizować odpowiedzi.", en: "Failed to analyze the answer." },
@@ -145,21 +146,23 @@ export const translations = {
     congratulations: { pl: "Gratulacje!", en: "Congratulations!" },
     winner_is: { pl: "Zwycięzcą jest", en: "The winner is" },
     play_again_btn: { pl: "Zagraj Ponownie", en: "Play Again" },
+    restart_game_btn: { pl: "Zacznij od nowa", en: "Start Over" },
+    restart_game_confirm: { pl: "Czy na pewno chcesz zrestartować grę? Cały postęp zostanie utracony.", en: "Are you sure you want to restart the game? All progress will be lost." },
     creative_words: {
         pl: [
-            'Przyczyna', 'Skutek', 'Proces', 'Wpływ', 'Kontekst', 'Struktura', 
-            'Ewolucja', 'Funkcja', 'Porównanie', 'Kontrast', 'Symbol', 'Narzędzie', 
+            'Przyczyna', 'Skutek', 'Proces', 'Wpływ', 'Kontekst', 'Struktura',
+            'Ewolucja', 'Funkcja', 'Porównanie', 'Kontrast', 'Symbol', 'Narzędzie',
             'Mit', 'Początek', 'Przyszłość', 'Interakcja', 'Perspektywa', 'Anomalia',
-            'Zależność', 'Hierarchia', 'Transformacja', 'Cykl', 'Punkt zwrotny', 
-            'Tradycja', 'Znaczenie', 'Ograniczenie', 'Potencjał', 'Zasada', 
+            'Zależność', 'Hierarchia', 'Transformacja', 'Cykl', 'Punkt zwrotny',
+            'Tradycja', 'Znaczenie', 'Ograniczenie', 'Potencjał', 'Zasada',
             'Adaptacja', 'Innowacja'
         ],
         en: [
-            'Cause', 'Effect', 'Process', 'Impact', 'Context', 'Structure', 
-            'Evolution', 'Function', 'Comparison', 'Contrast', 'Symbol', 'Tool', 
+            'Cause', 'Effect', 'Process', 'Impact', 'Context', 'Structure',
+            'Evolution', 'Function', 'Comparison', 'Contrast', 'Symbol', 'Tool',
             'Myth', 'Origin', 'Future', 'Interaction', 'Perspective', 'Anomaly',
-            'Dependence', 'Hierarchy', 'Transformation', 'Cycle', 'Turning point', 
-            'Tradition', 'Significance', 'Limitation', 'Potential', 'Principle', 
+            'Dependence', 'Hierarchy', 'Transformation', 'Cycle', 'Turning point',
+            'Tradition', 'Significance', 'Limitation', 'Potential', 'Principle',
             'Adaptation', 'Innovation'
         ]
     },
@@ -198,7 +201,7 @@ export const translations = {
             ],
             output_format: `\n# OSTATECZNY WYNIK:\nPo zakończeniu wewnętrznego procesu myślowego, zwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precyzyjna subkategoria...",\n  "options": ["...", "...", "...", "..."]\n}`
         },
-        en: { 
+        en: {
             persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
             chain_of_thought: `\n# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. This is a key balance. Then, refine it, ensuring it is unambiguous and meets all other rules.`,
             context_header: "\n# CONTEXT AND RULES TO APPLY:",
@@ -371,9 +374,9 @@ function setLanguage(lang) {
         if (translations[key] && translations[key][lang]) {
             const translation = translations[key][lang];
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                if(el.placeholder) el.placeholder = translation;
+                if (el.placeholder) el.placeholder = translation;
             } else if (el.title && !el.textContent.trim()) {
-                 el.title = translation;
+                el.title = translation;
             }
             else {
                 el.innerHTML = translation;
@@ -383,7 +386,7 @@ function setLanguage(lang) {
     // Ręczne ustawienie placeholderów, które mogą nie mieć `data-lang-key`
     const geminiKeyInput = document.getElementById('gemini-api-key');
     if (geminiKeyInput) geminiKeyInput.placeholder = translations.gemini_api_key_placeholder[lang];
-    
+
     const lmStudioUrlInput = document.getElementById('lmstudio-url-input');
     if (lmStudioUrlInput) lmStudioUrlInput.placeholder = translations.lm_studio_url_placeholder[lang];
 
@@ -473,7 +476,7 @@ async function generateCategories() {
     if (!theme) return;
 
     if (!gameState.api.isConfigured()) {
-         showNotification({ title: translations.api_error[gameState.currentLanguage], body: gameState.api.configErrorMsg }, 'error');
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: gameState.api.configErrorMsg }, 'error');
         return;
     }
 
@@ -523,7 +526,7 @@ function createBoardLayout() {
     const ringStartId = id;
     const ringSquareCountPerSegment = 6;
     for (let i = 0; i < 6; i++) {
-        const segmentCategoryPattern = [(i + 2) % 6, (i + 3) % 6, (i + 4) % 6, (i + 5) % 6, i % 6, (i+1)%6];
+        const segmentCategoryPattern = [(i + 2) % 6, (i + 3) % 6, (i + 4) % 6, (i + 5) % 6, i % 6, (i + 1) % 6];
         for (let j = 0; j < ringSquareCountPerSegment; j++) {
             const type = (j === 2) ? CONFIG.SQUARE_TYPES.ROLL_AGAIN : CONFIG.SQUARE_TYPES.RING;
             const categoryIndex = type === CONFIG.SQUARE_TYPES.RING ? segmentCategoryPattern[j] : null;
@@ -571,6 +574,42 @@ function createBoardLayout() {
         hq2.connections.push(previousId);
     }
     gameState.board = layout;
+}
+
+/**
+ * Zapisuje aktualny stan gry w localStorage.
+ */
+function saveGameState() {
+    // Tworzymy kopię stanu, aby uniknąć problemów z referencjami
+    const stateToSave = { ...gameState };
+    // Usuwamy obiekty, których nie można serializować (jak adapter API)
+    delete stateToSave.api; 
+
+    localStorage.setItem('savedQuizGame', JSON.stringify(stateToSave));
+    console.log("Gra zapisana.", new Date().toLocaleTimeString());
+}
+
+/**
+ * Wczytuje stan gry z localStorage.
+ * @returns {object|null} - Wczytany stan gry lub null.
+ */
+function loadGameState() {
+    const savedState = localStorage.getItem('savedQuizGame');
+    if (savedState) {
+        console.log("Znaleziono zapisany stan gry. Wczytuję...");
+        return JSON.parse(savedState);
+    }
+    return null;
+}
+
+/**
+ * Restartuje grę, czyszcząc zapisany stan i odświeżając stronę.
+ */
+function restartGame() {
+    if (confirm(translations.restart_game_confirm[gameState.currentLanguage])) {
+        localStorage.removeItem('savedQuizGame');
+        window.location.reload();
+    }
 }
 
 /**
@@ -845,7 +884,7 @@ function promptCategoryChoice() {
 async function animatePawnMovement(path) {
     const playerIndex = gameState.currentPlayerIndex;
     const tokenEl = document.getElementById(`token-${playerIndex}`);
-    
+
     for (const squareId of path) {
         const newSquare = gameState.board.find(s => s.id === squareId);
         tokenEl.style.left = `calc(${newSquare.pos.x}% - 1.75%)`;
@@ -894,15 +933,15 @@ async function askQuestion(forcedCategoryIndex = null) {
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = forcedCategoryIndex !== null ? forcedCategoryIndex : square.categoryIndex;
-     // Zabezpieczenie na wypadek braku kategorii na danym polu
-     if (categoryIndex === null || categoryIndex === undefined) {
+    // Zabezpieczenie na wypadek braku kategorii na danym polu
+    if (categoryIndex === null || categoryIndex === undefined) {
         console.error("Błędny indeks kategorii na aktualnym polu:", square);
         nextTurn(); // Przejdź do następnej tury, aby uniknąć zawieszenia gry
         return;
     }
-    
+
     const category = gameState.categories[categoryIndex];
-    
+
     const categoryColor = CONFIG.CATEGORY_COLORS[categoryIndex];
 
     questionCategoryH3.textContent = translations.category_title[gameState.currentLanguage].replace('{category}', category);
@@ -1013,7 +1052,7 @@ async function handleManualVerification(isCorrect) {
         if (!history.includes(newSubcategory)) {
             history.push(newSubcategory);
         }
-        
+
         if (history.length > CONFIG.MAX_SUBCATEGORY_HISTORY) {
             gameState.categoryTopicHistory[category] = history.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY);
         }
@@ -1028,7 +1067,7 @@ async function handleManualVerification(isCorrect) {
 
     if (isCorrect) {
         if (square.type === CONFIG.SQUARE_TYPES.HQ) {
-            if(category && !player.wedges.includes(category)){
+            if (category && !player.wedges.includes(category)) {
                 player.wedges.push(category);
                 if (gameState.mutateCategories) {
                     await mutateCategory(categoryIndex);
@@ -1058,10 +1097,10 @@ async function mutateCategory(categoryIndex) {
     const oldCategory = gameState.categories[categoryIndex];
     try {
         const choices = await gameState.api.getCategoryMutationChoices(oldCategory);
-        
+
         categoryMutationButtons.innerHTML = '';
         categoryMutationModal.querySelector('h3').textContent = translations.choose_mutation_title[gameState.currentLanguage];
-        
+
         choices.forEach(choice => {
             const button = document.createElement('button');
             button.textContent = choice;
@@ -1089,7 +1128,7 @@ async function mutateCategory(categoryIndex) {
 function handleMutationChoice(categoryIndex, oldCategory, newCategory) {
     categoryMutationModal.classList.add('hidden');
     gameState.categories[categoryIndex] = newCategory;
-    
+
     // Zaktualizuj historię i UI
     delete gameState.categoryTopicHistory[oldCategory];
     if (!gameState.categoryTopicHistory[newCategory]) {
@@ -1097,7 +1136,7 @@ function handleMutationChoice(categoryIndex, oldCategory, newCategory) {
     }
     const legendItem = document.getElementById(`legend-cat-${categoryIndex}`);
     legendItem.querySelector('span').textContent = newCategory;
-    
+
     showNotification({
         title: translations.category_mutated[gameState.currentLanguage],
         body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategory)
@@ -1125,6 +1164,7 @@ function closePopupAndContinue() {
         diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
         rollDiceBtn.disabled = false;
         rollDiceBtn.classList.remove('opacity-50');
+        saveGameState();
     } else {
         nextTurn();
     }
@@ -1141,6 +1181,7 @@ function nextTurn() {
     diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
     rollDiceBtn.disabled = false;
     rollDiceBtn.classList.remove('opacity-50');
+    saveGameState();
 }
 
 /**
@@ -1169,9 +1210,9 @@ function showModal(show) {
     }
 }
 
-function hideModal() { 
-    showModal(false); 
-    setTimeout(() => { if(modalContent) modalContent.style.borderTopColor = 'transparent'; }, 300);
+function hideModal() {
+    showModal(false);
+    setTimeout(() => { if (modalContent) modalContent.style.borderTopColor = 'transparent'; }, 300);
 }
 
 /**
@@ -1197,7 +1238,7 @@ function renderPromptHistory() {
         const promptTitle = document.createElement('h4');
         promptTitle.className = 'font-semibold text-gray-800';
         promptTitle.textContent = `${translations.history_prompt_title[lang]} #${gameState.promptHistory.length - index}`;
-        
+
         const promptPre = document.createElement('pre');
         promptPre.className = 'mt-2 p-3 bg-gray-200 text-sm text-gray-700 rounded-md overflow-x-auto whitespace-pre-wrap';
         const promptCode = document.createElement('code');
@@ -1213,7 +1254,7 @@ function renderPromptHistory() {
         const responseCode = document.createElement('code');
         responseCode.textContent = entry.response; // Bezpieczne wstawienie tekstu
         responsePre.appendChild(responseCode);
-        
+
         entryDiv.append(promptTitle, promptPre, responseTitle, responsePre);
         fragment.appendChild(entryDiv);
     });
@@ -1239,10 +1280,33 @@ function hideHistoryModal() {
  */
 export function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
-    
+
     // --- EVENT LISTENERS ---
     window.addEventListener('DOMContentLoaded', () => {
-        setLanguage('pl');
+        const savedGame = loadGameState();
+        if (savedGame) {
+            // Wznów grę
+            Object.assign(gameState, savedGame);
+            setLanguage(gameState.currentLanguage);
+    
+            // Przywróć UI do stanu gry
+            setupScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            renderBoard();
+            renderCategoryLegend();
+            updateUI();
+    
+            // Ustaw przyciski i komunikaty
+            rollDiceBtn.disabled = gameState.isAwaitingMove;
+            if(gameState.isAwaitingMove) rollDiceBtn.classList.add('opacity-50');
+            gameMessageDiv.textContent = gameState.isAwaitingMove ? translations.choose_move[gameState.currentLanguage] : '';
+    
+        } else {
+            // Rozpocznij nową grę
+            setLanguage('pl');
+        }
+    
+        // Zawsze wczytuj ustawienia API
         if (gameState.api.loadSettings) {
             gameState.api.loadSettings();
         }
@@ -1252,26 +1316,26 @@ export function initializeApp(apiAdapter) {
     langEnBtn.addEventListener('click', () => setLanguage('en'));
     gameModeSelect.addEventListener('change', updateDescriptions);
     knowledgeLevelSelect.addEventListener('change', updateDescriptions);
-    
+
     temperatureSlider.addEventListener('input', (e) => {
         const temp = parseFloat(e.target.value);
         temperatureValueSpan.textContent = temp.toFixed(1);
         e.target.style.setProperty('--thumb-color', `hsl(${(1 - temp / 2) * 240}, 70%, 50%)`);
         if (gameState.api.saveSettings) gameState.api.saveSettings();
     });
-    
+
     includeThemeToggle.addEventListener('change', () => { if (gameState.api.saveSettings) gameState.api.saveSettings(); });
     mutateCategoriesToggle.addEventListener('change', () => { if (gameState.api.saveSettings) gameState.api.saveSettings(); });
-    
+
     generateCategoriesBtn.addEventListener('click', generateCategories);
     regenerateQuestionBtn.addEventListener('click', () => askQuestion(gameState.currentForcedCategoryIndex));
-    
+
     popupRegenerateBtn.addEventListener('click', () => {
         answerPopup.classList.add('opacity-0', 'scale-90');
         setTimeout(() => answerPopup.classList.add('hidden'), 500);
         askQuestion(gameState.currentForcedCategoryIndex);
     });
-    
+
     playerCountInput.addEventListener('input', updatePlayerNameInputs);
     startGameBtn.addEventListener('click', initializeGame);
     rollDiceBtn.addEventListener('click', rollDice);
@@ -1282,7 +1346,8 @@ export function initializeApp(apiAdapter) {
     closePopupBtn.addEventListener('click', closePopupAndContinue);
     showHistoryBtn.addEventListener('click', showHistoryModal);
     closeHistoryBtn.addEventListener('click', hideHistoryModal);
-    
+    restartGameBtn.addEventListener('click', restartGame);
+
     playAgainBtn.addEventListener('click', () => {
         winnerScreen.classList.add('hidden');
         setupScreen.classList.remove('hidden');
