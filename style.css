@@ -4,8 +4,6 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    /* Prevents scrolling on the main body, as scrolling is handled within specific elements. */
-    overflow: hidden; 
 }
 
 /* ============================================= */
@@ -28,6 +26,27 @@ body {
     max-height: 800px;
     position: relative;
     margin-bottom: 2rem;
+}
+
+@media (orientation: portrait) {
+/* Mobile Layout for Game Screen (Default) */
+#game-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh; /* Use dynamic viewport height to fill the screen. */
+}
+
+/* Container for the board, ensuring it doesn't shrink. */
+#game-screen > div:first-child {
+    flex-shrink: 0;
+}
+
+/* Controls panel takes remaining space and gets its own scrollbar. */
+#game-controls {
+    flex-grow: 1;       /* Allows this element to expand. */
+    overflow-y: auto;   /* Adds an internal scrollbar if content overflows. */
+    min-height: 0;      /* A necessary flexbox trick to make overflow work correctly. */
+}
 }
 
 /* SVG container for drawing lines between board squares. */
@@ -310,6 +329,39 @@ body {
 .notification.error   { border-left: 4px solid #ef4444; } /* red-500 */
 .notification.success { border-left: 4px solid #22c55e; } /* green-500 */
 .notification.info    { border-left: 4px solid #3b82f6; } /* blue-500 */
+
+/* --- Dynamic Scaling for Game Controls (Portrait Mode Only) --- */
+
+@media (orientation: portrait) {
+    /* Make the main panel padding slightly smaller on very narrow screens. */
+    #game-controls {
+        padding: clamp(1rem, 5vw, 1.5rem); /* Min 16px, preferred 5vw, max 24px */
+    }
+
+    /* Scale the font size of the "Player's Turn" heading. */
+    #game-controls h2 {
+        font-size: clamp(1.125rem, 6vw, 1.5rem); /* Min 18px, preferred 6vw, max 24px */
+    }
+
+    /* Scale the player score entries. */
+    #player-scores .p-2 {
+        padding: clamp(0.25rem, 2vw, 0.5rem);
+    }
+    #player-scores .font-semibold {
+        font-size: clamp(0.875rem, 4vw, 1rem); /* Min 14px, preferred 4vw, max 16px */
+    }
+    .category-wedge {
+        width: clamp(8px, 3vw, 12px);
+        height: clamp(8px, 3vw, 12px);
+    }
+
+    /* Scale the main "Roll Dice" button. */
+    #roll-dice-btn {
+        padding-top: clamp(0.5rem, 3vw, 0.75rem);
+        padding-bottom: clamp(0.5rem, 3vw, 0.75rem);
+        font-size: clamp(1rem, 5vw, 1.125rem); /* Min 16px, preferred 5vw, max 18px */
+    }
+}
 
 /* ============================================= */
 /* 4. STATE & HELPER CLASSES                     */
