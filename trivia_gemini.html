@@ -9,8 +9,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script>
+        (function() {
+            const theme = localStorage.getItem('trivia_theme') || 'light';
+            if (theme !== 'light') {
+                document.documentElement.className = theme;
+            }
+        })();
+    </script>
 </head>
 <body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+<div id="theme-switcher" class="fixed top-4 right-4 z-[101] bg-gray-200 p-1 rounded-full shadow-md flex gap-1">
+    <label title="Jasny"><input type="radio" name="theme" value="light" class="theme-radio" checked>☀️</label>
+    <label title="Ciemny"><input type="radio" name="theme" value="dark" class="theme-radio">🌙</label>
+    <label title="OLED"><input type="radio" name="theme" value="oled" class="theme-radio">⚫</label>
+</div>
 
 <div id="notification-container" class="fixed top-5 right-5 z-[100] space-y-2"></div>
 
@@ -79,7 +93,7 @@
                     <label data-lang-key="category_theme_label" class="block text-sm font-medium text-gray-700">Temat do generacji kategorii (opcjonalnie)</label>
                     <div class="flex gap-2 mt-1">
                         <input type="text" id="theme-input" data-lang-key="category_theme_placeholder" placeholder="Wpisz motyw, np. Władca Pierścieni" class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                        <button id="generate-categories-btn" data-lang-key="category_generator_btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Generuj</button>
+                        <button id="generate-categories-btn" data-lang-key="category_generator_btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 active:bg-indigo-800 transition-colors themed-button">Generuj</button>
                     </div>
                 </div>
                 
@@ -129,11 +143,22 @@
                 <dt class="font-semibold" data-lang-key="infobox_theme_title">📝 Dodaj Temat do Pytań</dt>
                 <dd class="mt-1 text-slate-600" data-lang-key="infobox_theme_desc">Jeśli wpisano temat w polu "Temat do generacji kategorii", zaznaczenie tej opcji sprawi, że model AI będzie musiał tworzyć pytania, które są związane nie tylko z kategorią (np. "Historia"), ale również z głównym motywem gry (np. "Władca Pierścieni").</dd>
             </dl>
+            <dl>
+                <dt class="font-semibold" data-lang-key="infobox_rules_title">📜 Zasady Gry</dt>
+                <dd data-lang-key="infobox_rules_desc">
+                    <ul class="list-disc list-inside space-y-1 mt-1 mb-2">
+                        <li><b>Cel:</b> Zdobądź jako pierwszy "cząstkę" z każdej z 6 kategorii.</li>
+                        <li><b>Rozgrywka:</b> Rzuć kostką, przesuń pionek i odpowiedz na pytanie z kategorii pola, na którym wylądujesz.</li>
+                        <li><b>Zdobywanie cząstek:</b> Cząstki zdobywa się za poprawną odpowiedź na polu-matce (duże, okrągłe pole na końcu "ramienia").</li>
+                        <li><b>Pola specjalne:</b> Pole centralne pozwala wybrać dowolną kategorię, a niektóre pola na pierścieniu pozwalają rzucić kostką jeszcze raz.</li>
+                    </ul>
+                </dd>
+            </dl>
         </div>
-    </div>
-    
-    <div class="flex-shrink-0 pt-6">
-        <button id="start-game-btn" data-lang-key="start_game_btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Rozpocznij Grę</button>
+
+        <div class="mt-6">
+            <button id="start-game-btn" data-lang-key="start_game_btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors themed-button">Rozpocznij Grę</button>
+        </div>
     </div>
 </div>
 
@@ -161,21 +186,21 @@
                 </div>
             </div>
         </div>
-        <button id="roll-dice-btn" data-lang-key="roll_dice_btn" class="w-full py-3 px-4 rounded-md shadow-sm text-lg font-bold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Rzuć Kostką</button>
+        <button id="roll-dice-btn" data-lang-key="roll_dice_btn" class="w-full py-3 px-4 rounded-md shadow-sm text-lg font-bold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors themed-button">Rzuć Kostką</button>
         <div id="category-legend" class="flex flex-wrap justify-center gap-x-4 gap-y-2"></div>
         <div id="game-message" class="text-center font-medium text-red-600 h-6"></div>
         <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
             <div class="flex gap-2">
-                <label for="upload-state-input" id="upload-state-btn" class="w-full text-center py-2 px-4 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors cursor-pointer">
+                <label for="upload-state-input" id="upload-state-btn" data-lang-key="upload_state_btn" class="w-full text-center py-2 px-4 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors cursor-pointer themed-button">
                     Wczytaj grę
                 </label>
                 <input type="file" id="upload-state-input" class="hidden" accept=".json">
         
-                <button id="download-state-btn" class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 active:bg-gray-800 transition-colors">
+                <button id="download-state-btn" data-lang-key="download_state_btn" class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 active:bg-gray-800 transition-colors themed-button">
                     Pobierz zapis
                 </button>
             </div>
-            <button id="restart-game-btn" class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors">
+            <button id="restart-game-btn" data-lang-key="restart_game_btn" class="w-full py-2 px-4 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors themed-button">
                 Zacznij od nowa
             </button>
         </div>
@@ -205,7 +230,7 @@
             <div id="mcq-options-container" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 mt-4"></div>
             <div id="answer-section" class="mt-4">
                 <input type="text" id="answer-input" data-lang-key="answer_placeholder" placeholder="Wpisz swoją odpowiedź..." class="w-full px-4 py-2 border border-gray-300 rounded-md">
-                <button id="submit-answer-btn" data-lang-key="submit_answer_btn" class="mt-4 w-full py-2 px-4 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Zatwierdź Odpowiedź</button>
+                <button id="submit-answer-btn" data-lang-key="submit_answer_btn" class="mt-4 w-full py-2 px-4 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors themed-button">Zatwierdź Odpowiedź</button>
             </div>
         </div>
     </div>
@@ -229,8 +254,7 @@
             <div id="incorrect-explanation-container" class="hidden">
                 <p class="text-sm font-medium text-red-500" data-lang-key="your_answer_explanation">Uzasadnienie błędu:</p>
                 <p id="incorrect-explanation-text" class="p-2 bg-red-100 rounded-md"></p>
-                <div id="incorrect-explanation-loader" class="hidden text-center p-2"><span class="text-sm text-gray-500">Analizuję...</span></div>
-            </div>
+                <div id="incorrect-explanation-loader" class="hidden text-center p-2"><span class="text-sm text-gray-500" data-lang-key="analyzing_text">Analizuję...</span></div>            </div>
             <div id="correct-answer-container">
                 <p class="text-sm font-medium text-gray-500" data-lang-key="correct_answer_is">Poprawna odpowiedź:</p>
                 <p id="correct-answer-text" class="p-2 bg-green-100 rounded-md"></p>
@@ -256,19 +280,19 @@
     </div>
 
     <div id="verification-buttons" class="mt-4 flex gap-4">
-        <button id="reject-answer-btn" data-lang-key="reject_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors">Niepoprawna</button>
-        <button id="accept-answer-btn" data-lang-key="accept_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors">Poprawna</button>
+        <button id="reject-answer-btn" data-lang-key="reject_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors themed-button">Niepoprawna</button>
+        <button id="accept-answer-btn" data-lang-key="accept_answer" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors themed-button">Poprawna</button>
     </div>
     <div id="post-verification-buttons" class="hidden mt-4 flex gap-4">
-        <button id="popup-regenerate-btn" data-lang-key="regenerate_question_btn" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors">Nowe pytanie</button>
-        <button id="close-popup-btn" data-lang-key="continue_btn" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 active:bg-gray-800 transition-colors">Kontynuuj</button>
+        <button id="popup-regenerate-btn" data-lang-key="regenerate_question_btn" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors themed-button">Nowe pytanie</button>
+        <button id="close-popup-btn" data-lang-key="continue_btn" class="w-full py-2 px-4 rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 active:bg-gray-800 transition-colors themed-button">Kontynuuj</button>
     </div>
 </div>
 
 <div id="winner-screen" class="hidden flex-col items-center justify-center space-y-6 p-8 bg-white rounded-2xl shadow-xl">
     <h1 data-lang-key="congratulations" class="text-4xl font-bold text-yellow-500">Gratulacje!</h1>
     <p class="text-2xl"><span data-lang-key="winner_is">Zwycięzcą jest</span> <span id="winner-name" class="font-bold"></span>!</p>
-    <button id="play-again-btn" data-lang-key="play_again_btn" class="py-3 px-6 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors">Zagraj Ponownie</button>
+    <button id="play-again-btn" data-lang-key="play_again_btn" class="py-3 px-6 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors themed-button">Zagraj Ponownie</button>
 </div>
 
 <div id="history-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 items-center justify-center z-50 p-4">
@@ -289,5 +313,6 @@
     import { initializeApp } from './game_core.js';
     import './adapter_gemini.js';
 </script>
+<script src="theme.js"></script>
 </body>
 </html>

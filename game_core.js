@@ -112,7 +112,7 @@ export const translations = {
     knowledge_desc_intermediate: { pl: "Pytania dla znających temat.", en: "Questions for those familiar with the topic." },
     knowledge_desc_expert: { pl: "Pytania dla prawdziwych ekspertów.", en: "Questions for true experts." },
     category_theme_label: { pl: "Temat do generacji kategorii (opcjonalnie)", en: "Category Generation Theme (optional)" },
-    category_theme_placeholder: { pl: "Wpisz motyw, np. Władca Pierścieni", en: "Enter a theme, e.g., Lord of the Rings" },
+    category_theme_placeholder: { pl: "Wpisz motyw", en: "Enter theme"},
     include_theme_label: { pl: "Dodaj temat generacji do pytań", en: "Add generation theme to questions" },
     mutate_categories_label: { pl: "Mutacja kategorii po zdobyciu punktu", en: "Mutate category after scoring" },
     category_generator_btn: { pl: "Generuj", en: "Generate" },
@@ -303,6 +303,25 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
         en: `"{topics}"`
     },
     infobox_title: { pl: "Jak działają te opcje?", en: "How do these options work?" },
+    infobox_rules_title: { pl: "📜 Zasady Gry", en: "📜 Game Rules" },
+    infobox_rules_desc: { 
+        pl: `
+            <ul class="list-disc list-inside space-y-1 mt-1 mb-2 text-slate-600">
+                <li><b>Cel:</b> Zdobądź jako pierwszy "cząstkę" z każdej z 6 kategorii.</li>
+                <li><b>Rozgrywka:</b> Rzuć kostką, przesuń pionek i odpowiedz na pytanie z kategorii pola, na którym wylądujesz.</li>
+                <li><b>Zdobywanie cząstek:</b> Cząstki zdobywa się za poprawną odpowiedź na polu-matce (duże, okrągłe pole na końcu "ramienia").</li>
+                <li><b>Pola specjalne:</b> Pole centralne pozwala wybrać dowolną kategorię, a niektóre pola na pierścieniu pozwalają rzucić kostką jeszcze raz.</li>
+            </ul>
+        `, 
+        en: `
+            <ul class="list-disc list-inside space-y-1 mt-1 mb-2 text-slate-600">
+                <li><b>Objective:</b> Be the first to collect a "wedge" from each of the 6 categories.</li>
+                <li><b>Gameplay:</b> Roll the dice, move your pawn, and answer a question from the category of the square you land on.</li>
+                <li><b>Earning Wedges:</b> Wedges are earned for a correct answer on an HQ square (the large, circular square at the end of a spoke).</li>
+                <li><b>Special Squares:</b> The center HUB square lets you choose any category, and some squares on the outer ring let you roll the dice again.</li>
+            </ul>
+        ` 
+    },
     infobox_temp_title: { pl: "🌡️ Temperatura", en: "🌡️ Temperature" },
     infobox_temp_desc: { pl: "Kontroluje \"kreatywność\" modelu AI. Niska wartość (np. 0.2) tworzy bardziej przewidywalne i zachowawcze treści. Wysoka wartość (np. 1.2) zachęca do tworzenia bardziej zróżnicowanych i nieoczekiwanych pytań, co może czasem prowadzić do dziwnych wyników.", en: "Controls the \"creativity\" of the AI model. A low value (e.g., 0.2) produces more predictable and conservative content. A high value (e.g., 1.2) encourages more diverse and unexpected questions, which can sometimes lead to strange results." },
     infobox_mutation_title: { pl: "🧬 Mutacja Kategorii", en: "🧬 Category Mutation" },
@@ -320,8 +339,8 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
     history_prompt_title: { pl: "Wysłany Prompt", en: "Sent Prompt" },
     history_response_title: { pl: "Otrzymana Odpowiedź", en: "Received Response" },
     history_empty: { pl: "Historia jest jeszcze pusta.", en: "History is empty." },
-    download_state_btn: { pl: "Pobierz zapis (JSON)", en: "Download State (JSON)" },
-    upload_state_btn: { pl: "Wczytaj grę (JSON)", en: "Load Game (JSON)" },
+    download_state_btn: { pl: "Pobierz zapis", en: "Download State" },
+    upload_state_btn: { pl: "Wczytaj grę", en: "Load Game" },
     game_loaded_success: { pl: "Gra wczytana pomyślnie!", en: "Game loaded successfully!" },
     game_loaded_error: { pl: "Błąd wczytywania pliku. Upewnij się, że to poprawny plik zapisu.", en: "Error loading file. Make sure it's a valid save file." }
 };

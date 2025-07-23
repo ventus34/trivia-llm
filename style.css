@@ -367,3 +367,180 @@ body {
 #history-modal.visible {
     display: flex; /* Klasa .visible go pokazuje */
 }
+
+/* === STYLE PRZEŁĄCZNIKA MOTYWÓW === */
+#theme-switcher label {
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    transition: background-color 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem; /* 14px */
+    user-select: none;
+}
+.theme-radio {
+    display: none; /* Ukrywamy oryginalne radio buttony */
+}
+.theme-radio:checked + span {
+    background-color: transparent;
+    box-shadow: none;
+    transform: scale(1.25); /* Lekko powiększamy ikonę, by zaznaczyć wybór */
+    font-weight: bold;
+}
+
+/* === DEFINICJE MOTYWÓW === */
+
+/* --- 1. Style WSPÓLNE dla motywu Ciemnego i OLED --- */
+/* (Wszystkie kolory czcionek, kontrolek, ramek itp.) */
+
+html.dark,
+html.oled {
+    color-scheme: dark;
+}
+
+html.dark body,
+html.oled body {
+    color: rgb(229 231 235); /* text-gray-200 */
+}
+
+/* Reguły dla wszystkich tekstów, aby były spójne */
+html.dark h1, html.oled h1,
+html.dark h2, html.oled h2,
+html.dark h3, html.oled h3,
+html.dark #question-text, html.oled #question-text,
+html.dark .player-name-input, html.oled .player-name-input,
+html.dark #player-count, html.oled #player-count,
+html.dark .text-sm.text-gray-900, html.oled .text-sm.text-gray-900,
+html.dark .font-bold.mb-3.flex.items-center.text-slate-800, html.oled .font-bold.mb-3.flex.items-center.text-slate-800 {
+    color: rgb(229 231 235); /* text-gray-200 */
+}
+
+html.dark dl dt, html.oled dl dt {
+    color: rgb(226 232 240); /* text-slate-200 */
+}
+
+html.dark dl dd, html.oled dl dd,
+html.dark .text-gray-700, html.oled .text-gray-700,
+html.dark .text-slate-700, html.oled .text-slate-700,
+html.dark .text-gray-500, html.oled .text-gray-500,
+html.dark #game-mode-description, html.oled #game-mode-description,
+html.dark #knowledge-level-description, html.oled #knowledge-level-description {
+    color: rgb(156 163 175); /* text-gray-400 */
+}
+
+/* Style dla wszystkich kontrolek */
+html.dark input, html.oled input,
+html.dark select, html.oled select {
+    background-color: rgb(75 85 99);
+    border-color: rgb(107 114 128);
+}
+
+html.dark ::placeholder, html.oled ::placeholder {
+    color: rgb(156 163 175);
+}
+
+html.dark input[type="checkbox"], html.oled input[type="checkbox"] {
+    accent-color: #6366f1;
+    border: 1px solid rgb(107 114 128);
+    border-radius: 4px;
+}
+
+/* Style dla przycisków */
+html.dark .emoji-button, html.oled .emoji-button { background-color: rgb(55 65 81); }
+html.dark .emoji-button:hover, html.oled .emoji-button:hover { background-color: rgb(75 85 99); }
+
+html.dark .lang-btn, html.oled .lang-btn {
+    background-color: rgb(55 65 81);
+    color: rgb(229 231 235);
+    border-color: rgb(107 114 128);
+}
+html.dark .lang-btn.active, html.oled .lang-btn.active {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+    color: white;
+}
+html.dark .lang-btn:hover:not(.active), html.oled .lang-btn:hover:not(.active) {
+    background-color: rgb(75 85 99);
+}
+
+/* --- 2. Style TŁA specyficzne dla motywu CIEMNEGO --- */
+
+html.dark body { background-color: rgb(31 41 55); } /* bg-gray-800 */
+html.dark .bg-white { background-color: rgb(55 65 81); } /* bg-gray-700 */
+html.dark .bg-gray-100 { background-color: rgb(75 85 99); } /* bg-gray-600 */
+html.dark .bg-slate-100 { background-color: rgb(51 65 85); } /* bg-slate-700 */
+html.dark #theme-switcher { background-color: rgb(75 85 99); } /* bg-gray-600 */
+html.dark .board-square::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 8px; background-color: black; opacity: 0.25; transition: opacity 0.3s ease; }
+html.dark .board-square.highlighted-move::after { opacity: 0; }
+html.dark .board-connections line { stroke: #6b7280; }
+
+/* --- 3. Style TŁA specyficzne dla motywu OLED --- */
+
+html.oled body { background-color: #000000; }
+html.oled .bg-white { background-color: rgb(1, 1, 1); } /* bg-zinc-900 */
+html.oled .bg-gray-100 { background-color: rgb(0, 0, 0); } /* bg-zinc-800 */
+html.oled .bg-slate-100 { background-color: #111111; }
+html.oled #theme-switcher { background-color: rgb(39 39 42); }
+html.oled .board-square::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 8px; background-color: black; opacity: 0.4; transition: opacity 0.3s ease; }
+html.oled .board-square.highlighted-move::after { opacity: 0; }
+html.oled .board-connections line { stroke: #4b5563; }
+
+/* Odpowiedź gracza: Zapewniamy białą czcionkę na ciemnoszarym tle z motywu */
+html.dark #player-answer-text,
+html.oled #player-answer-text {
+    color: #FFFFFF;
+}
+
+/* Poprawna odpowiedź: Ciemnozielone tło i jasnozielony tekst */
+html.dark #correct-answer-text,
+html.oled #correct-answer-text {
+    background-color: #14532d;  /* Ciemna zieleń */
+    color: #dcfce7;           /* Jasnozielony tekst */
+    border: 1px solid #166534;
+}
+
+/* Wyjaśnienie: Ciemnożółte/bursztynowe tło i jasnożółty tekst */
+html.dark #explanation-text,
+html.oled #explanation-text {
+    background-color: #7c2d12; /* Ciemny bursztyn */
+    color: #fef9c3;           /* Jasnożółty tekst */
+    border: 1px solid #92400e;
+}
+
+/* Wyjaśnienie błędu: Ciemnoczerwone tło i jasnoczerwony tekst */
+html.dark #incorrect-explanation-text,
+html.oled #incorrect-explanation-text {
+    background-color: #7f1d1d; /* Ciemna czerwień */
+    color: #fee2e2;           /* Jasnoczerwony tekst */
+    border: 1px solid #991b1b;
+}
+
+/* === PRZYCIEMNIENIE ELEMENTÓW W TRYBIE OLED === */
+
+/* Zmniejsza jasność kolorowych nazw graczy i kategorii w legendzie,
+   używając filtra CSS, który działa również na kolory ustawione w JS. */
+   html.oled #current-player-name,
+   html.oled #category-legend .w-4.h-4 {
+       filter: brightness(0.7);
+   }
+   
+   /* Przyciemnia tekst w legendzie kategorii dla spójności */
+   html.oled #category-legend span {
+       color: rgb(156 163 175); /* text-gray-400 */
+   }
+   
+   html.oled .themed-button {
+    filter: brightness(0.7);
+    transition: filter 0.2s ease-in-out;
+}
+
+html.oled .themed-button:hover {
+    filter: brightness(0.85);
+}
+
+html.dark [data-lang-key="infobox_rules_desc"] ul,
+html.oled [data-lang-key="infobox_rules_desc"] ul {
+    color: rgb(164 178 199); /* text-slate-400 */
+}
