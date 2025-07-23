@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trivia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    
+    <script>
+        (function() {
+            const theme = localStorage.getItem('trivia_theme') || 'light';
+            if (theme !== 'light') {
+                document.documentElement.className = theme;
+            }
+        })();
+    </script>
+
     <style>
         body {
             font-family: sans-serif;
@@ -12,13 +24,11 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
             text-align: center;
         }
         .container {
             padding: 2rem;
-            background-color: white;
-            border-radius: 8px;
+            border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         h1 {
@@ -30,27 +40,38 @@
             padding: 1rem 2rem;
             font-size: 1rem;
             color: white;
-            background-color: #007bff;
             border-radius: 5px;
             text-decoration: none;
             transition: background-color 0.3s;
         }
-        a:hover {
-            background-color: #0056b3;
+        #gemini-link {
+            background-color: #4f46e5; /* indigo-600 */
+        }
+        #gemini-link:hover {
+            background-color: #4338ca; /* indigo-700 */
         }
         #local-link {
-            background-color: #28a745;
+            background-color: #16a34a; /* green-600 */
         }
         #local-link:hover {
-            background-color: #218838;
+            background-color: #15803d; /* green-700 */
         }
     </style>
 </head>
-<body>
-<div class="container">
-    <h1>Trivia<h1>
-    <a href="auth.html">Gemini API</a>
-    <a href="trivia_local.html" id="local-link">LM Studio (Local)</a>
-</div>
+<body class="bg-gray-100">
+
+    <div id="theme-switcher" class="fixed top-4 right-4 z-[101] bg-gray-200 p-1 rounded-full shadow-md flex gap-1">
+        <label title="Jasny"><input type="radio" name="theme" value="light" class="theme-radio" checked>☀️</label>
+        <label title="Ciemny"><input type="radio" name="theme" value="dark" class="theme-radio">🌙</label>
+        <label title="OLED"><input type="radio" name="theme" value="oled" class="theme-radio">⚫</label>
+    </div>
+
+    <div class="container bg-white">
+        <h1 class="text-3xl font-bold text-gray-900">Trivia</h1>
+        <a href="auth.html" id="gemini-link">Gemini API</a>
+        <a href="trivia_local.html" id="local-link">LM Studio (Local)</a>
+    </div>
+
+    <script src="theme.js"></script>
 </body>
 </html>

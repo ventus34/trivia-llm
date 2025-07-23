@@ -500,11 +500,23 @@ html.dark .board-square.highlighted-move::after { opacity: 0; }
 
 /* --- 6.3. OLED Theme Specifics (Backgrounds & Filters) --- */
 
-html.oled body { background-color: #000000; }
-html.oled .bg-white { background-color: rgb(24 24 27); } /* bg-zinc-900 */
-html.oled .bg-gray-100 { background-color: rgb(39 39 42); } /* bg-zinc-800 */
-html.oled .bg-slate-100 { background-color: #111111; }
-html.oled #theme-switcher { background-color: rgb(39 39 42); }
+/* Set all main backgrounds to pure black for a true OLED experience. */
+html.oled body,
+html.oled .bg-white,
+html.oled .bg-gray-100,
+html.oled .bg-slate-100,
+html.oled #theme-switcher {
+    background-color: #000000;
+}
+
+/* Add subtle borders to key containers to maintain visual separation. */
+html.oled .bg-white, 
+html.oled .bg-slate-100,
+html.oled #theme-switcher {
+    border: 1px solid #27272a; /* zinc-800, a very dark gray */
+}
+
+/* Connection lines for the board in OLED mode. */
 html.oled .board-connections line { stroke: #4b5563; }
 
 /* Add a darker overlay for OLED mode. */
@@ -533,6 +545,17 @@ html.oled .themed-button {
 }
 html.oled .themed-button:hover {
     filter: brightness(0.85);
+}
+
+html.dark #question-modal,
+html.dark #history-modal,
+html.dark #category-choice-modal,
+html.dark #model-choice-modal,
+html.oled #question-modal,
+html.oled #history-modal,
+html.oled #category-choice-modal,
+html.oled #model-choice-modal {
+    background-color: rgba(2, 0, 0, 0.75); 
 }
 
 /* ============================================= */
