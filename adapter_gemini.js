@@ -5,6 +5,13 @@ const geminiApiKeyInput = document.getElementById('gemini-api-key');
 const modelSelect = document.getElementById('model-select');
 const refreshModelsBtn = document.getElementById('refresh-models-btn');
 
+class RateLimitError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "RateLimitError";
+    }
+}
+
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -24,6 +31,11 @@ async function callApi(prompt, expectJson = true, url, headers, getPayload) {
             });
 
             if (!response.ok) {
+                // Specjalna obsługa dla błędu "Too Many Requests"
+                if (response.status === 429) {
+                    console.warn("API Rate Limit Exceeded.");
+                    throw new RateLimitError("API rate limit reached.");
+                }
                 const errorBody = await response.text();
                 throw new Error(`API Error: ${response.status} - ${errorBody}`);
             }

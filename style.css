@@ -275,6 +275,14 @@ body {
     font-size: clamp(0.875rem, 3vw, 1rem);
 }
 
+#model-choice-modal {
+    display: none; /* Domyślnie ukryty */
+}
+
+#model-choice-modal.visible {
+    display: flex; /* Pokazujemy po dodaniu klasy .visible */
+}
+
 /* Lepsza siatka na małych ekranach w panelu ustawień */
 @media (max-width: 640px) {
     #setup-screen .grid-cols-1.sm\\:grid-cols-2 {
@@ -555,4 +563,18 @@ html.oled [data-lang-key="infobox_rules_desc"] ul {
 .is-loading {
     animation: spin 1s linear infinite;
     display: inline-block; /* Ważne, aby transformacja działała poprawnie */
+}
+
+#question-modal,
+#history-modal,
+#category-choice-modal,
+#model-choice-modal {
+    display: none; /* Domyślnie wszystkie są ukryte */
+}
+
+#question-modal.visible,
+#history-modal.visible,
+#category-choice-modal.visible,
+#model-choice-modal.visible {
+    display: flex; /* Klasa .visible je pokazuje */
 }

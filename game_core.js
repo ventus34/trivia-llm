@@ -340,6 +340,9 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
     history_prompt_title: { pl: "Wysłany Prompt", en: "Sent Prompt" },
     history_response_title: { pl: "Otrzymana Odpowiedź", en: "Received Response" },
     history_empty: { pl: "Historia jest jeszcze pusta.", en: "History is empty." },
+    rate_limit_title: { pl: "Przekroczono limit zapytań", en: "Request Limit Exceeded" },
+    rate_limit_desc: { pl: "Wykorzystałeś limit zapytań dla obecnego modelu. Wybierz inny model, aby kontynuować grę.", en: "You have used the request limit for the current model. Please choose another model to continue." },
+    confirm_choice_btn: { pl: "Zatwierdź wybór", en: "Confirm Choice" },
     download_state_btn: { pl: "Pobierz zapis", en: "Download State" },
     upload_state_btn: { pl: "Wczytaj grę", en: "Load Game" },
     game_loaded_success: { pl: "Gra wczytana pomyślnie!", en: "Game loaded successfully!" },
@@ -516,8 +519,16 @@ async function generateCategories() {
         updateCategoryInputs(generatedCats.slice(0, 6));
     } catch (error) {
         console.error("Category generation error:", error);
+        if (error.message && error.message.includes('rate limit')) {
+            // Po zmianie modelu, przywracamy przycisk do stanu początkowego i ponawiamy próbę
+            generateCategoriesBtn.textContent = originalBtnText;
+            generateCategoriesBtn.disabled = false;
+            await promptForModelChange();
+            return generateCategories();
+        }
         showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.generate_categories_error[gameState.currentLanguage] }, 'error');
     } finally {
+        // Ten blok finally jest nadal potrzebny, aby odblokować przycisk w razie sukcesu lub zwykłego błędu
         generateCategoriesBtn.textContent = originalBtnText;
         generateCategoriesBtn.disabled = false;
     }
@@ -1003,12 +1014,12 @@ function promptCategoryChoice() {
         button.className = 'w-full p-3 text-white font-semibold rounded-lg transition-transform hover:scale-105';
         button.style.backgroundColor = CONFIG.CATEGORY_COLORS[index];
         button.onclick = () => {
-            categoryChoiceModal.classList.add('hidden');
+            categoryChoiceModal.classList.remove('visible');
             askQuestion(index);
         };
         categoryChoiceButtons.appendChild(button);
     });
-    categoryChoiceModal.classList.remove('hidden');
+    categoryChoiceModal.classList.add('visible');
 }
 
 /**
@@ -1067,15 +1078,13 @@ async function askQuestion(forcedCategoryIndex = null) {
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = forcedCategoryIndex !== null ? forcedCategoryIndex : square.categoryIndex;
-    // Zabezpieczenie na wypadek braku kategorii na danym polu
     if (categoryIndex === null || categoryIndex === undefined) {
         console.error("Błędny indeks kategorii na aktualnym polu:", square);
-        nextTurn(); // Przejdź do następnej tury, aby uniknąć zawieszenia gry
+        nextTurn();
         return;
     }
 
     const category = gameState.categories[categoryIndex];
-
     const categoryColor = CONFIG.CATEGORY_COLORS[categoryIndex];
 
     questionCategoryH3.textContent = translations.category_title[gameState.currentLanguage].replace('{category}', category);
@@ -1097,8 +1106,8 @@ async function askQuestion(forcedCategoryIndex = null) {
             mcqOptionsContainer.classList.remove('hidden');
             data.options.forEach(option => {
                 const button = document.createElement('button');
-                button.textContent = option;
                 button.className = "w-full p-3 text-left bg-gray-100 hover:bg-indigo-100 rounded-lg transition-colors";
+                button.textContent = option;
                 button.onclick = () => handleMcqAnswer(option);
                 mcqOptionsContainer.appendChild(button);
             });
@@ -1108,9 +1117,18 @@ async function askQuestion(forcedCategoryIndex = null) {
             answerInput.focus();
         }
         questionContent.classList.remove('hidden');
+        llmLoader.classList.add('hidden'); // Ukrywamy loader po sukcesie
 
     } catch (error) {
         console.error('Question generation error:', error);
+        if (error.message && error.message.includes('rate limit')) {
+            await promptForModelChange();
+            // Prawidłowe ponowienie przez zwrócenie wyniku nowego wywołania
+            return askQuestion(forcedCategoryIndex);
+        }
+        
+        // Obsługa innych błędów
+        llmLoader.classList.add('hidden');
         questionTextP.textContent = translations.question_generation_error[gameState.currentLanguage];
         questionContent.classList.remove('hidden');
         setTimeout(() => {
@@ -1119,8 +1137,6 @@ async function askQuestion(forcedCategoryIndex = null) {
             rollDiceBtn.classList.remove('opacity-50');
             gameMessageDiv.textContent = 'Błąd, rzuć ponownie.';
         }, 3000);
-    } finally {
-        llmLoader.classList.add('hidden');
     }
 }
 
@@ -1328,16 +1344,56 @@ function checkWinCondition() {
 }
 
 /**
+ * Pokazuje modal wyboru modelu i czeka na potwierdzenie użytkownika.
+ * @returns {Promise<void>}
+ */
+function promptForModelChange() {
+    return new Promise(async (resolve) => {
+        const modal = document.getElementById('model-choice-modal');
+        const title = document.getElementById('model-choice-title');
+        const select = document.getElementById('modal-model-select');
+        const confirmBtn = document.getElementById('confirm-model-choice-btn');
+
+        // Ustaw tłumaczenia
+        const lang = gameState.currentLanguage;
+        title.textContent = translations.rate_limit_title[lang];
+        confirmBtn.textContent = translations.confirm_choice_btn[lang];
+        document.querySelector('[data-lang-key="rate_limit_desc"]').textContent = translations.rate_limit_desc[lang];
+        document.querySelector('[for="modal-model-select"]').textContent = translations.model_label[lang];
+
+        // Odśwież i skopiuj listę modeli
+        if (gameState.api.fetchModels) await gameState.api.fetchModels();
+        const mainModelSelect = document.getElementById('model-select');
+        select.innerHTML = mainModelSelect.innerHTML;
+        select.value = mainModelSelect.value;
+
+        modal.classList.add('visible');
+
+        const onConfirm = () => {
+            const mainModelSelect = document.getElementById('model-select');
+            mainModelSelect.value = select.value; // Zaktualizuj główny select
+            if (gameState.api.saveSettings) gameState.api.saveSettings(); // Zapisz nowe ustawienie
+
+            modal.classList.remove('visible');
+            confirmBtn.removeEventListener('click', onConfirm);
+            resolve();
+        };
+
+        confirmBtn.addEventListener('click', onConfirm);
+    });
+}
+
+/**
  * Pokazuje lub ukrywa modal pytania.
  * @param {boolean} show - Czy pokazać modal.
  */
 function showModal(show) {
     if (show) {
-        questionModal.classList.remove('hidden');
+        questionModal.classList.add('visible');
         setTimeout(() => modalContent.classList.remove('scale-95', 'opacity-0'), 10);
     } else {
         modalContent.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => questionModal.classList.add('hidden'), 300);
+        setTimeout(() => questionModal.classList.remove('visible'), 300);
     }
 }
 
