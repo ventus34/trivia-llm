@@ -137,6 +137,7 @@ export const translations = {
     question_generation_error: { pl: "Nie udało się wygenerować pytania. Sprawdź konsolę, by poznać szczegóły.", en: "Failed to generate a question. Check console for details." },
     answer_placeholder: { pl: "Wpisz swoją odpowiedź...", en: "Type your answer here..." },
     submit_answer_btn: { pl: "Zatwierdź Odpowiedź", en: "Submit Answer" },
+    analyzing_text: { pl: "Analizuję...", en: "Analyzing..." },
     empty_answer_error: { pl: "Proszę wpisać odpowiedź.", en: "Please enter an answer." },
     answer_evaluation: { pl: "Oceń odpowiedź", en: "Evaluate Answer" },
     player_answer_was: { pl: "Odpowiedź gracza:", en: "Player's answer:" },

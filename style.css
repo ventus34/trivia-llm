@@ -544,3 +544,15 @@ html.dark [data-lang-key="infobox_rules_desc"] ul,
 html.oled [data-lang-key="infobox_rules_desc"] ul {
     color: rgb(164 178 199); /* text-slate-400 */
 }
+
+
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.is-loading {
+    animation: spin 1s linear infinite;
+    display: inline-block; /* Ważne, aby transformacja działała poprawnie */
+}

@@ -96,11 +96,9 @@ async function fetchModels() {
     }
 
     const refreshIcon = document.getElementById('refresh-icon');
-    const loadingSpinner = document.getElementById('loading-spinner');
 
     refreshModelsBtn.disabled = true;
-    refreshIcon.classList.add('hidden');
-    loadingSpinner.classList.remove('hidden');
+    refreshIcon.classList.add('is-loading'); // Dodajemy klasę animującą
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
@@ -119,8 +117,7 @@ async function fetchModels() {
         populateModelsDropdown();
     } finally {
         refreshModelsBtn.disabled = false;
-        refreshIcon.classList.remove('hidden');
-        loadingSpinner.classList.add('hidden');
+        refreshIcon.classList.remove('is-loading'); 
     }
 }
 
