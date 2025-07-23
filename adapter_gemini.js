@@ -1,7 +1,6 @@
 import { initializeApp, gameState, translations } from './game_core.js';
 
 // --- ELEMENTY UI SPECIFICZNE DLA GEMINI ---
-const geminiApiKeyInput = document.getElementById('gemini-api-key');
 const modelSelect = document.getElementById('model-select');
 const refreshModelsBtn = document.getElementById('refresh-models-btn');
 
@@ -82,7 +81,7 @@ async function callApi(prompt, expectJson = true, url, headers, getPayload) {
  * @returns {Promise<any>} - Wynik z API.
  */
 async function callGeminiApiWithRetries(prompt, expectJson = true) {
-    const apiKey = geminiApiKeyInput.value.trim();
+    const apiKey = sessionStorage.getItem('gemini_api_key');
     const modelId = modelSelect.value;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
     const headers = { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey };
@@ -100,7 +99,7 @@ async function callGeminiApiWithRetries(prompt, expectJson = true) {
  * Pobiera listę dostępnych modeli Gemini.
  */
 async function fetchModels() {
-    const apiKey = geminiApiKeyInput.value.trim();
+    const apiKey = sessionStorage.getItem('gemini_api_key');
     const lang = document.documentElement.lang || 'pl';
     if (!apiKey) {
         alert(translations.api_key_alert[lang]);
@@ -168,28 +167,36 @@ function populateModelsDropdown(models = []) {
 const geminiApiAdapter = {
     configErrorMsg: '',
 
-    isConfigured() {
-        const apiKey = geminiApiKeyInput.value.trim();
-        const lang = gameState.currentLanguage;
-        this.configErrorMsg = translations.api_key_alert[lang];
-        return !!apiKey;
-    },
-    
-    saveSettings() {
-        localStorage.setItem('quizGameSettings_gemini', JSON.stringify({
-            apiKey: geminiApiKeyInput.value,
-            model: modelSelect.value,
-        }));
-    },
-
     loadSettings() {
-        populateModelsDropdown();
+        // Wczytujemy klucz z sessionStorage i wstawiamy go do pola (dla wglądu użytkownika)
+        const apiKey = sessionStorage.getItem('gemini_api_key');
+
+        populateModelsDropdown(); // To pozostaje bez zmian
+    
         const savedSettings = localStorage.getItem('quizGameSettings_gemini');
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
-            if (settings.apiKey) geminiApiKeyInput.value = settings.apiKey;
             if (settings.model) modelSelect.value = settings.model;
         }
+    },
+    
+    saveSettings() {
+        // Zapisujemy tylko ustawienia, które nie są kluczem API
+        localStorage.setItem('quizGameSettings_gemini', JSON.stringify({
+            model: modelSelect.value,
+        }));
+    },
+    
+    isConfigured() {
+        const apiKey = sessionStorage.getItem('gemini_api_key');
+        const lang = gameState.currentLanguage;
+        this.configErrorMsg = translations.api_key_alert[lang];
+        if (!apiKey) {
+             // Jeśli z jakiegoś powodu klucza nie ma, odeślij na stronę autoryzacji
+            window.location.href = 'auth.html';
+            return false;
+        }
+        return true;
     },
 
     async generateCategories(theme) {
@@ -296,7 +303,6 @@ const geminiApiAdapter = {
 };
 
 // --- INICJALIZACJA ---
-geminiApiKeyInput.addEventListener('input', geminiApiAdapter.saveSettings);
 modelSelect.addEventListener('change', geminiApiAdapter.saveSettings);
 refreshModelsBtn.addEventListener('click', fetchModels);
 

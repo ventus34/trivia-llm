@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-lang-key="title">Trivia - Autoryzacja</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl">
+        <div class="flex justify-center">
+            <div class="inline-flex rounded-md shadow-sm">
+                <button id="lang-pl" class="lang-btn px-4 py-2 text-sm font-medium">Polski</button>
+                <button id="lang-en" class="lang-btn -ml-px px-4 py-2 text-sm font-medium">English</button>
+            </div>
+        </div>
+
+        <div>
+            <h1 data-lang-key="welcome" class="text-3xl font-bold text-center text-gray-900">Witaj w Trivia</h1>
+            <p data-lang-key="provide_key" class="mt-2 text-center text-sm text-gray-600">
+                Podaj swój klucz API Google Gemini, aby rozpocząć.
+            </p>
+        </div>
+        <form id="auth-form">
+            <label for="username" class="sr-only">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" value="trivia-gemini-api-key" class="sr-only">
+        
+            <div>
+                <label for="api-key-input" data-lang-key="api_key_label" class="sr-only">Klucz API</label>
+                <input id="api-key-input" name="current-password" type="password" ... >
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="mt-1 text-xs text-indigo-600 hover:underline" data-lang-key="gemini_api_key_help">Gdzie znaleźć klucz?</a>
+            </div>
+        
+            <div>
+                <button type="submit" data-lang-key="continue_btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                    Kontynuuj
+                </button>
+            </div>
+        </form>
+        <p data-lang-key="session_notice" class="mt-4 text-xs text-center text-gray-500">
+            Twój klucz API zostanie zapisany tylko na czas tej sesji i nie będzie przechowywany na stałe.
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- SEKCJA TŁUMACZEŃ ---
+            const translations = {
+                title: { pl: "Trivia", en: "Trivia" },
+                welcome: { pl: "Trivia", en: "Trivia" },
+                provide_key: { pl: "Podaj swój klucz API Google Gemini, aby rozpocząć.", en: "Provide your Google Gemini API key to begin." },
+                api_key_label: { pl: "Klucz API", en: "API Key" },
+                api_key_placeholder: { pl: "Klucz API Google Gemini", en: "Google Gemini API Key" },
+                continue_btn: { pl: "Kontynuuj", en: "Continue" },
+                gemini_api_key_help: { pl: "Gdzie znaleźć klucz?", en: "Where to find the key?" },
+                session_notice: { pl: "Twój klucz API zostanie zapisany tylko na czas tej sesji i nie będzie przechowywany na stałe.", en: "Your API key will only be saved for this session and will not be stored permanently." }
+            };
+
+            const langPlBtn = document.getElementById('lang-pl');
+            const langEnBtn = document.getElementById('lang-en');
+
+            function setLanguage(lang) {
+                localStorage.setItem('trivia_lang', lang); // Zapisujemy wybór, aby inne strony go "pamiętały"
+                document.documentElement.lang = lang;
+                langPlBtn.classList.toggle('active', lang === 'pl');
+                langEnBtn.classList.toggle('active', lang === 'en');
+
+                document.querySelectorAll('[data-lang-key]').forEach(el => {
+                    const key = el.dataset.langKey;
+                    if (translations[key] && translations[key][lang]) {
+                        if (el.tagName === 'INPUT') {
+                            el.placeholder = translations[key][lang];
+                        } else {
+                            el.textContent = translations[key][lang];
+                        }
+                    }
+                });
+            }
+
+            langPlBtn.addEventListener('click', () => setLanguage('pl'));
+            langEnBtn.addEventListener('click', () => setLanguage('en'));
+
+            // --- KONIEC SEKCJI TŁUMACZEŃ ---
+
+            const authForm = document.getElementById('auth-form');
+            const apiKeyInput = document.getElementById('api-key-input');
+
+            const storedKey = sessionStorage.getItem('gemini_api_key');
+            if (storedKey) {
+                apiKeyInput.value = storedKey;
+            }
+
+            authForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const apiKey = apiKeyInput.value.trim();
+                if (!apiKey) return;
+
+                sessionStorage.setItem('gemini_api_key', apiKey);
+                const savedGame = localStorage.getItem('savedQuizGame');
+
+                if (savedGame) {
+                    window.location.href = 'trivia_gemini.html?loadGame=true';
+                } else {
+                    window.location.href = 'trivia_gemini.html';
+                }
+            });
+            
+            // Ustaw język na podstawie zapisanego wyboru lub preferencji przeglądarki
+            const savedLang = localStorage.getItem('trivia_lang') || (navigator.language.startsWith('pl') ? 'pl' : 'en');
+            setLanguage(savedLang);
+        });
+    </script>
+</body>
+</html>

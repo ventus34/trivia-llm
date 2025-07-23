@@ -1470,10 +1470,14 @@ export function initializeApp(apiAdapter) {
 
     // --- EVENT LISTENERS ---
     window.addEventListener('DOMContentLoaded', () => {
-        const savedGame = loadGameState(); // Wczytanie z localStorage
-        if (savedGame) {
-            restoreGameState(savedGame); // Użycie nowej funkcji
+        const urlParams = new URLSearchParams(window.location.search);
+        const shouldLoadGame = urlParams.get('loadGame') === 'true';
+        const savedGame = loadGameState();
+        if (shouldLoadGame && savedGame) {
+            // Jeśli URL tak nakazuje i istnieje zapis, wczytaj grę
+            restoreGameState(savedGame);
         } else {
+            // W przeciwnym razie, uruchom normalnie
             setLanguage('pl');
         }
     
