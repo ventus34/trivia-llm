@@ -1,46 +1,62 @@
-/* Podstawowe style body */
+/* ============================================= */
+/* 1. BASE & GENERAL STYLES                      */
+/* ============================================= */
+
 body {
     font-family: 'Inter', sans-serif;
-    overflow: hidden;
+    /* Prevents scrolling on the main body, as scrolling is handled within specific elements. */
+    overflow: hidden; 
 }
 
-/* Wrapper planszy, aby zachować proporcje */
+/* ============================================= */
+/* 2. LAYOUT CONTAINERS                          */
+/* ============================================= */
+
+/* The main game screen container. */
+#game-screen {
+    height: auto;
+    min-height: 100dvh; /* Use dynamic viewport height to fill the screen on mobile devices. */
+}
+
+/* Wrapper for the game board to maintain a square aspect ratio. */
 .board-wrapper {
-    width: 80vh;
+    /* Uses vh units to scale with viewport height. */
+    width: 80vh; 
     height: 80vh;
+    /* Caps the size on larger screens. */
     max-width: 800px;
     max-height: 800px;
     position: relative;
     margin-bottom: 2rem;
 }
 
-/* Kontener na połączenia SVG */
+/* SVG container for drawing lines between board squares. */
 .board-connections {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 1; /* Pod polami */
+    z-index: 1; /* Positioned below the board squares. */
 }
 
-.board-connections line {
-    stroke: #9ca3af; /* gray-400 */
-    stroke-width: 3;
-    stroke-linecap: round;
-}
-
-
-/* Kontener planszy */
+/* Main container for the board squares. */
 .board-container {
     width: 100%;
     height: 100%;
     position: relative;
 }
 
-/* Style dla pojedynczego pola na planszy */
+/* ============================================= */
+/* 3. COMPONENT STYLES                           */
+/* ============================================= */
+
+/* --- Board & Player Elements --- */
+
+/* A single square on the game board. */
 .board-square {
     position: absolute;
+    /* Sized relative to the parent .board-container. */
     width: 6%;
     height: 6%;
     border: 2px solid #374151; /* gray-700 */
@@ -54,18 +70,18 @@ body {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     transition: all 0.2s ease-in-out;
     cursor: pointer;
-    z-index: 2; /* Pola nad liniami łączącymi */
+    z-index: 2; /* Positioned above the connection lines. */
 }
 
-/* Podświetlenie możliwego ruchu */
+/* Highlight for a square that represents a possible move. */
 .board-square.highlighted-move {
     border-color: #10b981; /* emerald-500 */
     transform: scale(1.1);
     box-shadow: 0 0 15px #10b981;
-    z-index: 10;
+    z-index: 10; /* Ensures highlighted square is on top of everything. */
 }
 
-/* Pionek gracza */
+/* The player's game piece/token. */
 .player-token {
     position: absolute;
     width: 3.5%;
@@ -75,12 +91,15 @@ body {
     justify-content: center;
     font-size: 2.8vh;
     line-height: 1;
-    transition: all 0.5s ease-in-out; /* Dłuższa animacja dla płynnego ruchu */
+    /* Longer transition for smooth movement across the board. */
+    transition: all 0.5s ease-in-out; 
     text-shadow: 0 0 5px rgba(0,0,0,0.5);
-    z-index: 5;
+    z-index: 5; /* Positioned above squares but below highlighted ones. */
 }
 
-/* "Cząstka" kategorii w panelu gracza */
+/* --- Player Panel & UI Elements --- */
+
+/* A "wedge" representing a collected category in the player's panel. */
 .category-wedge {
     width: 12px;
     height: 12px;
@@ -91,38 +110,30 @@ body {
     cursor: pointer;
     transition: transform 0.2s;
 }
+
 .category-wedge:hover {
     transform: scale(1.2);
 }
 
-/* Aktywny przycisk języka */
-.lang-btn.active { 
-    background-color: #4f46e5; /* indigo-600 */
-    color: white; 
-}
+/* --- 3D Dice --- */
 
-/* Popup z odpowiedzią - style przejścia */
-#answer-popup {
-    transition: opacity 0.5s, transform 0.5s;
-}
-
-/* Kontener na kostkę 3D */
+/* Container to establish the 3D perspective for the dice. */
 .dice-container {
     width: 60px;
     height: 60px;
     perspective: 1000px;
 }
 
-/* Kostka 3D */
+/* The dice itself, which holds the 3D faces. */
 .dice {
     width: 100%;
     height: 100%;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.5s ease-out;
+    transition: transform 0.5s ease-out; /* For the rolling animation. */
 }
 
-/* Ścianka kostki */
+/* A single face of the 3D dice. */
 .face {
     position: absolute;
     width: 60px;
@@ -136,7 +147,7 @@ body {
     color: #333;
 }
 
-/* Pozycje ścianek kostki w przestrzeni 3D */
+/* 3D transforms to position each face correctly in 3D space. */
 .front  { transform: rotateY(  0deg) translateZ(30px); }
 .back   { transform: rotateY(180deg) translateZ(30px); }
 .right  { transform: rotateY( 90deg) translateZ(30px); }
@@ -144,7 +155,66 @@ body {
 .top    { transform: rotateX( 90deg) translateZ(30px); }
 .bottom { transform: rotateX(-90deg) translateZ(30px); }
 
-/* Suwak temperatury */
+/* --- Modals & Popups (Question, Answer, History) --- */
+
+/* Style for the top border of the modal, used for category color hints. */
+#modal-content {
+    border-top: 8px solid transparent;
+    transition: border-color 0.3s ease-in-out;
+}
+
+/* Fluid font size for the question text. Min 16px, scales with 4% viewport width, max 20px. */
+#question-text {
+    font-size: clamp(1rem, 4vw, 1.25rem); 
+    line-height: 1.6;
+}
+
+/* Container for multiple-choice answer buttons. */
+#mcq-options-container {
+    gap: 1rem; /* Increased spacing between buttons. */
+    margin-top: 2rem; /* Increased spacing between question and answers. */
+}
+
+/* Buttons for multiple-choice answers. */
+#mcq-options-container button {
+    /* Fluid font size. Min 16px, preferred 3.5vw, max 18px. */
+    font-size: clamp(1rem, 3.5vw, 1.125rem); 
+    /* Fluid padding. */
+    padding: clamp(0.75rem, 3vw, 1rem); 
+    border: 1px solid #e5e7eb; /* Light gray border for better contrast. */
+    transition: all 0.2s ease-in-out;
+}
+
+#mcq-options-container button:hover {
+    border-color: #6366f1; /* Indigo color to match the theme. */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* The popup that shows the result after answering. */
+#answer-popup {
+    transition: opacity 0.5s, transform 0.5s;
+}
+
+/* Fluid font size for text inside the answer popup. */
+#answer-popup .text-left p {
+    font-size: clamp(0.875rem, 3vw, 1rem);
+}
+
+/* Container for prompt history in the history modal. */
+#history-content pre {
+    max-height: 300px; /* Limits height for long prompts. */
+}
+
+/* --- Controls & Inputs (Buttons, Sliders, Pickers) --- */
+
+/* Language selection button. */
+.lang-btn.active { 
+    background-color: #4f46e5; /* indigo-600 */
+    color: white; 
+}
+
+/* Temperature slider styling. */
 #temperature-slider {
     -webkit-appearance: none;
     appearance: none;
@@ -160,7 +230,7 @@ body {
     -webkit-appearance: none;
     appearance: none;
     margin-top: -4px;
-    background-color: var(--thumb-color, #4f46e5);
+    background-color: var(--thumb-color, #4f46e5); /* Uses a CSS variable for easier theme changes. */
     height: 20px;
     width: 20px;
     border-radius: 50%;
@@ -168,7 +238,7 @@ body {
     box-shadow: 0 0 5px rgba(0,0,0,0.3);
 }
 
-/* Wybór emotikonek */
+/* Emoji picker component. */
 .emoji-picker {
     position: relative;
 }
@@ -214,7 +284,9 @@ body {
     background-color: #f3f4f6;
 }
 
-/* Kontener na powiadomienia */
+/* --- Notifications --- */
+
+/* Notification toast component. */
 .notification {
     max-width: 350px;
     background-color: white;
@@ -224,159 +296,60 @@ body {
     display: flex;
     align-items: start;
     gap: 0.75rem;
+    /* Initial state for slide-in animation. */
     opacity: 0;
     transform: translateX(100%);
     transition: all 0.5s ease-in-out;
 }
+/* Final state for the animation. */
 .notification.show {
     opacity: 1;
     transform: translateX(0);
 }
-.notification.error {
-    border-left: 4px solid #ef4444; /* red-500 */
-}
-.notification.success {
-    border-left: 4px solid #22c55e; /* green-500 */
-}
-.notification.info {
-    border-left: 4px solid #3b82f6; /* blue-500 */
+/* Color-coded borders for different notification types. */
+.notification.error   { border-left: 4px solid #ef4444; } /* red-500 */
+.notification.success { border-left: 4px solid #22c55e; } /* green-500 */
+.notification.info    { border-left: 4px solid #3b82f6; } /* blue-500 */
+
+/* ============================================= */
+/* 4. STATE & HELPER CLASSES                     */
+/* ============================================= */
+
+/* Generic loading spinner class. */
+.is-loading {
+    animation: spin 1s linear infinite;
+    display: inline-block; /* Required for transform to work correctly. */
 }
 
-/* === SEKCJA RESPONSIVE === */
-
-/* Zapewnia, że ekran gry może się rozciągać w pionie, zamiast mieć stałą wysokość */
-#game-screen {
-    height: auto;
-    min-height: 100dvh; /* Używa dynamicznej wysokości viewportu */
-}
-
-/* Dynamiczne skalowanie planszy, aby zawsze mieściła się w ekranie */
-.board-wrapper {
-    width: min(85vh, 90vw);
-    height: min(85vh, 90vw);
-    margin: 1rem auto; /* Lepsze centrowanie w elastycznym kontenerze */
-}
-
-/* Płynny rozmiar czcionki dla tekstu pytania */
-#question-text {
-    /* Min. 16px, skaluje się z 4% szerokości viewportu, maks. 20px */
-    font-size: clamp(1rem, 4vw, 1.25rem); 
-    line-height: 1.6;
-}
-
-/* Płynny rozmiar czcionki i padding dla przycisków odpowiedzi */
-#mcq-options-container button {
-    font-size: clamp(0.9rem, 3.5vw, 1rem);
-    padding: clamp(0.75rem, 3vw, 1rem); /* Skalowanie wewnętrznego odstępu */
-}
-
-/* Lepsze skalowanie tekstu w okienku z wynikiem odpowiedzi */
-#answer-popup .text-left p {
-    font-size: clamp(0.875rem, 3vw, 1rem);
-}
-
+/* Visibility toggles for all modals. */
+#question-modal,
+#history-modal,
+#category-choice-modal,
 #model-choice-modal {
-    display: none; /* Domyślnie ukryty */
+    display: none; /* Hidden by default. */
 }
 
+#question-modal.visible,
+#history-modal.visible,
+#category-choice-modal.visible,
 #model-choice-modal.visible {
-    display: flex; /* Pokazujemy po dodaniu klasy .visible */
+    display: flex; /* Displayed when the .visible class is added via JS. */
 }
 
-/* Lepsza siatka na małych ekranach w panelu ustawień */
-@media (max-width: 640px) {
-    #setup-screen .grid-cols-1.sm\\:grid-cols-2 {
-        grid-template-columns: 1fr; /* Wszystko w jednej kolumnie na małych ekranach */
-    }
+/* ============================================= */
+/* 5. ANIMATION KEYFRAMES                        */
+/* ============================================= */
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
 }
 
-@media (min-width: 1024px) {
-    /* Używamy nowej klasy, aby style siatki dotyczyły WYŁĄCZNIE ekranu gry */
-    .js-game-grid-layout {
-        display: grid;
-        grid-template-columns: 1fr 420px;
-        align-items: stretch; 
-    }
+/* ============================================= */
+/* 6. THEMING                                    */
+/* ============================================= */
 
-    .js-game-grid-layout > div:first-child {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .board-wrapper {
-        width: 90%;
-        aspect-ratio: 1 / 1;
-        max-width: none; 
-        max-height: 92vh; 
-        margin: 0;
-    }
-
-    .js-game-grid-layout #game-controls {
-        max-height: 90vh;
-        justify-self: start;
-    }
-
-    /* Powiększone okienka pozostają bez zmian */
-    #question-modal .bg-white, #answer-popup {
-        max-width: 1024px;
-    }
-    #question-modal #question-text, #answer-popup h3 {
-        font-size: 1.75rem;
-    }
-    #mcq-options-container button, #answer-popup .text-left p {
-        font-size: 1.125rem;
-    }
-}
-
-/* Dodanie ramki i cienia do przycisków odpowiedzi dla lepszego kontrastu */
-#mcq-options-container button {
-    border: 1px solid #e5e7eb; /* Jasnoszara ramka */
-    transition: all 0.2s ease-in-out;
-}
-
-/* Wyraźniejszy efekt po najechaniu myszką */
-#mcq-options-container button:hover {
-    border-color: #6366f1; /* Kolor indygo, pasujący do motywu */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* Dodanie miejsca na kolorową ramkę na górze okna z pytaniem */
-#modal-content {
-    border-top: 8px solid transparent;
-    transition: border-color 0.3s ease-in-out;
-}
-
-/* Zwiększenie odstępów w oknie z pytaniem */
-#question-content {
-    padding-top: 0.5rem;
-}
-#mcq-options-container {
-    gap: 1rem; /* Zwiększamy odstęp między przyciskami */
-    margin-top: 2rem; /* Zwiększamy odstęp między pytaniem a odpowiedziami */
-}
-
-/* Lekkie zwiększenie czcionki w przyciskach dla lepszej czytelności */
-#mcq-options-container button {
-    font-size: clamp(1rem, 3.5vw, 1.125rem); /* Zwiększamy minimalny i maksymalny rozmiar */
-}
-
-/* Style dla historii promptów */
-#history-content pre {
-    max-height: 300px; /* Ogranicza wysokość, aby długie prompty nie zdominowały widoku */
-}
-
-/* Poprawka widoczności modalu historii */
-#history-modal {
-    display: none; /* Domyślnie ukryty */
-}
-#history-modal.visible {
-    display: flex; /* Klasa .visible go pokazuje */
-}
-
-/* === STYLE PRZEŁĄCZNIKA MOTYWÓW === */
+/* --- Theme Switcher Component --- */
 #theme-switcher label {
     cursor: pointer;
     padding: 0.25rem 0.5rem;
@@ -389,19 +362,18 @@ body {
     user-select: none;
 }
 .theme-radio {
-    display: none; /* Ukrywamy oryginalne radio buttony */
+    display: none; /* Hide the original radio inputs. */
 }
+/* Style the icon within the label when the associated radio is checked. */
 .theme-radio:checked + span {
     background-color: transparent;
     box-shadow: none;
-    transform: scale(1.25); /* Lekko powiększamy ikonę, by zaznaczyć wybór */
+    transform: scale(1.25); /* Enlarge the icon to indicate selection. */
     font-weight: bold;
 }
 
-/* === DEFINICJE MOTYWÓW === */
-
-/* --- 1. Style WSPÓLNE dla motywu Ciemnego i OLED --- */
-/* (Wszystkie kolory czcionek, kontrolek, ramek itp.) */
+/* --- 6.1. SHARED STYLES for Dark & OLED Themes --- */
+/* (Common text colors, controls, borders, etc.)   */
 
 html.dark,
 html.oled {
@@ -413,7 +385,7 @@ html.oled body {
     color: rgb(229 231 235); /* text-gray-200 */
 }
 
-/* Reguły dla wszystkich tekstów, aby były spójne */
+/* Consistent text color overrides for various elements. */
 html.dark h1, html.oled h1,
 html.dark h2, html.oled h2,
 html.dark h3, html.oled h3,
@@ -429,6 +401,7 @@ html.dark dl dt, html.oled dl dt {
     color: rgb(226 232 240); /* text-slate-200 */
 }
 
+/* Subtler text colors for descriptions and secondary text. */
 html.dark dl dd, html.oled dl dd,
 html.dark .text-gray-700, html.oled .text-gray-700,
 html.dark .text-slate-700, html.oled .text-slate-700,
@@ -438,7 +411,7 @@ html.dark #knowledge-level-description, html.oled #knowledge-level-description {
     color: rgb(156 163 175); /* text-gray-400 */
 }
 
-/* Style dla wszystkich kontrolek */
+/* Form controls styling. */
 html.dark input, html.oled input,
 html.dark select, html.oled select {
     background-color: rgb(75 85 99);
@@ -455,7 +428,7 @@ html.dark input[type="checkbox"], html.oled input[type="checkbox"] {
     border-radius: 4px;
 }
 
-/* Style dla przycisków */
+/* Button styling. */
 html.dark .emoji-button, html.oled .emoji-button { background-color: rgb(55 65 81); }
 html.dark .emoji-button:hover, html.oled .emoji-button:hover { background-color: rgb(75 85 99); }
 
@@ -473,79 +446,28 @@ html.dark .lang-btn:hover:not(.active), html.oled .lang-btn:hover:not(.active) {
     background-color: rgb(75 85 99);
 }
 
-/* --- 2. Style TŁA specyficzne dla motywu CIEMNEGO --- */
-
-html.dark body { background-color: rgb(31 41 55); } /* bg-gray-800 */
-html.dark .bg-white { background-color: rgb(55 65 81); } /* bg-gray-700 */
-html.dark .bg-gray-100 { background-color: rgb(75 85 99); } /* bg-gray-600 */
-html.dark .bg-slate-100 { background-color: rgb(51 65 85); } /* bg-slate-700 */
-html.dark #theme-switcher { background-color: rgb(75 85 99); } /* bg-gray-600 */
-html.dark .board-square::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 8px; background-color: black; opacity: 0.25; transition: opacity 0.3s ease; }
-html.dark .board-square.highlighted-move::after { opacity: 0; }
-html.dark .board-connections line { stroke: #6b7280; }
-
-/* --- 3. Style TŁA specyficzne dla motywu OLED --- */
-
-html.oled body { background-color: #000000; }
-html.oled .bg-white { background-color: rgb(1, 1, 1); } /* bg-zinc-900 */
-html.oled .bg-gray-100 { background-color: rgb(0, 0, 0); } /* bg-zinc-800 */
-html.oled .bg-slate-100 { background-color: #111111; }
-html.oled #theme-switcher { background-color: rgb(39 39 42); }
-html.oled .board-square::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 8px; background-color: black; opacity: 0.4; transition: opacity 0.3s ease; }
-html.oled .board-square.highlighted-move::after { opacity: 0; }
-html.oled .board-connections line { stroke: #4b5563; }
-
-/* Odpowiedź gracza: Zapewniamy białą czcionkę na ciemnoszarym tle z motywu */
+/* Theming for answer/explanation text blocks. */
 html.dark #player-answer-text,
 html.oled #player-answer-text {
     color: #FFFFFF;
 }
-
-/* Poprawna odpowiedź: Ciemnozielone tło i jasnozielony tekst */
 html.dark #correct-answer-text,
 html.oled #correct-answer-text {
-    background-color: #14532d;  /* Ciemna zieleń */
-    color: #dcfce7;           /* Jasnozielony tekst */
+    background-color: #14532d;  /* Dark Green */
+    color: #dcfce7;           /* Light Green Text */
     border: 1px solid #166534;
 }
-
-/* Wyjaśnienie: Ciemnożółte/bursztynowe tło i jasnożółty tekst */
 html.dark #explanation-text,
 html.oled #explanation-text {
-    background-color: #7c2d12; /* Ciemny bursztyn */
-    color: #fef9c3;           /* Jasnożółty tekst */
+    background-color: #7c2d12; /* Dark Amber */
+    color: #fef9c3;           /* Light Yellow Text */
     border: 1px solid #92400e;
 }
-
-/* Wyjaśnienie błędu: Ciemnoczerwone tło i jasnoczerwony tekst */
 html.dark #incorrect-explanation-text,
 html.oled #incorrect-explanation-text {
-    background-color: #7f1d1d; /* Ciemna czerwień */
-    color: #fee2e2;           /* Jasnoczerwony tekst */
+    background-color: #7f1d1d; /* Dark Red */
+    color: #fee2e2;           /* Light Red Text */
     border: 1px solid #991b1b;
-}
-
-/* === PRZYCIEMNIENIE ELEMENTÓW W TRYBIE OLED === */
-
-/* Zmniejsza jasność kolorowych nazw graczy i kategorii w legendzie,
-   używając filtra CSS, który działa również na kolory ustawione w JS. */
-   html.oled #current-player-name,
-   html.oled #category-legend .w-4.h-4 {
-       filter: brightness(0.7);
-   }
-   
-   /* Przyciemnia tekst w legendzie kategorii dla spójności */
-   html.oled #category-legend span {
-       color: rgb(156 163 175); /* text-gray-400 */
-   }
-   
-   html.oled .themed-button {
-    filter: brightness(0.7);
-    transition: filter 0.2s ease-in-out;
-}
-
-html.oled .themed-button:hover {
-    filter: brightness(0.85);
 }
 
 html.dark [data-lang-key="infobox_rules_desc"] ul,
@@ -554,27 +476,129 @@ html.oled [data-lang-key="infobox_rules_desc"] ul {
 }
 
 
+/* --- 6.2. DARK Theme Specifics (Backgrounds) --- */
 
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+html.dark body { background-color: rgb(31 41 55); } /* bg-gray-800 */
+html.dark .bg-white { background-color: rgb(55 65 81); } /* bg-gray-700 */
+html.dark .bg-gray-100 { background-color: rgb(75 85 99); } /* bg-gray-600 */
+html.dark .bg-slate-100 { background-color: rgb(51 65 85); } /* bg-slate-700 */
+html.dark #theme-switcher { background-color: rgb(75 85 99); } /* bg-gray-600 */
+html.dark .board-connections line { stroke: #6b7280; }
+
+/* Add a dark overlay to board squares to reduce their brightness. */
+html.dark .board-square::after { 
+    content: ''; 
+    position: absolute; 
+    top: 0; left: 0; right: 0; bottom: 0; 
+    border-radius: 8px; 
+    background-color: black; 
+    opacity: 0.25; 
+    transition: opacity 0.3s ease; 
+}
+/* Remove overlay on highlighted squares to make them pop. */
+html.dark .board-square.highlighted-move::after { opacity: 0; }
+
+/* --- 6.3. OLED Theme Specifics (Backgrounds & Filters) --- */
+
+html.oled body { background-color: #000000; }
+html.oled .bg-white { background-color: rgb(24 24 27); } /* bg-zinc-900 */
+html.oled .bg-gray-100 { background-color: rgb(39 39 42); } /* bg-zinc-800 */
+html.oled .bg-slate-100 { background-color: #111111; }
+html.oled #theme-switcher { background-color: rgb(39 39 42); }
+html.oled .board-connections line { stroke: #4b5563; }
+
+/* Add a darker overlay for OLED mode. */
+html.oled .board-square::after { 
+    content: ''; 
+    position: absolute; 
+    top: 0; left: 0; right: 0; bottom: 0; 
+    border-radius: 8px; 
+    background-color: black; 
+    opacity: 0.4; 
+    transition: opacity 0.3s ease; 
+}
+html.oled .board-square.highlighted-move::after { opacity: 0; }
+
+/* Reduce brightness of colorful UI elements to prevent eye strain on OLED screens. */
+html.oled #current-player-name,
+html.oled #category-legend .w-4.h-4 {
+    filter: brightness(0.7);
+}
+html.oled #category-legend span {
+    color: rgb(156 163 175); /* text-gray-400 */
+}
+html.oled .themed-button {
+    filter: brightness(0.7);
+    transition: filter 0.2s ease-in-out;
+}
+html.oled .themed-button:hover {
+    filter: brightness(0.85);
 }
 
-.is-loading {
-    animation: spin 1s linear infinite;
-    display: inline-block; /* Ważne, aby transformacja działała poprawnie */
+/* ============================================= */
+/* 7. RESPONSIVE DESIGN                          */
+/* ============================================= */
+
+/* --- Mobile & Tablet First (Default styles are mobile-first) --- */
+
+/* Dynamically scale the board to fit within the viewport on any device. */
+.board-wrapper {
+    /* min() ensures it never exceeds 85% of height or 90% of width. */
+    width: min(85vh, 90vw);
+    height: min(85vh, 90vw);
+    margin: 1rem auto; /* Better centering for flexible containers. */
 }
 
-#question-modal,
-#history-modal,
-#category-choice-modal,
-#model-choice-modal {
-    display: none; /* Domyślnie wszystkie są ukryte */
+/* Media query for small screens (e.g., mobile phones). */
+@media (max-width: 640px) {
+    /* Stacks grid items in a single column on the setup screen. */
+    #setup-screen .grid-cols-1.sm\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
 }
 
-#question-modal.visible,
-#history-modal.visible,
-#category-choice-modal.visible,
-#model-choice-modal.visible {
-    display: flex; /* Klasa .visible je pokazuje */
+/* --- Desktop (Large Screens) --- */
+
+/* Media query for large screens (>= 1024px). */
+@media (min-width: 1024px) {
+    /* A specific class for the game grid layout on large screens. */
+    .js-game-grid-layout {
+        display: grid;
+        grid-template-columns: 1fr 420px; /* Board on left, controls on right. */
+        align-items: stretch; 
+    }
+
+    /* Center the board container vertically within its grid cell. */
+    .js-game-grid-layout > div:first-child {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Override board wrapper styles for the desktop layout. */
+    .board-wrapper {
+        width: 90%;
+        aspect-ratio: 1 / 1;
+        max-width: none; 
+        max-height: 92vh; 
+        margin: 0; /* Remove auto margin. */
+    }
+
+    /* Align the game controls panel to the start of its grid cell. */
+    .js-game-grid-layout #game-controls {
+        max-height: 90vh;
+        justify-self: start;
+    }
+
+    /* Enlarge fonts and modals for better readability on large screens. */
+    #question-modal .bg-white, #answer-popup {
+        max-width: 1024px;
+    }
+    #question-modal #question-text, #answer-popup h3 {
+        font-size: 1.75rem;
+    }
+    #mcq-options-container button, #answer-popup .text-left p {
+        font-size: 1.125rem;
+    }
 }
