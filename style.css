@@ -367,6 +367,11 @@ body {
 /* 4. STATE & HELPER CLASSES                     */
 /* ============================================= */
 
+#game-screen.hidden,
+#setup-screen.hidden {
+    display: none;
+}
+
 /* Generic loading spinner class. */
 .is-loading {
     animation: spin 1s linear infinite;
