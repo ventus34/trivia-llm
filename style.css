@@ -177,7 +177,8 @@ textarea.category-input {
     height: 100%;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.5s ease-out; /* For the rolling animation. */
+    /* Changed from 0.5s to 0.25s to make the animation faster and snappier. */
+    transition: transform 0.25s ease-out;
 }
 
 /* A single face of the 3D dice. */

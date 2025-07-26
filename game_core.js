@@ -1016,27 +1016,74 @@ function updateUI() {
 
 // --- CORE GAME FLOW ---
 
-/**
- * Sets the visual face of the 3D dice.
- * @param {number} roll - The dice roll result (1-6).
+/*
+ * Creates a realistic, multi-step tumble animation for the dice.
+ * The animation simulates a continuous, decelerating spin without any random speed-ups.
+ * @param {number} roll - The final dice roll result (1-6).
  */
-function setDiceFace(roll) {
+async function animateDiceRoll(roll) {
     const rotations = {
         1: 'rotateY(0deg) rotateX(0deg)', 2: 'rotateX(-90deg)', 3: 'rotateY(90deg)',
         4: 'rotateY(-90deg)', 5: 'rotateX(90deg)', 6: 'rotateY(180deg)'
     };
-    UI.diceElement.style.transform = rotations[roll];
+    const finalTransform = rotations[roll];
+
+    // --- State for a continuous, momentum-based roll ---
+    let currentX = 0;
+    let currentY = 0;
+
+    // Generate a strong, consistent initial spin direction.
+    const spinX = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
+    const spinY = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
+
+    const tumbleCount = 2;
+    const tumbleDelay = 100;
+
+    // Use a fast, linear transition for the main tumbles
+    UI.diceElement.style.transition = 'transform 0.1s linear';
+
+    for (let i = 0; i < tumbleCount; i++) {
+        // The rotation now only decelerates based on the initial spin.
+        // A non-linear divisor (i * 1.5 + 1) creates a more natural slowdown.
+        // The random "wobble" has been removed to prevent perceived speed-ups.
+        currentX += spinX / (i * 1.5 + 1);
+        currentY += spinY / (i * 1.5 + 1);
+
+        const tumbleTransform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+
+        UI.diceElement.style.transform = tumbleTransform;
+        await new Promise(resolve => setTimeout(resolve, tumbleDelay));
+    }
+
+    // Use a final, long, and smooth transition for the "settling" effect.
+    UI.diceElement.style.transition = 'transform 0.8s cubic-bezier(0.2, 1, 0.2, 1)';
+
+    // Apply the final, correct face rotation
+    UI.diceElement.style.transform = finalTransform;
+
+    // Wait for the final animation to complete
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Reset the inline style
+    UI.diceElement.style.transition = '';
 }
+
 
 /**
  * Handles the dice roll action, calculates possible moves, and highlights them.
+ * This function is now async to await the new animation.
  */
-function rollDice() {
-    if (gameState.isAwaitingMove) return;
+async function rollDice() {
+    // Prevent multiple rolls while one is in progress or awaiting a move
+    if (UI.rollDiceBtn.disabled || gameState.isAwaitingMove) return;
+
+    UI.rollDiceBtn.disabled = true; // Disable button immediately
     UI.gameMessageDiv.textContent = '';
     const roll = Math.floor(Math.random() * 6) + 1;
 
-    setDiceFace(roll);
+    // Await the new, more complex animation before showing results
+    await animateDiceRoll(roll);
+
     UI.diceResultDiv.querySelector('span').textContent = translations.dice_roll_result[gameState.currentLanguage].replace('{roll}', roll);
 
     const player = gameState.players[gameState.currentPlayerIndex];
@@ -1047,12 +1094,11 @@ function rollDice() {
 
     if (destinationIds.length > 0) {
         gameState.isAwaitingMove = true;
-        UI.rollDiceBtn.disabled = true;
-        UI.rollDiceBtn.classList.add('opacity-50');
+        // The button remains disabled while the player chooses a move
         UI.gameMessageDiv.textContent = translations.choose_move[gameState.currentLanguage];
         destinationIds.forEach(id => document.getElementById(`square-${id}`).classList.add('highlighted-move'));
     } else {
-        // No possible moves, which shouldn't happen on a connected board, but as a fallback.
+        // No possible moves, so proceed to the next turn (which re-enables the button)
         nextTurn();
     }
 }
