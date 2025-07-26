@@ -158,7 +158,7 @@ const localApiAdapter = {
             .replace(/{theme_context}/g, themeContext)
             .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
             .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
-            .replace(/{history_prompt}/g, historyPrompt)
+            .replace(/{avoidance_list_prompt}/g, historyPrompt)
             .replace(/{language_name}/g, languageName)
             .replace(/{inspirational_words}/g, twoInspirationalWords);
 

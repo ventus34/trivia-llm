@@ -15,8 +15,10 @@ const CONFIG = {
     SQUARE_TYPES: { HQ: 'HEADQUARTERS', SPOKE: 'SPOKE', RING: 'RING', HUB: 'HUB', ROLL_AGAIN: 'ROLL_AGAIN' },
     // Delay in milliseconds for pawn movement animation
     ANIMATION_DELAY_MS: 50,
-    // The maximum number of subcategory topics to remember per category to avoid repetition
-    MAX_SUBCATEGORY_HISTORY: 10,
+    // // The maximum number of subcategory topics to remember per category to avoid repetition
+    // MAX_SUBCATEGORY_HISTORY: 10,
+    // The maximum number of 'history items' to remember per category to avoid repetition
+    MAX_HISTORY_ITEMS_PER_CATEGORY: 25,
     // A list of emojis available for player tokens
     EMOJI_OPTIONS: ['😀', '🚀', '🦄', '🤖', '🦊', '🧙', '👽', '👾', '👻', '👑', '💎', '🍕', '🍔', '⚽️', '🏀', '🎸', '🎨', '🎭', '🎬', '🎤', '🎮', '💻', '💡', '🧪', '🌍', '🏛️', '🏰', '🗿', '🛸']
 };
@@ -218,7 +220,13 @@ export const translations = {
     question_prompt: {
         pl: {
             persona: "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego.",
-            chain_of_thought: "\n# PROCES MYŚLOWY (Chain of Thought):\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. To kluczowy balans. Następnie udoskonal go, upewniając się, że jest jednoznaczny i spełnia wszystkie pozostałe reguły.",
+            chain_of_thought: `
+            # PROCES MYŚLOWY (Chain of Thought):
+            Zanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:
+            1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.
+            2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.
+            3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. Udoskonal pytanie.
+            4.  **Weryfikacja i Korekta:** Przejrzyj wybrane pytanie, odpowiedź i opcje. Sprawdź je KROK PO KROKU pod kątem WSZYSTKICH reguł (zwłaszcza reguły 'ZAKAZ POWTÓRZEŃ' i krytycznej zasady, że odpowiedź nie może być w pytaniu). Jeśli jakakolwiek reguła jest złamana, **POPRAW** treść, aby była w pełni zgodna.`,
             context_header: "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
             context_lines: [
                 "- Kategoria: \"{category}\"",
@@ -230,17 +238,24 @@ export const translations = {
             rules: [
                 "**JĘZYK WYJŚCIOWY:** Cała zawartość finalnego obiektu JSON (pytanie, odpowiedź, opcje, wyjaśnienie) MUSI być w języku {language_name}.",
                 "**DEFINIUJ SUBKATEGORIĘ:** Dla każdego pytania zdefiniuj jedno- lub dwuwyrazową, precyzyjną subkategorię (np. dla 'Historii' -> 'Starożytny Rzym').",
-                "**ZAKAZ POWTÓRZEŃ:** Pytanie nie może dotyczyć następujących, ostatnio użytych subkategorii: {history_prompt}. Wygeneruj pytanie z zupełnie innej subkategorii.",
+                "**ZAKAZ POWTÓRZEŃ:** Pytanie nie może dotyczyć następujących, ostatnio użytych tematów i nazw własnych: {avoidance_list_prompt}. Wygeneruj pytanie z zupełnie innej dziedziny.",
                 "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
+                "**WYODRĘBNIJ NAZWY WŁASNE:** Zidentyfikuj kluczowe nazwy własne (np. tytuły seriali, miejsca, imiona i nazwiska) w treści pytania, odpowiedzi i wyjaśnienia, a następnie umieść je w tablicy 'key_entities'.",
                 "**JAKOŚĆ OPCJI (dla MCQ):** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
                 "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź.",
                 "**SPÓJNOŚĆ:** Pytanie musi ściśle trzymać się podanej kategorii."
             ],
-            output_format: `\n# OSTATECZNY WYNIK:\nPo zakończeniu wewnętrznego procesu myślowego, zwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precyzyjna subkategoria...",\n  "options": ["...", "...", "...", "..."]\n}`
+            output_format: `\n# OSTATECZNY WYNIK:\nWypisz wewnętrzny proces myślowowy, następnie zwróć odpowiedź jako jeden, czysty obiekt JSON o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precyzyjna subkategoria...",\n  "options": ["...", "...", "...", "..."]\n}`
         },
         en: {
             persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
-            chain_of_thought: `\n# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. This is a key balance. Then, refine it, ensuring it is unambiguous and meets all other rules.`,
+            chain_of_thought: `
+            # CHAIN OF THOUGHT PROCESS:
+            Before providing the final JSON output, conduct an internal thought process. Step by step:
+            1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.
+            2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.
+            3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. Refine the question.
+            4.  **Verification and Correction:** Review the selected question, answer, and options. Check them STEP-BY-STEP against ALL the rules (especially the 'NO REPETITION' rule and the critical rule that the answer cannot be in the question). If any rule is violated, **CORRECT** the content to be fully compliant.`,
             context_header: "\n# CONTEXT AND RULES TO APPLY:",
             context_lines: [
                 "- Category: \"{category}\"",
@@ -252,13 +267,14 @@ export const translations = {
             rules: [
                 "**OUTPUT LANGUAGE:** The entire content of the final JSON object (question, answer, options, explanation) MUST be in {language_name}.",
                 "**DEFINE SUBCATEGORY:** For each question, define a precise, one or two-word subcategory (e.g., for 'History' -> 'Ancient Rome').",
-                "**NO REPETITION:** The question must not be about the following, recently used subcategories: {history_prompt}. Generate a question from a completely different subcategory.",
+                "**EXTRACT PROPER NOUNS:** Identify key proper nouns (e.g., series titles, places, full names) within the question, answer, and explanation, then place them in the 'key_entities' array.",
+                "**NO REPETITION:** The question must not be about the following, recently used topics and proper nouns: {avoidance_list_prompt}. Generate a question from a completely different domain.",
                 "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
                 "**OPTION QUALITY (for MCQ):** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
                 "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer.",
                 "**CONSISTENCY:** The question must strictly adhere to the given category."
             ],
-            output_format: `\n# FINAL OUTPUT:\nAfter completing your internal thought process, return the response ONLY as a single, clean JSON object with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precise subcategory...",\n  "options": ["...", "...", "...", "..."]\n}`
+            output_format: `\n# FINAL OUTPUT:\nWrite your internal thought process, after that return the response as a single, clean JSON object with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precise subcategory...",\n  "options": ["...", "...", "...", "..."]\n}`
         }
     },
     batch_category_prompt_cot: {
@@ -1096,8 +1112,17 @@ async function handleManualVerification(isCorrect) {
         if (!history.includes(newSubcategory)) {
             history.push(newSubcategory);
         }
-        if (history.length > CONFIG.MAX_SUBCATEGORY_HISTORY) {
-            gameState.categoryTopicHistory[oldCategory] = history.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY);
+
+        if (Array.isArray(gameState.currentQuestionData.key_entities)) {
+            gameState.currentQuestionData.key_entities.forEach(entity => {
+                if (!history.includes(entity)) {
+                    history.push(entity);
+                }
+            });
+        }
+
+        if (history.length > CONFIG.MAX_HISTORY_ITEMS_PER_CATEGORY) {
+            gameState.categoryTopicHistory[oldCategory] = history.slice(-CONFIG.MAX_HISTORY_ITEMS_PER_CATEGORY);
         }
         localStorage.setItem('globalQuizHistory', JSON.stringify(gameState.categoryTopicHistory));
     }
