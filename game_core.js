@@ -16,9 +16,9 @@ const CONFIG = {
     // Delay in milliseconds for pawn movement animation
     ANIMATION_DELAY_MS: 50,
     // // The maximum number of subcategory topics to remember per category to avoid repetition
-    // MAX_SUBCATEGORY_HISTORY: 10,
+    MAX_SUBCATEGORY_HISTORY_ITEMS: 15,
     // The maximum number of 'history items' to remember per category to avoid repetition
-    MAX_HISTORY_ITEMS_PER_CATEGORY: 25,
+    MAX_ENTITY_HISTORY_ITEMS: 25,
     // A list of emojis available for player tokens
     EMOJI_OPTIONS: ['😀', '🚀', '🦄', '🤖', '🦊', '🧙', '👽', '👾', '👻', '👑', '💎', '🍕', '🍔', '⚽️', '🏀', '🎸', '🎨', '🎭', '🎬', '🎤', '🎮', '💻', '💡', '🧪', '🌍', '🏛️', '🏰', '🗿', '🛸']
 };
@@ -243,15 +243,25 @@ export const translations = {
             rules: [
                 "**JĘZYK WYJŚCIOWY:** Cała zawartość finalnego obiektu JSON (pytanie, odpowiedź, opcje, wyjaśnienie) MUSI być w języku {language_name}.",
                 "**DEFINIUJ SUBKATEGORIĘ:** Dla każdego pytania zdefiniuj jedno- lub dwuwyrazową, precyzyjną subkategorię (np. dla 'Historii' -> 'Starożytny Rzym').",
-                "**ZAKAZ POWTÓRZEŃ:** Pytanie nie może dotyczyć następujących, ostatnio użytych tematów i nazw własnych: {avoidance_list_prompt}. Wygeneruj pytanie z zupełnie innej dziedziny.",
+                "**ZAKAZ POWTÓRZEŃ (SUBKATEGORIE):** Pytanie nie może dotyczyć następujących, ostatnio użytych subkategorii: {subcategory_history_prompt}.",
+                "**ZAKAZ POWTÓRZEŃ (NAZWY WŁASNE):** Pytanie nie może zawierać ani dotyczyć następujących, ostatnio użytych nazw własnych: {entity_history_prompt}.",                
                 "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
                 "**WYODRĘBNIJ NAZWY WŁASNE:** Zidentyfikuj kluczowe nazwy własne (np. tytuły seriali, miejsca, imiona i nazwiska) w treści pytania, odpowiedzi i wyjaśnienia, a następnie umieść je w tablicy 'key_entities'.",
                 "**JAKOŚĆ OPCJI (dla MCQ):** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
                 "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź.",
                 "**SPÓJNOŚĆ:** Pytanie musi ściśle trzymać się podanej kategorii."
             ],
-            output_format: `\n# OSTATECZNY WYNIK:\nWypisz wewnętrzny proces myślowowy, następnie zwróć odpowiedź jako jeden, czysty obiekt JSON o strukturze:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precyzyjna subkategoria...",\n  "options": ["...", "...", "...", "..."]\n}`
-        },
+            output_format: `
+            # OSTATECZNY WYNIK:
+            Wypisz wewnętrzny proces myślowowy, następnie zwróć odpowiedź jako jeden, czysty obiekt JSON o strukturze:
+            {
+              "question": "...",
+              "answer": "...",
+              "explanation": "...",
+              "subcategory": "Precyzyjna subkategoria...",
+              "key_entities": ["Nazwa Własna 1", "Nazwa Własna 2"],
+              "options": ["...", "...", "...", "..."]
+            }`        },
         en: {
             persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
             chain_of_thought: `
@@ -273,14 +283,24 @@ export const translations = {
                 "**OUTPUT LANGUAGE:** The entire content of the final JSON object (question, answer, options, explanation) MUST be in {language_name}.",
                 "**DEFINE SUBCATEGORY:** For each question, define a precise, one or two-word subcategory (e.g., for 'History' -> 'Ancient Rome').",
                 "**EXTRACT PROPER NOUNS:** Identify key proper nouns (e.g., series titles, places, full names) within the question, answer, and explanation, then place them in the 'key_entities' array.",
-                "**NO REPETITION:** The question must not be about the following, recently used topics and proper nouns: {avoidance_list_prompt}. Generate a question from a completely different domain.",
+                "**NO REPETITION (SUBCATEGORIES):** The question must not be about the following, recently used subcategories: {subcategory_history_prompt}.",
+                "**NO REPETITION (PROPER NOUNS):** The question must not contain or be about the following, recently used proper nouns: {entity_history_prompt}.",                
                 "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
                 "**OPTION QUALITY (for MCQ):** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
                 "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer.",
                 "**CONSISTENCY:** The question must strictly adhere to the given category."
             ],
-            output_format: `\n# FINAL OUTPUT:\nWrite your internal thought process, after that return the response as a single, clean JSON object with the structure:\n{\n  "question": "...",\n  "answer": "...",\n  "explanation": "...",\n  "subcategory": "Precise subcategory...",\n  "options": ["...", "...", "...", "..."]\n}`
-        }
+            output_format: `
+            # FINAL OUTPUT:
+            Write your internal thought process, after that return the response as a single, clean JSON object with the structure:
+            {
+              "question": "...",
+              "answer": "...",
+              "explanation": "...",
+              "subcategory": "Precise subcategory...",
+              "key_entities": ["Proper Noun 1", "Proper Noun 2"],
+              "options": ["...", "...", "...", "..."]
+            }`        }
     },
     batch_category_prompt_cot: {
         pl: `Jesteś kreatywnym mistrzem teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich, ciekawych i intuicyjnych kategorii do quizu na podstawie podanego motywu.
@@ -1261,23 +1281,36 @@ async function handleManualVerification(isCorrect) {
 
     // Record the subcategory to history to avoid repetition, regardless of answer correctness
     if (oldCategory && gameState.currentQuestionData.subcategory) {
+        // Zapewnienie kompatybilności wstecznej i inicjalizacja nowej struktury
+        if (!gameState.categoryTopicHistory[oldCategory] || Array.isArray(gameState.categoryTopicHistory[oldCategory])) {
+            gameState.categoryTopicHistory[oldCategory] = { subcategories: [], entities: [] };
+        }
+        
         const history = gameState.categoryTopicHistory[oldCategory];
+
+        // Dodawanie podkategorii do jej własnej listy
         const newSubcategory = gameState.currentQuestionData.subcategory;
-        if (!history.includes(newSubcategory)) {
-            history.push(newSubcategory);
+        if (!history.subcategories.includes(newSubcategory)) {
+            history.subcategories.push(newSubcategory);
         }
 
+        // Dodawanie nazw własnych do ich własnej listy
         if (Array.isArray(gameState.currentQuestionData.key_entities)) {
             gameState.currentQuestionData.key_entities.forEach(entity => {
-                if (!history.includes(entity)) {
-                    history.push(entity);
+                if (!history.entities.includes(entity)) {
+                    history.entities.push(entity);
                 }
             });
         }
-
-        if (history.length > CONFIG.MAX_HISTORY_ITEMS_PER_CATEGORY) {
-            gameState.categoryTopicHistory[oldCategory] = history.slice(-CONFIG.MAX_HISTORY_ITEMS_PER_CATEGORY);
+        
+        // Ograniczanie rozmiaru obu list historii
+        if (history.subcategories.length > CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS) {
+            history.subcategories = history.subcategories.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS);
         }
+        if (history.entities.length > CONFIG.MAX_ENTITY_HISTORY_ITEMS) {
+            history.entities = history.entities.slice(-CONFIG.MAX_ENTITY_HISTORY_ITEMS);
+        }
+
         localStorage.setItem('globalQuizHistory', JSON.stringify(gameState.categoryTopicHistory));
     }
 

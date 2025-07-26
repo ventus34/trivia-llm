@@ -125,9 +125,17 @@ const localApiAdapter = {
         const languageName = lang === 'pl' ? 'polskim' : 'English';
         const promptStructure = translations.question_prompt[lang];
 
-        let history = [...(gameState.categoryTopicHistory[category] || [])];
-        shuffleArray(history);
-        const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
+        let categoryHistory = gameState.categoryTopicHistory[category] || { subcategories: [], entities: [] };
+        if (Array.isArray(categoryHistory)) {
+            categoryHistory = { subcategories: categoryHistory, entities: [] };
+        }
+        const subcategoryHistory = [...(categoryHistory.subcategories || [])];
+        const entityHistory = [...(categoryHistory.entities || [])];
+        shuffleArray(subcategoryHistory);
+        shuffleArray(entityHistory);
+
+        const subcategoryHistoryPrompt = subcategoryHistory.length > 0 ? `"${subcategoryHistory.join('", "')}"` : "Brak historii.";
+        const entityHistoryPrompt = entityHistory.length > 0 ? `"${entityHistory.join('", "')}"` : "Brak historii.";
 
         const inspirationalWords = [...translations.inspirational_words[lang]];
         shuffleArray(inspirationalWords);
@@ -153,7 +161,8 @@ const localApiAdapter = {
             .replace(/{theme_context}/g, themeContext)
             .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
             .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
-            .replace(/{avoidance_list_prompt}/g, historyPrompt)
+            .replace(/{subcategory_history_prompt}/g, subcategoryHistoryPrompt)
+            .replace(/{entity_history_prompt}/g, entityHistoryPrompt)
             .replace(/{language_name}/g, languageName)
             .replace(/{inspirational_words}/g, twoInspirationalWords);
 

@@ -223,9 +223,17 @@ const geminiApiAdapter = {
         const promptStructure = translations.question_prompt[lang];
 
         // Retrieve the history of subtopics for this category to avoid repetition.
-        let history = [...(gameState.categoryTopicHistory[category] || [])];
-        shuffleArray(history); // Shuffle to add variety to the prompt.
-        const historyPrompt = history.length > 0 ? `"${history.join('", "')}"` : "Brak historii.";
+        let categoryHistory = gameState.categoryTopicHistory[category] || { subcategories: [], entities: [] };
+        if (Array.isArray(categoryHistory)) {
+            categoryHistory = { subcategories: categoryHistory, entities: [] };
+        }
+        const subcategoryHistory = [...(categoryHistory.subcategories || [])];
+        const entityHistory = [...(categoryHistory.entities || [])];
+        shuffleArray(subcategoryHistory);
+        shuffleArray(entityHistory);
+
+        const subcategoryHistoryPrompt = subcategoryHistory.length > 0 ? `"${subcategoryHistory.join('", "')}"` : "Brak historii.";
+        const entityHistoryPrompt = entityHistory.length > 0 ? `"${entityHistory.join('", "')}"` : "Brak historii.";
 
         // Inject inspirational words to spur creativity.
         const inspirationalWords = [...translations.inspirational_words[lang]];
@@ -256,7 +264,8 @@ const geminiApiAdapter = {
             .replace(/{theme_context}/g, themeContext)
             .replace(/{knowledge_prompt}/g, translations.knowledge_prompts[gameState.knowledgeLevel][lang])
             .replace(/{game_mode_prompt}/g, translations.game_mode_prompts[gameState.gameMode][lang])
-            .replace(/{avoidance_list_prompt}/g, historyPrompt)
+            .replace(/{subcategory_history_prompt}/g, subcategoryHistoryPrompt)
+            .replace(/{entity_history_prompt}/g, entityHistoryPrompt)
             .replace(/{language_name}/g, languageName)
             .replace(/{inspirational_words}/g, twoInspirationalWords);
 
