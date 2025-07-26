@@ -118,7 +118,7 @@ export let gameState = {
  * The keys correspond to `data-lang-key` attributes in the HTML or are used directly in the code.
  */
 export const translations = {
-    setup_title: { pl: "Ustawienia Zaawansowane", en: "Advanced Settings" },
+    setup_title: { pl: "Ustawienia", en: "Settings" },
     gemini_api_key_label: { pl: "Klucz API Google Gemini:", en: "Google Gemini API Key:" },
     gemini_api_key_placeholder: { pl: "Wklej swój klucz API", en: "Paste your API key" },
     gemini_api_key_help: { pl: "Gdzie znaleźć klucz?", en: "Where to find the key?" },
