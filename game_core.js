@@ -384,6 +384,15 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
 // --- UI & NOTIFICATIONS ---
 
 /**
+ * Automatically adjusts the height of a textarea to fit its content.
+ * @param {HTMLTextAreaElement} textarea - The textarea element to resize.
+ */
+function autoResizeTextarea(textarea) {
+    textarea.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
+    textarea.style.height = `${textarea.scrollHeight}px`; // Set height to content height
+}
+
+/**
  * Displays a notification on the screen.
  * @param {object} message - An object with `title` and `body` fields.
  * @param {string} [type='info'] - The type of notification ('info', 'success', 'error').
@@ -470,18 +479,30 @@ function updateDescriptions() {
 // --- GAME SETUP ---
 
 /**
- * Populates the category name input fields.
+ * Populates the category name input fields using auto-sizing textareas.
  * @param {string[]} cats - An array of category names.
  */
 function updateCategoryInputs(cats) {
     UI.categoriesContainer.innerHTML = '';
     for (let i = 0; i < 6; i++) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'category-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm';
-        input.value = cats[i] || '';
-        input.style.borderLeft = `5px solid ${CONFIG.CATEGORY_COLORS[i]}`;
-        UI.categoriesContainer.appendChild(input);
+        // Changed from 'input' to 'textarea' to support multi-line text.
+        const textarea = document.createElement('textarea');
+
+        // The className remains the same to inherit existing styles.
+        textarea.className = 'category-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm';
+        textarea.value = cats[i] || '';
+        textarea.style.borderLeft = `5px solid ${CONFIG.CATEGORY_COLORS[i]}`;
+
+        // Set rows to 1 to mimic a single-line input's initial appearance.
+        textarea.rows = 1;
+
+        // Add an event listener to resize the textarea on every input.
+        textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+
+        UI.categoriesContainer.appendChild(textarea);
+
+        // Perform an initial resize to fit any pre-loaded content correctly.
+        autoResizeTextarea(textarea);
     }
 }
 
