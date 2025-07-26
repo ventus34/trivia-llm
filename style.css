@@ -125,6 +125,25 @@ textarea.category-input {
     word-wrap: break-word; /* Forces long words to break to prevent horizontal overflow. */
 }
 
+/* Style for the 'suggest alternatives' button positioned inside the category input area */
+.category-suggestion-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem;
+    font-size: 1.125rem; /* 18px */
+    line-height: 1;
+    color: #9ca3af; /* gray-400 */
+    background-color: transparent;
+    border-radius: 9999px;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.category-suggestion-btn:hover {
+    color: #4f46e5; /* indigo-600 */
+    transform: scale(1.1);
+}
+
 /* --- Player Panel & UI Elements --- */
 
 /* A "wedge" representing a collected category in the player's panel. */

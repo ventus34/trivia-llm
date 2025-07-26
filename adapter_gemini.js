@@ -295,24 +295,26 @@ const geminiApiAdapter = {
     },
 
     /**
-     * Generates three new category choices to replace an old one after a player scores on an HQ square.
+     * Generates three new category choices to replace an old one.
+     * This function is now decoupled from the global state and relies on passed parameters.
      * @param {string} oldCategory - The name of the category to be replaced.
+     * @param {string[]} [existingCategories=[]] - An array of other category names to avoid duplication.
      * @returns {Promise<object[]>} A promise resolving to an array of new category choices.
      */
-    async getCategoryMutationChoices(oldCategory) {
+    async getCategoryMutationChoices(oldCategory, existingCategories = []) {
         const lang = gameState.currentLanguage;
         const basePrompt = translations.category_mutation_prompt[lang];
 
-        const theme = gameState.theme || "-"; // Use a default if no theme is set.
-        // Provide the other categories as context to avoid generating duplicates.
-        const otherCategories = gameState.categories.filter(c => c !== oldCategory);
-        const existingCategoriesStr = `"${otherCategories.join('", "')}"`;
+        const theme = gameState.theme || "-";
+
+        const existingCategoriesStr = `"${existingCategories.join('", "')}"`;
 
         const prompt = basePrompt
             .replace(/{old_category}/g, oldCategory)
             .replace(/{theme}/g, theme)
             .replace(/{existing_categories}/g, existingCategoriesStr);
 
+        // Correctly call this adapter's specific API wrapper function.
         const data = await callGeminiApiWithRetries(prompt, true);
 
         return data.choices;

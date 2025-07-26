@@ -311,6 +311,27 @@
     </div>
 </div>
 
+<div id="suggestion-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4">
+        <div class="flex justify-between items-center">
+            <h3 id="suggestion-modal-title" class="text-xl font-bold">Alternative Suggestions</h3>
+            <button id="close-suggestion-modal-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div id="suggestion-loader" class="hidden flex flex-col items-center justify-center gap-4 py-8">
+            <div class="flex space-x-2">
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce"></div>
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                <div class="w-4 h-4 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+            </div>
+            <span class="text-gray-600">Generating suggestions...</span>
+        </div>
+        <div id="suggestion-buttons" class="grid grid-cols-1 gap-3">
+        </div>
+    </div>
+</div>
+
 <script type="module">
     // Importujemy główną logikę i adapter dla Gemini
     import { initializeApp } from './game_core.js';
