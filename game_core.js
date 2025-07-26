@@ -98,6 +98,11 @@ const UI = {
     restartGameBtn: document.getElementById('restart-game-btn'),
     downloadStateBtn: document.getElementById('download-state-btn'),
     uploadStateInput: document.getElementById('upload-state-input'),
+    suggestionModal: document.getElementById('suggestion-modal'),
+    suggestionModalTitle: document.getElementById('suggestion-modal-title'),
+    closeSuggestionModalBtn: document.getElementById('close-suggestion-modal-btn'),
+    suggestionLoader: document.getElementById('suggestion-loader'),
+    suggestionButtons: document.getElementById('suggestion-buttons')
 };
 
 
@@ -120,7 +125,7 @@ export let gameState = {
  * The keys correspond to `data-lang-key` attributes in the HTML or are used directly in the code.
  */
 export const translations = {
-    setup_title: { pl: "Ustawienia Zaawansowane", en: "Advanced Settings" },
+    setup_title: { pl: "Ustawienia", en: "Settings" },
     gemini_api_key_label: { pl: "Klucz API Google Gemini:", en: "Google Gemini API Key:" },
     gemini_api_key_placeholder: { pl: "Wklej swój klucz API", en: "Paste your API key" },
     gemini_api_key_help: { pl: "Gdzie znaleźć klucz?", en: "Where to find the key?" },
@@ -314,25 +319,30 @@ After your thought process, first write out your thoughts inside <thinking>...</
         en: `You are a helpful teacher in a quiz game. A player has just answered incorrectly. Your task is to explain to them why their answer was wrong. Be concise, empathetic, and educational.\n\nContext:\n- Question: "{question}"\n- Correct answer: "{correct_answer}"\n- Player's incorrect answer: "{player_answer}"\n\nTask:\nWrite a short (1-2 sentences) explanation for why the player's answer is incorrect. Focus on the player's reasoning error or point out the key difference.\n\nReturn the response as a JSON object in the format: {"explanation": "Your explanation..."}`
     },
     category_mutation_prompt: {
-        pl: `Jesteś mistrzem gry. Twoim zadaniem jest zaproponowanie TRZECH alternatywnych kategorii, które zastąpią starą kategorię: "{old_category}".
+        pl: `Jesteś mistrzem gry. Twoim zadaniem jest zaproponowanie PIĘCIU alternatywnych kategorii, które zastąpią starą kategorię: "{old_category}".
 
 # PROCES MYŚLOWY (Chain of Thought):
 1.  **Analiza:** Jaka jest esencja kategorii "{old_category}" i jej związek z motywem gry: "{theme}"?
-2.  **Burza Mózgów:** Wypisz 5-6 pomysłów na kategorie, które są rozwinięciem lub alternatywą dla "{old_category}".
-3.  **Selekcja:** Wybierz 3 najlepsze pomysły. Upewnij się, że nie powtarzają pozostałych kategorii w grze ({existing_categories}) i że są od siebie różne. Dla każdego sformułuj zwięzły opis.
+2.  **Burza Mózgów:** Wypisz 7-8 pomysłów na kategorie, które są rozwinięciem lub alternatywą dla "{old_category}".
+3.  **Selekcja:** Wybierz 5 najlepszych pomysłów. Upewnij się, że nie powtarzają pozostałych kategorii w grze ({existing_categories}) i że są od siebie różne. Dla każdego sformułuj zwięzły opis.
 
 # OSTATECZNY WYNIK:
 Po procesie myślowym zwróć WYŁĄCZNIE obiekt JSON w formacie: {"choices": [{"name": "Nazwa 1", "description": "Opis 1"}, ...]}`,
-        en: `You are a game master. Your task is to propose THREE alternative categories to replace the old category: "{old_category}".
+        en: `You are a game master. Your task is to propose FIVE alternative categories to replace the old category: "{old_category}".
 
 # CHAIN OF THOUGHT PROCESS:
 1.  **Analysis:** What is the essence of the category "{old_category}" and its relation to the game theme: "{theme}"?
-2.  **Brainstorm:** List 5-6 ideas for categories that are an evolution or alternative to "{old_category}".
-3.  **Selection:** Choose the 3 best ideas. Ensure they do not repeat the other categories in the game ({existing_categories}) and are distinct from each other. Formulate a concise description for each.
+2.  **Brainstorm:** List 7-8 ideas for categories that are an evolution or alternative to "{old_category}".
+3.  **Selection:** Choose the 5 best ideas. Ensure they do not repeat the other categories in the game ({existing_categories}) and are distinct from each other. Formulate a concise description for each.
 
 # FINAL OUTPUT:
 After your thought process, return ONLY a JSON object in the format: {"choices": [{"name": "Name 1", "description": "Description 1"}, ...]}`
     },
+    suggestion_modal_title: { pl: "Sugestie", en: "Suggestions" },
+    suggestion_loader_text: { pl: "Generuję sugestie...", en: "Generating suggestions..." },
+    suggestion_error: { pl: "Nie udało się wygenerować sugestii.", en: "Could not generate suggestions." },
+    suggestion_input_needed: { pl: "Proszę wpisać kategorię, aby uzyskać sugestie.", en: "Please enter a category to get suggestions for." },
+    suggestion_button_title: { pl: "Zasugeruj alternatywy", en: "Suggest alternatives" },
     main_theme_context_prompt: {
         pl: "Pytanie musi dotyczyć motywu: {theme}.",
         en: "The question must relate to the theme: {theme}."
@@ -398,6 +408,15 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
 
 
 // --- UI & NOTIFICATIONS ---
+
+/**
+ * Automatically adjusts the height of a textarea to fit its content.
+ * @param {HTMLTextAreaElement} textarea - The textarea element to resize.
+ */
+function autoResizeTextarea(textarea) {
+    textarea.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
+    textarea.style.height = `${textarea.scrollHeight}px`; // Set height to content height
+}
 
 /**
  * Displays a notification on the screen.
@@ -468,6 +487,10 @@ function setLanguage(lang) {
     const lmStudioUrlInput = document.getElementById('lmstudio-url-input');
     if (lmStudioUrlInput) lmStudioUrlInput.placeholder = translations.lm_studio_url_placeholder[lang];
 
+    // Update suggestion modal title on language change
+    if (UI.suggestionModalTitle) {
+        UI.suggestionModalTitle.textContent = translations.suggestion_modal_title[lang];
+    }
     updateCategoryInputs(translations.default_categories[lang].split(', '));
     updatePlayerNameInputs();
     updateDescriptions();
@@ -486,18 +509,103 @@ function updateDescriptions() {
 // --- GAME SETUP ---
 
 /**
- * Populates the category name input fields.
+ * Handles the click event for the category suggestion button.
+ * It gathers context, calls the API, and displays the suggestion modal.
+ * @param {HTMLTextAreaElement} targetTextarea - The textarea element for which to generate suggestions.
+ */
+async function handleSuggestAlternatives(targetTextarea) {
+    if (!gameState.api.isConfigured()) {
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: gameState.api.configErrorMsg }, 'error');
+        return;
+    }
+
+    const oldCategory = targetTextarea.value.trim();
+    if (!oldCategory) {
+        showNotification({ title: "Input Required", body: translations.suggestion_input_needed[gameState.currentLanguage] }, 'info');
+        return;
+    }
+
+    // Show the modal and the loader immediately for better UX.
+    UI.suggestionModal.classList.remove('hidden');
+    UI.suggestionLoader.classList.remove('hidden');
+    UI.suggestionLoader.querySelector('span').textContent = translations.suggestion_loader_text[gameState.currentLanguage];
+    UI.suggestionButtons.classList.add('hidden');
+    UI.suggestionButtons.innerHTML = ''; // Clear old suggestions
+
+    // Gather context from other categories to avoid generating duplicates.
+    const allCategoryInputs = Array.from(UI.categoriesContainer.querySelectorAll('.category-input'));
+    const existingCategories = allCategoryInputs
+        .map(input => input.value.trim())
+        // Exclude the current and empty categories to create a clean context list.
+        .filter(cat => cat !== oldCategory && cat !== '');
+
+    try {
+        // Pass the dynamically gathered list of existing categories to the function.
+        const choices = await gameState.api.getCategoryMutationChoices(oldCategory, existingCategories);
+
+
+        UI.suggestionLoader.classList.add('hidden');
+        UI.suggestionButtons.classList.remove('hidden');
+
+        if (!choices || choices.length === 0) {
+            UI.suggestionButtons.textContent = translations.suggestion_error[gameState.currentLanguage];
+            return;
+        }
+
+        // Create a button for each suggestion from the API.
+        choices.forEach(choice => {
+            const button = document.createElement('button');
+            button.className = 'w-full p-4 text-white rounded-lg transition-transform hover:scale-105 text-left bg-indigo-600 themed-button';
+            button.innerHTML = `<span class="block font-bold text-lg">${choice.name || ""}</span><p class="text-sm font-normal opacity-90 mt-1">${choice.description || ""}</p>`;
+            button.onclick = () => {
+                targetTextarea.value = choice.name;
+                autoResizeTextarea(targetTextarea); // Adjust height for new content
+                UI.suggestionModal.classList.add('hidden');
+            };
+            UI.suggestionButtons.appendChild(button);
+        });
+
+    } catch (error) {
+        console.error("Failed to get category suggestions:", error);
+        UI.suggestionLoader.classList.add('hidden');
+        UI.suggestionButtons.classList.remove('hidden');
+        UI.suggestionButtons.textContent = translations.suggestion_error[gameState.currentLanguage];
+        showNotification({ title: "API Error", body: "Could not generate suggestions." }, 'error');
+    }
+}
+
+
+/**
+ * Populates the category name input fields using auto-sizing textareas.
  * @param {string[]} cats - An array of category names.
  */
 function updateCategoryInputs(cats) {
     UI.categoriesContainer.innerHTML = '';
     for (let i = 0; i < 6; i++) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'category-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm';
-        input.value = cats[i] || '';
-        input.style.borderLeft = `5px solid ${CONFIG.CATEGORY_COLORS[i]}`;
-        UI.categoriesContainer.appendChild(input);
+        // Create a wrapper to contain both the textarea and the suggestion button.
+        const wrapper = document.createElement('div');
+        wrapper.className = 'relative';
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'category-input mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm';
+        textarea.value = cats[i] || '';
+        textarea.style.borderLeft = `5px solid ${CONFIG.CATEGORY_COLORS[i]}`;
+        textarea.rows = 1;
+        textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+
+        // Create the 'suggest alternatives' button.
+        const suggestBtn = document.createElement('button');
+        suggestBtn.type = 'button'; // Prevent form submission.
+        suggestBtn.className = 'category-suggestion-btn';
+        suggestBtn.title = translations.suggestion_button_title[gameState.currentLanguage];
+        suggestBtn.innerHTML = '✨'; // A magic wand emoji to signify suggestion.
+        suggestBtn.addEventListener('click', () => handleSuggestAlternatives(textarea));
+
+        wrapper.appendChild(textarea);
+        wrapper.appendChild(suggestBtn);
+        UI.categoriesContainer.appendChild(wrapper);
+
+        autoResizeTextarea(textarea);
     }
 }
 
@@ -924,27 +1032,74 @@ function updateUI() {
 
 // --- CORE GAME FLOW ---
 
-/**
- * Sets the visual face of the 3D dice.
- * @param {number} roll - The dice roll result (1-6).
+/*
+ * Creates a realistic, multi-step tumble animation for the dice.
+ * The animation simulates a continuous, decelerating spin without any random speed-ups.
+ * @param {number} roll - The final dice roll result (1-6).
  */
-function setDiceFace(roll) {
+async function animateDiceRoll(roll) {
     const rotations = {
         1: 'rotateY(0deg) rotateX(0deg)', 2: 'rotateX(-90deg)', 3: 'rotateY(90deg)',
         4: 'rotateY(-90deg)', 5: 'rotateX(90deg)', 6: 'rotateY(180deg)'
     };
-    UI.diceElement.style.transform = rotations[roll];
+    const finalTransform = rotations[roll];
+
+    // --- State for a continuous, momentum-based roll ---
+    let currentX = 0;
+    let currentY = 0;
+
+    // Generate a strong, consistent initial spin direction.
+    const spinX = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
+    const spinY = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
+
+    const tumbleCount = 2;
+    const tumbleDelay = 100;
+
+    // Use a fast, linear transition for the main tumbles
+    UI.diceElement.style.transition = 'transform 0.1s linear';
+
+    for (let i = 0; i < tumbleCount; i++) {
+        // The rotation now only decelerates based on the initial spin.
+        // A non-linear divisor (i * 1.5 + 1) creates a more natural slowdown.
+        // The random "wobble" has been removed to prevent perceived speed-ups.
+        currentX += spinX / (i * 1.5 + 1);
+        currentY += spinY / (i * 1.5 + 1);
+
+        const tumbleTransform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+
+        UI.diceElement.style.transform = tumbleTransform;
+        await new Promise(resolve => setTimeout(resolve, tumbleDelay));
+    }
+
+    // Use a final, long, and smooth transition for the "settling" effect.
+    UI.diceElement.style.transition = 'transform 0.8s cubic-bezier(0.2, 1, 0.2, 1)';
+
+    // Apply the final, correct face rotation
+    UI.diceElement.style.transform = finalTransform;
+
+    // Wait for the final animation to complete
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // Reset the inline style
+    UI.diceElement.style.transition = '';
 }
+
 
 /**
  * Handles the dice roll action, calculates possible moves, and highlights them.
+ * This function is now async to await the new animation.
  */
-function rollDice() {
-    if (gameState.isAwaitingMove) return;
+async function rollDice() {
+    // Prevent multiple rolls while one is in progress or awaiting a move
+    if (UI.rollDiceBtn.disabled || gameState.isAwaitingMove) return;
+
+    UI.rollDiceBtn.disabled = true; // Disable button immediately
     UI.gameMessageDiv.textContent = '';
     const roll = Math.floor(Math.random() * 6) + 1;
 
-    setDiceFace(roll);
+    // Await the new, more complex animation before showing results
+    await animateDiceRoll(roll);
+
     UI.diceResultDiv.querySelector('span').textContent = translations.dice_roll_result[gameState.currentLanguage].replace('{roll}', roll);
 
     const player = gameState.players[gameState.currentPlayerIndex];
@@ -955,12 +1110,11 @@ function rollDice() {
 
     if (destinationIds.length > 0) {
         gameState.isAwaitingMove = true;
-        UI.rollDiceBtn.disabled = true;
-        UI.rollDiceBtn.classList.add('opacity-50');
+        // The button remains disabled while the player chooses a move
         UI.gameMessageDiv.textContent = translations.choose_move[gameState.currentLanguage];
         destinationIds.forEach(id => document.getElementById(`square-${id}`).classList.add('highlighted-move'));
     } else {
-        // No possible moves, which shouldn't happen on a connected board, but as a fallback.
+        // No possible moves, so proceed to the next turn (which re-enables the button)
         nextTurn();
     }
 }
@@ -1144,7 +1298,11 @@ async function handleManualVerification(isCorrect) {
         UI.closePopupBtn.classList.add('hidden');
 
         try {
-            const choices = await gameState.api.getCategoryMutationChoices(oldCategory);
+            // Create the context list of other categories from the game state.
+            const otherCategories = gameState.categories.filter(c => c !== oldCategory);
+            // Pass the context list to the function.
+            const choices = await gameState.api.getCategoryMutationChoices(oldCategory, otherCategories);
+
             UI.mutationLoader.classList.add('hidden');
             UI.mutationButtons.classList.remove('hidden');
             UI.mutationButtons.innerHTML = '';
@@ -1621,6 +1779,11 @@ export function initializeApp(apiAdapter) {
     UI.restartGameBtn.addEventListener('click', restartGame);
     UI.downloadStateBtn.addEventListener('click', downloadGameState);
     UI.uploadStateInput.addEventListener('change', handleStateUpload);
+
+    UI.closeSuggestionModalBtn.addEventListener('click', () => {
+        UI.suggestionModal.classList.add('hidden');
+    });
+    UI.suggestionModalTitle.textContent = translations.suggestion_modal_title[gameState.currentLanguage];
 
     UI.playAgainBtn.addEventListener('click', () => {
         UI.winnerScreen.classList.add('hidden');

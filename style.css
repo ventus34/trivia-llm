@@ -116,6 +116,34 @@ body {
     z-index: 5; /* Positioned above squares but below highlighted ones. */
 }
 
+/* Style for category input fields when they are textareas to allow for auto-sizing. */
+textarea.category-input {
+    resize: none; /* Disables the user's ability to manually resize the element. */
+    overflow-y: hidden; /* Hides the vertical scrollbar that can briefly appear during resizing. */
+    min-height: 42px; /* Ensures a minimum height similar to a standard input field. */
+    white-space: pre-wrap; /* Allows the browser to wrap text to the next line. */
+    word-wrap: break-word; /* Forces long words to break to prevent horizontal overflow. */
+}
+
+/* Style for the 'suggest alternatives' button positioned inside the category input area */
+.category-suggestion-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem;
+    font-size: 1.125rem; /* 18px */
+    line-height: 1;
+    color: #9ca3af; /* gray-400 */
+    background-color: transparent;
+    border-radius: 9999px;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.category-suggestion-btn:hover {
+    color: #4f46e5; /* indigo-600 */
+    transform: scale(1.1);
+}
+
 /* --- Player Panel & UI Elements --- */
 
 /* A "wedge" representing a collected category in the player's panel. */
@@ -149,7 +177,8 @@ body {
     height: 100%;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.5s ease-out; /* For the rolling animation. */
+    /* Changed from 0.5s to 0.25s to make the animation faster and snappier. */
+    transition: transform 0.25s ease-out;
 }
 
 /* A single face of the 3D dice. */
@@ -366,6 +395,11 @@ body {
 /* ============================================= */
 /* 4. STATE & HELPER CLASSES                     */
 /* ============================================= */
+
+#game-screen.hidden,
+#setup-screen.hidden {
+    display: none;
+}
 
 /* Generic loading spinner class. */
 .is-loading {
