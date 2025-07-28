@@ -90,7 +90,6 @@ const UI = {
     winnerNameSpan: document.getElementById('winner-name'),
     playAgainBtn: document.getElementById('play-again-btn'),
     notificationContainer: document.getElementById('notification-container'),
-    showHistoryBtn: document.getElementById('show-history-btn'),
     historyModal: document.getElementById('history-modal'),
     closeHistoryBtn: document.getElementById('close-history-btn'),
     historyContent: document.getElementById('history-content'),
@@ -102,7 +101,13 @@ const UI = {
     suggestionModalTitle: document.getElementById('suggestion-modal-title'),
     closeSuggestionModalBtn: document.getElementById('close-suggestion-modal-btn'),
     suggestionLoader: document.getElementById('suggestion-loader'),
-    suggestionButtons: document.getElementById('suggestion-buttons')
+    suggestionButtons: document.getElementById('suggestion-buttons'),
+    
+    // NOWE ELEMENTY MENU
+    openGameMenuBtn: document.getElementById('open-game-menu-btn'),
+    gameMenuPanel: document.getElementById('game-menu-panel'),
+    gameMenuOverlay: document.getElementById('game-menu-overlay'),
+    showHistoryBtn: document.getElementById('show-history-btn')
 };
 
 
@@ -718,7 +723,7 @@ function initializeGame() {
 
     gameState.categories.forEach(cat => {
         if (!gameState.categoryTopicHistory[cat]) {
-            gameState.categoryTopicHistory[cat] = [];
+            gameState.categoryTopicHistory[cat] = { subcategories: [], entities: [] };
         }
     });
 
@@ -1029,7 +1034,7 @@ function renderPlayerTokens() {
  */
 function updateUI() {
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    UI.currentPlayerNameSpan.textContent = currentPlayer.name;
+    UI.currentPlayerNameSpan.innerHTML = `${currentPlayer.emoji} ${currentPlayer.name}`;
     UI.currentPlayerNameSpan.style.color = currentPlayer.color;
     UI.playerScoresContainer.innerHTML = '';
 
@@ -1281,20 +1286,17 @@ async function handleManualVerification(isCorrect) {
 
     // Record the subcategory to history to avoid repetition, regardless of answer correctness
     if (oldCategory && gameState.currentQuestionData.subcategory) {
-        // Zapewnienie kompatybilności wstecznej i inicjalizacja nowej struktury
         if (!gameState.categoryTopicHistory[oldCategory] || Array.isArray(gameState.categoryTopicHistory[oldCategory])) {
             gameState.categoryTopicHistory[oldCategory] = { subcategories: [], entities: [] };
         }
         
         const history = gameState.categoryTopicHistory[oldCategory];
 
-        // Dodawanie podkategorii do jej własnej listy
         const newSubcategory = gameState.currentQuestionData.subcategory;
         if (!history.subcategories.includes(newSubcategory)) {
             history.subcategories.push(newSubcategory);
         }
 
-        // Dodawanie nazw własnych do ich własnej listy
         if (Array.isArray(gameState.currentQuestionData.key_entities)) {
             gameState.currentQuestionData.key_entities.forEach(entity => {
                 if (!history.entities.includes(entity)) {
@@ -1303,7 +1305,6 @@ async function handleManualVerification(isCorrect) {
             });
         }
         
-        // Ograniczanie rozmiaru obu list historii
         if (history.subcategories.length > CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS) {
             history.subcategories = history.subcategories.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS);
         }
@@ -1323,7 +1324,6 @@ async function handleManualVerification(isCorrect) {
                          gameState.mutateCategories;
 
     if (shouldMutate) {
-        // Don't award the wedge yet; wait for the player to choose a new category.
         UI.standardPopupContent.classList.add('hidden');
         UI.mutationContent.classList.remove('hidden');
         UI.mutationLoader.classList.remove('hidden');
@@ -1331,9 +1331,7 @@ async function handleManualVerification(isCorrect) {
         UI.closePopupBtn.classList.add('hidden');
 
         try {
-            // Create the context list of other categories from the game state.
             const otherCategories = gameState.categories.filter(c => c !== oldCategory);
-            // Pass the context list to the function.
             const choices = await gameState.api.getCategoryMutationChoices(oldCategory, otherCategories);
 
             UI.mutationLoader.classList.add('hidden');
@@ -1349,19 +1347,12 @@ async function handleManualVerification(isCorrect) {
                 button.innerHTML = `<span class="block font-bold text-lg">${choice.name || ""}</span><p class="text-sm font-normal opacity-90 mt-1">${choice.description || ""}</p>`;
                 button.onclick = () => {
                     const newCategoryName = choice.name;
-                    // Step 1: Update the category name in the game state.
                     gameState.categories[categoryIndex] = newCategoryName;
-                    
-                    // Step 2: Award the player a wedge for the NEW category.
                     player.wedges.push(newCategoryName);
-
-                    // Step 3: Update the legend to show the new category name.
                     renderCategoryLegend();
-
-                    // Clean up history and notify the player.
                     delete gameState.categoryTopicHistory[oldCategory];
                     if (!gameState.categoryTopicHistory[newCategoryName]) {
-                        gameState.categoryTopicHistory[newCategoryName] = [];
+                        gameState.categoryTopicHistory[newCategoryName] = { subcategories: [], entities: [] };
                     }
                     showNotification({ title: translations.category_mutated[gameState.currentLanguage], body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategoryName) }, 'info');
                     
@@ -1678,7 +1669,6 @@ function handleStateUpload(event) {
             event.target.value = ''; // Reset input
         }
     };
-    // ENCODING FIX: Explicitly read the file as UTF-8 to handle special characters correctly.
     reader.readAsText(file, 'UTF-8');
 }
 
@@ -1689,11 +1679,9 @@ function handleStateUpload(event) {
 function restoreGameState(stateToRestore) {
     Object.assign(gameState, stateToRestore);
     
-    // Reset transient turn state for a clean resume.
     gameState.isAwaitingMove = false;
     gameState.lastAnswerWasCorrect = false;
     
-    // The board layout is not saved, so it must be recreated.
     createBoardLayout();
 
     setLanguage(gameState.currentLanguage);
@@ -1720,18 +1708,15 @@ function restoreGameState(stateToRestore) {
  * @returns {object} The cleaned game state object.
  */
 function getCleanedState() {
-    // Create a deep copy to avoid modifying the live game state.
     const stateToSave = JSON.parse(JSON.stringify(gameState));
 
-    // 1. Exclude keys that are not needed in a save file.
     const excludeKeys = [
         'api', 'promptHistory', 'possiblePaths', 'currentQuestionData',
         'currentForcedCategoryIndex', 'currentPlayerAnswer', 'isAwaitingMove',
-        'lastAnswerWasCorrect', 'board' // The board is procedurally generated.
+        'lastAnswerWasCorrect', 'board'
     ];
     excludeKeys.forEach(key => delete stateToSave[key]);
 
-    // 2. Clean up subcategory history, keeping only history for currently active categories.
     if (stateToSave.categoryTopicHistory && stateToSave.categories) {
         const currentCategories = new Set(stateToSave.categories);
         const cleanedHistory = {};
@@ -1744,6 +1729,39 @@ function getCleanedState() {
     }
 
     return stateToSave;
+}
+
+/**
+ * NOWA FUNKCJA DO OBSŁUGI PANELU BOCZNEGO
+ */
+function setupGameMenu() {
+    const openBtn = UI.openGameMenuBtn;
+    const panel = UI.gameMenuPanel;
+    const overlay = UI.gameMenuOverlay;
+
+    function closeMenu() {
+        panel.classList.remove('visible');
+        overlay.classList.remove('visible');
+    }
+
+    function openMenu() {
+        panel.classList.add('visible');
+        overlay.classList.add('visible');
+    }
+
+    // Dodajemy event listenery, upewniając się, że elementy istnieją
+    if(openBtn) openBtn.addEventListener('click', openMenu);
+    if(overlay) overlay.addEventListener('click', closeMenu);
+
+    // Dodajemy event listenery do przycisków wewnątrz panelu
+    // Uwaga: większość z nich (restart, download, etc.) już ma listenery dodane przez ID.
+    // Jedynie dla przycisku historii, który może być klikany, by zamknąć panel, dodajemy logikę.
+    if(UI.showHistoryBtn) {
+        UI.showHistoryBtn.addEventListener('click', () => {
+            closeMenu();
+            showHistoryModal();
+        });
+    }
 }
 
 
@@ -1763,10 +1781,8 @@ export function initializeApp(apiAdapter) {
         const shouldLoadGame = urlParams.get('loadGame') === 'true';
         const savedGame = loadGameState();
         if (shouldLoadGame && savedGame) {
-            // If the URL directs to load and a save exists, restore the game.
             restoreGameState(savedGame);
         } else {
-            // Otherwise, start with a fresh setup screen.
             setLanguage('pl');
         }
     
@@ -1807,7 +1823,10 @@ export function initializeApp(apiAdapter) {
     UI.acceptAnswerBtn.addEventListener('click', () => handleManualVerification(true));
     UI.rejectAnswerBtn.addEventListener('click', () => handleManualVerification(false));
     UI.closePopupBtn.addEventListener('click', closePopupAndContinue);
-    UI.showHistoryBtn.addEventListener('click', showHistoryModal);
+    
+    // Zmieniamy listener dla przycisku historii - teraz jest w menu
+    // UI.showHistoryBtn.addEventListener('click', showHistoryModal); 
+    
     UI.closeHistoryBtn.addEventListener('click', hideHistoryModal);
     UI.restartGameBtn.addEventListener('click', restartGame);
     UI.downloadStateBtn.addEventListener('click', downloadGameState);
@@ -1821,12 +1840,10 @@ export function initializeApp(apiAdapter) {
     UI.playAgainBtn.addEventListener('click', () => {
         UI.winnerScreen.classList.add('hidden');
         UI.setupScreen.classList.remove('hidden');
-        // Remove the SVG connections overlay when restarting.
         const oldSvg = UI.boardWrapper.querySelector('.board-connections');
         if (oldSvg) oldSvg.remove();
     });
 
-    // Close active emoji pickers when clicking elsewhere on the document.
     document.addEventListener('click', (e) => {
         document.querySelectorAll('.emoji-panel.active').forEach(panel => {
             if (!panel.parentElement.contains(e.target)) {
@@ -1834,4 +1851,7 @@ export function initializeApp(apiAdapter) {
             }
         });
     });
+
+    // WYWOŁANIE FUNKCJI KONFIGURUJĄCEJ PANEL MENU
+    setupGameMenu();
 }

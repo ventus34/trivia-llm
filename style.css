@@ -28,25 +28,17 @@ body {
     margin-bottom: 2rem;
 }
 
-@media (orientation: portrait) {
-/* Mobile Layout for Game Screen (Default) */
-#game-screen {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh; /* Use dynamic viewport height to fill the screen. */
+/* --- Game Menu Panel (Side Panel) --- */
+#game-menu-panel {
+    transition: transform 0.3s ease-in-out;
 }
 
-/* Container for the board, ensuring it doesn't shrink. */
-#game-screen > div:first-child {
-    flex-shrink: 0;
+#game-menu-panel.visible {
+    transform: translateX(0);
 }
 
-/* Controls panel takes remaining space and gets its own scrollbar. */
-#game-controls {
-    flex-grow: 1;       /* Allows this element to expand. */
-    overflow-y: auto;   /* Adds an internal scrollbar if content overflows. */
-    min-height: 0;      /* A necessary flexbox trick to make overflow work correctly. */
-}
+#game-menu-overlay.visible {
+    display: block;
 }
 
 /* SVG container for drawing lines between board squares. */
@@ -177,7 +169,6 @@ textarea.category-input {
     height: 100%;
     position: relative;
     transform-style: preserve-3d;
-    /* Changed from 0.5s to 0.25s to make the animation faster and snappier. */
     transition: transform 0.25s ease-out;
 }
 
@@ -205,64 +196,66 @@ textarea.category-input {
 
 /* --- Modals & Popups (Question, Answer, History) --- */
 
-/* Style for the top border of the modal, used for category color hints. */
-#modal-content {
-    border-top: 8px solid transparent;
-    transition: border-color 0.3s ease-in-out;
+#modal-content, #answer-popup {
+    max-height: 85vh; 
+    display: flex;
+    flex-direction: column; 
 }
 
-/* Fluid font size for the question text. Min 16px, scales with 4% viewport width, max 20px. */
+#question-content {
+    overflow-y: auto;
+    flex-shrink: 1;   
+    min-height: 0;   
+}
+
 #question-text {
     font-size: clamp(1rem, 4vw, 1.25rem); 
     line-height: 1.6;
 }
 
-/* Container for multiple-choice answer buttons. */
-#mcq-options-container {
-    gap: 1rem; /* Increased spacing between buttons. */
-    margin-top: 2rem; /* Increased spacing between question and answers. */
+#standard-popup-content, #mutation-content {
+    overflow-y: auto;
+    flex-shrink: 1;
+    min-height: 0;
 }
 
-/* Buttons for multiple-choice answers. */
+#mcq-options-container {
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
 #mcq-options-container button {
-    /* Fluid font size. Min 16px, preferred 3.5vw, max 18px. */
     font-size: clamp(1rem, 3.5vw, 1.125rem); 
-    /* Fluid padding. */
     padding: clamp(0.75rem, 3vw, 1rem); 
-    border: 1px solid #e5e7eb; /* Light gray border for better contrast. */
+    border: 1px solid #e5e7eb;
     transition: all 0.2s ease-in-out;
 }
 
 #mcq-options-container button:hover {
-    border-color: #6366f1; /* Indigo color to match the theme. */
+    border-color: #6366f1;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* The popup that shows the result after answering. */
 #answer-popup {
     transition: opacity 0.5s, transform 0.5s;
 }
 
-/* Fluid font size for text inside the answer popup. */
 #answer-popup .text-left p {
     font-size: clamp(0.875rem, 3vw, 1rem);
 }
 
-/* Container for prompt history in the history modal. */
 #history-content pre {
-    max-height: 300px; /* Limits height for long prompts. */
+    max-height: 300px;
 }
 
 /* --- Controls & Inputs (Buttons, Sliders, Pickers) --- */
 
-/* Language selection button. */
 .lang-btn.active { 
-    background-color: #4f46e5; /* indigo-600 */
+    background-color: #4f46e5;
     color: white; 
 }
 
-/* Temperature slider styling. */
 #temperature-slider {
     -webkit-appearance: none;
     appearance: none;
@@ -278,7 +271,7 @@ textarea.category-input {
     -webkit-appearance: none;
     appearance: none;
     margin-top: -4px;
-    background-color: var(--thumb-color, #4f46e5); /* Uses a CSS variable for easier theme changes. */
+    background-color: var(--thumb-color, #4f46e5);
     height: 20px;
     width: 20px;
     border-radius: 50%;
@@ -286,7 +279,6 @@ textarea.category-input {
     box-shadow: 0 0 5px rgba(0,0,0,0.3);
 }
 
-/* Emoji picker component. */
 .emoji-picker {
     position: relative;
 }
@@ -334,7 +326,6 @@ textarea.category-input {
 
 /* --- Notifications --- */
 
-/* Notification toast component. */
 .notification {
     max-width: 350px;
     background-color: white;
@@ -344,53 +335,17 @@ textarea.category-input {
     display: flex;
     align-items: start;
     gap: 0.75rem;
-    /* Initial state for slide-in animation. */
     opacity: 0;
     transform: translateX(100%);
     transition: all 0.5s ease-in-out;
 }
-/* Final state for the animation. */
 .notification.show {
     opacity: 1;
     transform: translateX(0);
 }
-/* Color-coded borders for different notification types. */
-.notification.error   { border-left: 4px solid #ef4444; } /* red-500 */
-.notification.success { border-left: 4px solid #22c55e; } /* green-500 */
-.notification.info    { border-left: 4px solid #3b82f6; } /* blue-500 */
-
-/* --- Dynamic Scaling for Game Controls (Portrait Mode Only) --- */
-
-@media (orientation: portrait) {
-    /* Make the main panel padding slightly smaller on very narrow screens. */
-    #game-controls {
-        padding: clamp(1rem, 5vw, 1.5rem); /* Min 16px, preferred 5vw, max 24px */
-    }
-
-    /* Scale the font size of the "Player's Turn" heading. */
-    #game-controls h2 {
-        font-size: clamp(1.125rem, 6vw, 1.5rem); /* Min 18px, preferred 6vw, max 24px */
-    }
-
-    /* Scale the player score entries. */
-    #player-scores .p-2 {
-        padding: clamp(0.25rem, 2vw, 0.5rem);
-    }
-    #player-scores .font-semibold {
-        font-size: clamp(0.875rem, 4vw, 1rem); /* Min 14px, preferred 4vw, max 16px */
-    }
-    .category-wedge {
-        width: clamp(8px, 3vw, 12px);
-        height: clamp(8px, 3vw, 12px);
-    }
-
-    /* Scale the main "Roll Dice" button. */
-    #roll-dice-btn {
-        padding-top: clamp(0.5rem, 3vw, 0.75rem);
-        padding-bottom: clamp(0.5rem, 3vw, 0.75rem);
-        font-size: clamp(1rem, 5vw, 1.125rem); /* Min 16px, preferred 5vw, max 18px */
-    }
-}
+.notification.error   { border-left: 4px solid #ef4444; }
+.notification.success { border-left: 4px solid #22c55e; }
+.notification.info    { border-left: 4px solid #3b82f6; }
 
 /* ============================================= */
 /* 4. STATE & HELPER CLASSES                     */
@@ -401,25 +356,25 @@ textarea.category-input {
     display: none;
 }
 
-/* Generic loading spinner class. */
 .is-loading {
     animation: spin 1s linear infinite;
-    display: inline-block; /* Required for transform to work correctly. */
+    display: inline-block;
 }
 
-/* Visibility toggles for all modals. */
 #question-modal,
 #history-modal,
 #category-choice-modal,
 #model-choice-modal {
-    display: none; /* Hidden by default. */
+    display: none;
 }
 
 #question-modal.visible,
 #history-modal.visible,
 #category-choice-modal.visible,
 #model-choice-modal.visible {
-    display: flex; /* Displayed when the .visible class is added via JS. */
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10vh;
 }
 
 /* ============================================= */
@@ -435,7 +390,6 @@ textarea.category-input {
 /* 6. THEMING                                    */
 /* ============================================= */
 
-/* --- Theme Switcher Component --- */
 #theme-switcher label {
     cursor: pointer;
     padding: 0.25rem 0.5rem;
@@ -444,22 +398,18 @@ textarea.category-input {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
     user-select: none;
 }
 .theme-radio {
-    display: none; /* Hide the original radio inputs. */
+    display: none;
 }
-/* Style the icon within the label when the associated radio is checked. */
 .theme-radio:checked + span {
     background-color: transparent;
     box-shadow: none;
-    transform: scale(1.25); /* Enlarge the icon to indicate selection. */
+    transform: scale(1.25);
     font-weight: bold;
 }
-
-/* --- 6.1. SHARED STYLES for Dark & OLED Themes --- */
-/* (Common text colors, controls, borders, etc.)   */
 
 html.dark,
 html.oled {
@@ -468,10 +418,9 @@ html.oled {
 
 html.dark body,
 html.oled body {
-    color: rgb(229 231 235); /* text-gray-200 */
+    color: rgb(229 231 235);
 }
 
-/* Consistent text color overrides for various elements. */
 html.dark h1, html.oled h1,
 html.dark h2, html.oled h2,
 html.dark h3, html.oled h3,
@@ -479,25 +428,24 @@ html.dark #question-text, html.oled #question-text,
 html.dark .player-name-input, html.oled .player-name-input,
 html.dark #player-count, html.oled #player-count,
 html.dark .text-sm.text-gray-900, html.oled .text-sm.text-gray-900,
-html.dark .font-bold.mb-3.flex.items-center.text-slate-800, html.oled .font-bold.mb-3.flex.items-center.text-slate-800 {
-    color: rgb(229 231 235); /* text-gray-200 */
+html.dark .font-bold.mb-3.flex.items-center.text-slate-800, html.oled .font-bold.mb-3.flex.items-center.text-slate-800,
+html.dark #game-menu-panel, html.oled #game-menu-panel {
+    color: rgb(229 231 235);
 }
 
 html.dark dl dt, html.oled dl dt {
-    color: rgb(226 232 240); /* text-slate-200 */
+    color: rgb(226 232 240);
 }
 
-/* Subtler text colors for descriptions and secondary text. */
 html.dark dl dd, html.oled dl dd,
 html.dark .text-gray-700, html.oled .text-gray-700,
 html.dark .text-slate-700, html.oled .text-slate-700,
 html.dark .text-gray-500, html.oled .text-gray-500,
 html.dark #game-mode-description, html.oled #game-mode-description,
 html.dark #knowledge-level-description, html.oled #knowledge-level-description {
-    color: rgb(156 163 175); /* text-gray-400 */
+    color: rgb(156 163 175);
 }
 
-/* Form controls styling. */
 html.dark input, html.oled input,
 html.dark select, html.oled select {
     background-color: rgb(75 85 99);
@@ -514,7 +462,6 @@ html.dark input[type="checkbox"], html.oled input[type="checkbox"] {
     border-radius: 4px;
 }
 
-/* Button styling. */
 html.dark .emoji-button, html.oled .emoji-button { background-color: rgb(55 65 81); }
 html.dark .emoji-button:hover, html.oled .emoji-button:hover { background-color: rgb(75 85 99); }
 
@@ -532,46 +479,42 @@ html.dark .lang-btn:hover:not(.active), html.oled .lang-btn:hover:not(.active) {
     background-color: rgb(75 85 99);
 }
 
-/* Theming for answer/explanation text blocks. */
 html.dark #player-answer-text,
 html.oled #player-answer-text {
     color: #FFFFFF;
 }
 html.dark #correct-answer-text,
 html.oled #correct-answer-text {
-    background-color: #14532d;  /* Dark Green */
-    color: #dcfce7;           /* Light Green Text */
+    background-color: #14532d;
+    color: #dcfce7;
     border: 1px solid #166534;
 }
 html.dark #explanation-text,
 html.oled #explanation-text {
-    background-color: #7c2d12; /* Dark Amber */
-    color: #fef9c3;           /* Light Yellow Text */
+    background-color: #7c2d12;
+    color: #fef9c3;
     border: 1px solid #92400e;
 }
 html.dark #incorrect-explanation-text,
 html.oled #incorrect-explanation-text {
-    background-color: #7f1d1d; /* Dark Red */
-    color: #fee2e2;           /* Light Red Text */
+    background-color: #7f1d1d;
+    color: #fee2e2;
     border: 1px solid #991b1b;
 }
 
 html.dark [data-lang-key="infobox_rules_desc"] ul,
 html.oled [data-lang-key="infobox_rules_desc"] ul {
-    color: rgb(164 178 199); /* text-slate-400 */
+    color: rgb(164 178 199);
 }
 
-
-/* --- 6.2. DARK Theme Specifics (Backgrounds) --- */
-
-html.dark body { background-color: rgb(31 41 55); } /* bg-gray-800 */
-html.dark .bg-white { background-color: rgb(55 65 81); } /* bg-gray-700 */
-html.dark .bg-gray-100 { background-color: rgb(75 85 99); } /* bg-gray-600 */
-html.dark .bg-slate-100 { background-color: rgb(51 65 85); } /* bg-slate-700 */
-html.dark #theme-switcher { background-color: rgb(75 85 99); } /* bg-gray-600 */
+html.dark body { background-color: rgb(31 41 55); }
+html.dark .bg-white { background-color: rgb(55 65 81); }
+html.dark #game-menu-panel { background-color: rgb(75 85 99); }
+html.dark .bg-gray-100 { background-color: rgb(75 85 99); }
+html.dark .bg-slate-100 { background-color: rgb(51 65 85); }
+html.dark #theme-switcher { background-color: rgb(55 65 81); }
 html.dark .board-connections line { stroke: #6b7280; }
 
-/* Add a dark overlay to board squares to reduce their brightness. */
 html.dark .board-square::after { 
     content: ''; 
     position: absolute; 
@@ -581,31 +524,26 @@ html.dark .board-square::after {
     opacity: 0.25; 
     transition: opacity 0.3s ease; 
 }
-/* Remove overlay on highlighted squares to make them pop. */
 html.dark .board-square.highlighted-move::after { opacity: 0; }
 
-/* --- 6.3. OLED Theme Specifics (Backgrounds & Filters) --- */
-
-/* Set all main backgrounds to pure black for a true OLED experience. */
 html.oled body,
 html.oled .bg-white,
+html.oled #game-menu-panel,
 html.oled .bg-gray-100,
 html.oled .bg-slate-100,
 html.oled #theme-switcher {
     background-color: #000000;
 }
 
-/* Add subtle borders to key containers to maintain visual separation. */
 html.oled .bg-white, 
+html.oled #game-menu-panel,
 html.oled .bg-slate-100,
 html.oled #theme-switcher {
-    border: 1px solid #27272a; /* zinc-800, a very dark gray */
+    border: 1px solid #27272a;
 }
 
-/* Connection lines for the board in OLED mode. */
 html.oled .board-connections line { stroke: #4b5563; }
 
-/* Add a darker overlay for OLED mode. */
 html.oled .board-square::after { 
     content: ''; 
     position: absolute; 
@@ -617,13 +555,12 @@ html.oled .board-square::after {
 }
 html.oled .board-square.highlighted-move::after { opacity: 0; }
 
-/* Reduce brightness of colorful UI elements to prevent eye strain on OLED screens. */
 html.oled #current-player-name,
 html.oled #category-legend .w-4.h-4 {
     filter: brightness(0.7);
 }
 html.oled #category-legend span {
-    color: rgb(156 163 175); /* text-gray-400 */
+    color: rgb(156 163 175);
 }
 html.oled .themed-button {
     filter: brightness(0.7);
@@ -648,36 +585,101 @@ html.oled #model-choice-modal {
 /* 7. RESPONSIVE DESIGN                          */
 /* ============================================= */
 
-/* --- Mobile & Tablet First (Default styles are mobile-first) --- */
-
-/* Dynamically scale the board to fit within the viewport on any device. */
 .board-wrapper {
-    /* min() ensures it never exceeds 85% of height or 90% of width. */
     width: min(85vh, 90vw);
     height: min(85vh, 90vw);
-    margin: 1rem auto; /* Better centering for flexible containers. */
+    margin: 1rem auto;
 }
 
-/* Media query for small screens (e.g., mobile phones). */
 @media (max-width: 640px) {
-    /* Stacks grid items in a single column on the setup screen. */
     #setup-screen .grid-cols-1.sm\\:grid-cols-2 {
         grid-template-columns: 1fr;
     }
 }
 
-/* --- Desktop (Large Screens) --- */
+@media (orientation: portrait) {
+    #game-screen {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        padding: 1rem;
+    }
 
-/* Media query for large screens (>= 1024px). */
+    #game-controls {
+        flex-grow: 1;
+        overflow-y: auto;
+        min-height: 0;
+        margin-bottom: 1rem;
+    }
+
+    #game-screen > #roll-dice-btn {
+        flex-shrink: 0;
+    }
+
+    #game-controls h2 {
+        font-size: clamp(1.125rem, 6vw, 1.5rem);
+    }
+    #player-scores .p-2 {
+        padding: clamp(0.25rem, 2vw, 0.5rem);
+    }
+    #player-scores .font-semibold {
+        font-size: clamp(0.875rem, 4vw, 1rem);
+    }
+    .category-wedge {
+        width: clamp(8px, 3vw, 12px);
+        height: clamp(8px, 3vw, 12px);
+    }
+}
+
+@media (orientation: landscape) {
+    #game-screen {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-rows: 1fr;
+        height: 100vh;
+        padding: 1rem;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    #game-screen > .flex {
+        height: 100%;
+        max-height: calc(100vh - 2rem);
+    }
+    .board-wrapper {
+        width: auto;
+        height: 100%;
+        aspect-ratio: 1 / 1;
+        margin: 0;
+    }
+
+    #game-controls {
+        height: 100%;
+        max-height: calc(100vh - 2rem);
+        margin-bottom: 0;
+    }
+
+    #roll-dice-btn {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        height: 100%;
+        width: 60px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+}
+
+
 @media (min-width: 1024px) {
-    /* A specific class for the game grid layout on large screens. */
     .js-game-grid-layout {
         display: grid;
-        grid-template-columns: 1fr 420px; /* Board on left, controls on right. */
+        grid-template-columns: 1fr 420px;
         align-items: stretch; 
     }
 
-    /* Center the board container vertically within its grid cell. */
     .js-game-grid-layout > div:first-child {
         display: flex;
         flex-direction: column;
@@ -685,22 +687,19 @@ html.oled #model-choice-modal {
         justify-content: center;
     }
 
-    /* Override board wrapper styles for the desktop layout. */
     .board-wrapper {
         width: 90%;
         aspect-ratio: 1 / 1;
         max-width: none; 
         max-height: 92vh; 
-        margin: 0; /* Remove auto margin. */
+        margin: 0;
     }
 
-    /* Align the game controls panel to the start of its grid cell. */
     .js-game-grid-layout #game-controls {
         max-height: 90vh;
         justify-self: start;
     }
 
-    /* Enlarge fonts and modals for better readability on large screens. */
     #question-modal .bg-white, #answer-popup {
         max-width: 1024px;
     }
