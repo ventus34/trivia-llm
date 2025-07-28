@@ -158,13 +158,14 @@ textarea.category-input {
 
 /* Container to establish the 3D perspective for the dice. */
 .dice-container {
-    width: 60px;
-    height: 60px;
+    width: 80px; /* Zwiększono z 60px */
+    height: 80px; /* Zwiększono z 60px */
     perspective: 1000px;
 }
 
 /* The dice itself, which holds the 3D faces. */
 .dice {
+    cursor: pointer;
     width: 100%;
     height: 100%;
     position: relative;
@@ -175,11 +176,11 @@ textarea.category-input {
 /* A single face of the 3D dice. */
 .face {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 80px;  /* Zwiększono z 60px */
+    height: 80px; /* Zwiększono z 60px */
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid #999;
-    font-size: 30px;
+    font-size: 40px; /* Zwiększono z 30px */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -187,12 +188,12 @@ textarea.category-input {
 }
 
 /* 3D transforms to position each face correctly in 3D space. */
-.front  { transform: rotateY(  0deg) translateZ(30px); }
-.back   { transform: rotateY(180deg) translateZ(30px); }
-.right  { transform: rotateY( 90deg) translateZ(30px); }
-.left   { transform: rotateY(-90deg) translateZ(30px); }
-.top    { transform: rotateX( 90deg) translateZ(30px); }
-.bottom { transform: rotateX(-90deg) translateZ(30px); }
+.front  { transform: rotateY(  0deg) translateZ(40px); } /* Zwiększono z 30px */
+.back   { transform: rotateY(180deg) translateZ(40px); } /* Zwiększono z 30px */
+.right  { transform: rotateY( 90deg) translateZ(40px); } /* Zwiększono z 30px */
+.left   { transform: rotateY(-90deg) translateZ(40px); } /* Zwiększono z 30px */
+.top    { transform: rotateX( 90deg) translateZ(40px); } /* Zwiększono z 30px */
+.bottom { transform: rotateX(-90deg) translateZ(40px); } /* Zwiększono z 30px */
 
 /* --- Modals & Popups (Question, Answer, History) --- */
 
@@ -200,6 +201,18 @@ textarea.category-input {
     max-height: 85vh; 
     display: flex;
     flex-direction: column; 
+}
+
+#player-answer-text,
+#correct-answer-text,
+#incorrect-explanation-text,
+#explanation-text {
+    overflow-wrap: break-word;
+    width: 100%; 
+}
+
+#answer-popup.opacity-0 {
+    pointer-events: none;
 }
 
 #question-content {
@@ -214,8 +227,8 @@ textarea.category-input {
 }
 
 #standard-popup-content, #mutation-content {
+    flex-grow: 1;
     overflow-y: auto;
-    flex-shrink: 1;
     min-height: 0;
 }
 
@@ -373,8 +386,8 @@ textarea.category-input {
 #category-choice-modal.visible,
 #model-choice-modal.visible {
     display: flex;
-    align-items: flex-start;
-    padding-top: 10vh;
+    align-items: center; 
+    justify-content: center;
 }
 
 /* ============================================= */
@@ -385,6 +398,25 @@ textarea.category-input {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
 }
+
+@keyframes pulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    70% {
+      transform: scale(1.05);
+      box-shadow: 0 0 10px 20px rgba(255, 255, 255, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+  }
+  
+  .hint-pulsate .dice {
+      animation: pulse 2s infinite;
+  }
 
 /* ============================================= */
 /* 6. THEMING                                    */
@@ -591,6 +623,11 @@ html.oled #model-choice-modal {
     margin: 1rem auto;
 }
 
+#game-controls h2 { font-size: 1.5rem; }
+#game-controls #category-legend span { font-size: 0.875rem; }
+#game-controls #player-scores .font-semibold { font-size: 1rem; }
+#game-controls #dice-result { font-size: 1rem; }
+
 @media (max-width: 640px) {
     #setup-screen .grid-cols-1.sm\\:grid-cols-2 {
         grid-template-columns: 1fr;
@@ -607,13 +644,8 @@ html.oled #model-choice-modal {
 
     #game-controls {
         flex-grow: 1;
-        overflow-y: auto;
         min-height: 0;
-        margin-bottom: 1rem;
-    }
-
-    #game-screen > #roll-dice-btn {
-        flex-shrink: 0;
+        margin-bottom: 0;
     }
 
     #game-controls h2 {
@@ -631,10 +663,26 @@ html.oled #model-choice-modal {
     }
 }
 
+@media (orientation: portrait) {
+    #game-screen {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        padding: 1rem;
+    }
+
+    #game-controls {
+        flex-grow: 1;
+        overflow-y: auto;
+        min-height: 0;
+        margin-bottom: 0;
+    }
+}
+
 @media (orientation: landscape) {
     #game-screen {
         display: grid;
-        grid-template-columns: auto 1fr auto;
+        grid-template-columns: auto 1fr;
         grid-template-rows: 1fr;
         height: 100vh;
         padding: 1rem;
@@ -659,25 +707,24 @@ html.oled #model-choice-modal {
         margin-bottom: 0;
     }
 
-    #roll-dice-btn {
-        writing-mode: vertical-rl;
-        text-orientation: mixed;
-        height: 100%;
-        width: 60px;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
+    /* NOWE REGUŁY: Dostosowanie zawartości do wąskiego panelu */
+    #game-controls #category-legend {
+        /* Zmieniamy na jedną kolumnę, aby tekst się zmieścił */
+        grid-template-columns: repeat(1, 1fr);
     }
+    /* Zmniejszamy czcionki specjalnie dla tego widoku */
+    #game-controls h2 { font-size: 1.25rem; }
+    #game-controls #category-legend span { font-size: 0.8rem; }
+    #game-controls #player-scores .font-semibold { font-size: 0.875rem; }
 }
 
 
-@media (min-width: 1024px) {
+@media (min-width: 600px) {
     .js-game-grid-layout {
         display: grid;
-        grid-template-columns: 1fr 420px;
-        align-items: stretch; 
+        grid-template-columns: 2fr 1fr;
+        align-items: stretch;
+        gap: 2rem;
     }
 
     .js-game-grid-layout > div:first-child {
@@ -686,27 +733,55 @@ html.oled #model-choice-modal {
         align-items: center;
         justify-content: center;
     }
-
     .board-wrapper {
         width: 90%;
         aspect-ratio: 1 / 1;
-        max-width: none; 
-        max-height: 92vh; 
+        max-width: none;
+        max-height: 92vh;
         margin: 0;
     }
-
+    
     .js-game-grid-layout #game-controls {
         max-height: 90vh;
         justify-self: start;
+        max-width: 550px;
+        container-type: inline-size;
+        container-name: game-controls;
     }
 
+    /* Duże, skalowalne czcionki TYLKO dla widoku desktop/TV */
+    @container game-controls (min-width: 300px) {
+        .js-game-grid-layout h2 {
+            font-size: clamp(1.5rem, 8cqi, 3rem);
+        }
+        .js-game-grid-layout #category-legend span {
+            font-size: clamp(1rem, 4.5cqi, 1.5rem);
+        }
+        .js-game-grid-layout #player-scores .font-semibold {
+            font-size: clamp(1.1rem, 5cqi, 1.75rem);
+        }
+        .js-game-grid-layout #dice-result {
+            font-size: clamp(1.2rem, 5.5cqi, 1.75rem);
+        }
+    }
+    
     #question-modal .bg-white, #answer-popup {
-        max-width: 1024px;
+        max-width: 70vw;
+        max-height: 80vh;
+    }
+
+    #question-category {
+        font-size: clamp(1.5rem, 3vw, 2.25rem);
     }
     #question-modal #question-text, #answer-popup h3 {
-        font-size: 1.75rem;
+        font-size: 3rem;
+    }
+    #mcq-options-container {
+        position: relative;
+        z-index: 2;
+        gap: 1.5rem;
     }
     #mcq-options-container button, #answer-popup .text-left p {
-        font-size: 1.125rem;
+        font-size: 1.75rem;
     }
 }

@@ -43,7 +43,7 @@
                         <div class="flex items-end gap-2">
                             <select id="model-select" class="flex-grow mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
                                 </select>
-                                <button id="refresh-models-btn" class="p-2 mb-1 rounded-md hover:bg-gray-200 text-xl">
+                                <button id="refresh-models-btn" class="p-2 mb-1 rounded-md hover:bg-gray-200 text-xl" title="Odśwież listę modeli">
                                     <span id="refresh-icon">🔄</span>
                                 </button>
                         </div>
@@ -147,19 +147,20 @@
     </div>
 </div>
 
-<div id="game-screen" class="js-game-grid-layout hidden w-full min-h-screen p-4 lg:p-8 flex flex-col lg:flex-row items-center lg:items-stretch justify-center lg:justify-between gap-8 lg:gap-12">
+<div id="game-screen" class="js-game-grid-layout hidden w-full min-h-screen p-4 lg:p-8 flex-col lg:flex-row items-center lg:items-stretch justify-center lg:justify-between gap-8 lg:gap-12">
     <div class="flex flex-col items-center gap-4">
         <div class="board-wrapper">
             <div id="board" class="board-container"></div>
         </div>
     </div>
-
-    <div id="game-controls" class="w-full max-w-sm bg-white p-6 rounded-2xl shadow-xl flex flex-col">
-        <div class="scrollable-content space-y-4 overflow-y-auto">
+    
+    <div id="game-controls" class="w-full max-w-sm bg-white rounded-2xl shadow-xl flex flex-col">
+        <div class="scrollable-content space-y-4 overflow-y-auto flex-grow p-6">
             <h2 class="text-2xl font-bold text-left flex justify-between items-start">
-                <span>
-                    <span data-lang-key="player_turn">Tura Gracza</span>: <span id="current-player-name"></span>
-                </span>
+                <div>
+                    <span><span data-lang-key="player_turn">Tura Gracza</span>: <span id="current-player-emoji"></span></span>
+                    <div id="current-player-name" class="text-xl font-medium -mt-1"></div>
+                </div>
                 <button id="open-game-menu-btn" title="Opcje gry" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
@@ -182,14 +183,12 @@
             <div id="game-message" class="text-center font-medium text-red-600 h-6"></div>
         </div>
     </div>
-
-    <button id="roll-dice-btn" data-lang-key="roll_dice_btn" class="w-full max-w-sm mx-auto py-3 px-4 rounded-md shadow-sm text-lg font-bold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors themed-button">Rzuć Kostką</button>
 </div>
 
-<div id="question-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+<div id="question-modal" class="hidden fixed inset-0 bg-gray-900 z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl space-y-6 transform transition-all scale-95 opacity-0" id="modal-content">
         <div class="flex justify-between items-center">
-            <h3 class="text-xl font-bold" id="question-category"></h3>
+            <h3 id="question-category" class="font-bold"></h3>
             <button id="regenerate-question-btn" class="p-2 rounded-full hover:bg-gray-200 transition-colors" data-lang-key="regenerate_question_btn" title="Nowe pytanie">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9c-4.97 0-9-4.03-9-9s4.03-9 9-9"/><path d="M21 3v5h-5"/><path d="M3 12a9 9 0 0 1 9-9c1.61 0 3.11.42 4.47 1.17L21 3"/></svg>
             </button>
@@ -213,32 +212,33 @@
     </div>
 </div>
 
-<div id="category-choice-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+<div id="category-choice-modal" class="hidden fixed inset-0 bg-gray-900 z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg space-y-4">
         <h3 data-lang-key="choose_category_title" class="text-2xl font-bold text-center">Wybierz kategorię</h3>
         <div id="category-choice-buttons" class="grid grid-cols-2 gap-4"></div>
     </div>
 </div>
 
-<div id="answer-popup" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 bg-white rounded-xl shadow-2xl z-50 max-w-md w-full text-center opacity-0 scale-90">
+<div id="answer-popup" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-8 bg-white rounded-xl shadow-2xl z-50 max-w-md w-full text-center opacity-0 scale-90">
     <div id="standard-popup-content">
         <h3 id="answer-popup-title" class="text-2xl font-bold mb-4 text-gray-800"></h3>
-        <div class="text-left space-y-3">
+        <div class="text-left space-y-5">
             <div>
                 <p class="text-sm font-medium text-gray-500" data-lang-key="player_answer_was">Odpowiedź gracza:</p>
-                <p id="player-answer-text" class="p-2 bg-gray-100 rounded-md"></p>
+                <p id="player-answer-text" class="mt-2 p-2 bg-gray-100 rounded-md"></p>
             </div>
             <div id="incorrect-explanation-container" class="hidden">
                 <p class="text-sm font-medium text-red-500" data-lang-key="your_answer_explanation">Uzasadnienie błędu:</p>
-                <p id="incorrect-explanation-text" class="p-2 bg-red-100 rounded-md"></p>
-                <div id="incorrect-explanation-loader" class="hidden text-center p-2"><span class="text-sm text-gray-500" data-lang-key="analyzing_text">Analizuję...</span></div>            </div>
+                <p id="incorrect-explanation-text" class="mt-2 p-2 bg-red-100 rounded-md"></p>
+                <div id="incorrect-explanation-loader" class="hidden text-center p-2"><span class="text-sm text-gray-500" data-lang-key="analyzing_text">Analizuję...</span></div>
+            </div>
             <div id="correct-answer-container">
                 <p class="text-sm font-medium text-gray-500" data-lang-key="correct_answer_is">Poprawna odpowiedź:</p>
-                <p id="correct-answer-text" class="p-2 bg-green-100 rounded-md"></p>
+                <p id="correct-answer-text" class="mt-2 p-2 bg-green-100 rounded-md"></p>
             </div>
             <div id="explanation-container" class="hidden">
                 <p class="text-sm font-medium text-gray-500" data-lang-key="explanation">Wyjaśnienie poprawnej odpowiedzi:</p>
-                <p id="explanation-text" class="p-2 bg-yellow-100 rounded-md"></p>
+                <p id="explanation-text" class="mt-2 p-2 bg-yellow-100 rounded-md"></p>
             </div>
         </div>
     </div>
@@ -272,7 +272,7 @@
     <button id="play-again-btn" data-lang-key="play_again_btn" class="py-3 px-6 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 transition-colors themed-button">Zagraj Ponownie</button>
 </div>
 
-<div id="history-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 items-center justify-center z-50 p-4">
+<div id="history-modal" class="hidden fixed inset-0 bg-gray-900 z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
         <div class="flex-shrink-0 p-4 flex justify-between items-center border-b">
             <h3 id="history-modal-title" class="text-xl font-bold">Historia Promptów</h3>
@@ -285,7 +285,7 @@
     </div>
 </div>
 
-<div id="model-choice-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-[60] p-4">
+<div id="model-choice-modal" class="hidden fixed inset-0 bg-gray-900 z-[60] p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg space-y-4 text-center">
         <h3 id="model-choice-title" data-lang-key="rate_limit_title" class="text-2xl font-bold"></h3>
         <p data-lang-key="rate_limit_desc" class="text-gray-600"></p>
@@ -297,7 +297,7 @@
     </div>
 </div>
 
-<div id="suggestion-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+<div id="suggestion-modal" class="hidden fixed inset-0 bg-gray-900 z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md space-y-4">
         <div class="flex justify-between items-center">
             <h3 id="suggestion-modal-title" class="text-xl font-bold">Alternative Suggestions</h3>
@@ -355,7 +355,6 @@
 
 
 <script type="module">
-    // Importujemy główną logikę i adapter dla Gemini
     import { initializeApp } from './game_core.js';
     import './adapter_gemini.js';
 </script>

@@ -48,11 +48,11 @@ const UI = {
     boardWrapper: document.querySelector('.board-wrapper'),
     boardElement: document.getElementById('board'),
     categoryLegend: document.getElementById('category-legend'),
-    currentPlayerNameSpan: document.getElementById('current-player-name'),
+    currentPlayerEmojiSpan: document.getElementById('current-player-emoji'),
+    currentPlayerNameDiv: document.getElementById('current-player-name'),
     playerScoresContainer: document.getElementById('player-scores'),
     diceResultDiv: document.getElementById('dice-result'),
     diceElement: document.getElementById('dice'),
-    rollDiceBtn: document.getElementById('roll-dice-btn'),
     gameMessageDiv: document.getElementById('game-message'),
     questionModal: document.getElementById('question-modal'),
     modalContent: document.getElementById('modal-content'),
@@ -741,6 +741,7 @@ function initializeGame() {
     renderBoard();
     renderCategoryLegend();
     updateUI();
+    UI.diceResultDiv.classList.add('hint-pulsate');
     UI.setupScreen.classList.add('hidden');
     UI.gameScreen.classList.remove('hidden');
 }
@@ -820,8 +821,11 @@ async function askQuestion(forcedCategoryIndex = null) {
             UI.mcqOptionsContainer.classList.remove('hidden');
             data.options.forEach(option => {
                 const button = document.createElement('button');
-                button.className = "w-full p-3 text-left bg-gray-100 hover:bg-indigo-100 rounded-lg transition-colors";
-                button.textContent = option;
+
+                button.className = "w-full p-3 text-center bg-gray-100 hover:bg-indigo-100 rounded-lg transition-colors flex justify-center items-center";
+                
+                button.innerHTML = `<span>${option}</span>`;
+                
                 button.onclick = () => handleMcqAnswer(option);
                 UI.mcqOptionsContainer.appendChild(button);
             });
@@ -846,8 +850,7 @@ async function askQuestion(forcedCategoryIndex = null) {
         UI.questionContent.classList.remove('hidden');
         setTimeout(() => {
             hideModal();
-            UI.rollDiceBtn.disabled = false;
-            UI.rollDiceBtn.classList.remove('opacity-50');
+            UI.diceElement.disabled = false;
             UI.gameMessageDiv.textContent = 'Error, roll again.';
         }, 3000);
     }
@@ -1034,8 +1037,9 @@ function renderPlayerTokens() {
  */
 function updateUI() {
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    UI.currentPlayerNameSpan.innerHTML = `${currentPlayer.emoji} ${currentPlayer.name}`;
-    UI.currentPlayerNameSpan.style.color = currentPlayer.color;
+    UI.currentPlayerEmojiSpan.textContent = currentPlayer.emoji;
+    UI.currentPlayerNameDiv.textContent = currentPlayer.name;
+    UI.currentPlayerNameDiv.style.color = currentPlayer.color;
     UI.playerScoresContainer.innerHTML = '';
 
     gameState.players.forEach((player, playerIndex) => {
@@ -1116,9 +1120,10 @@ async function animateDiceRoll(roll) {
  */
 async function rollDice() {
     // Prevent multiple rolls while one is in progress or awaiting a move
-    if (UI.rollDiceBtn.disabled || gameState.isAwaitingMove) return;
+    UI.diceResultDiv.classList.remove('hint-pulsate');
+    if (UI.diceElement.disabled || gameState.isAwaitingMove) return;
 
-    UI.rollDiceBtn.disabled = true; // Disable button immediately
+    UI.diceElement.disabled = true; // Disable button immediately
     UI.gameMessageDiv.textContent = '';
     const roll = Math.floor(Math.random() * 6) + 1;
 
@@ -1199,8 +1204,7 @@ async function handleSquareClick(squareId) {
     const landedSquare = gameState.board.find(s => s.id === squareId);
     if (landedSquare.type === CONFIG.SQUARE_TYPES.ROLL_AGAIN) {
         UI.diceResultDiv.querySelector('span').textContent = 'Roll Again!';
-        UI.rollDiceBtn.disabled = false;
-        UI.rollDiceBtn.classList.remove('opacity-50');
+        UI.diceElement.disabled = false;
     } else if (landedSquare.type === CONFIG.SQUARE_TYPES.HUB) {
         promptCategoryChoice();
     } else {
@@ -1231,9 +1235,9 @@ function nextTurn() {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
     updateUI();
     UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
-    UI.rollDiceBtn.disabled = false;
-    UI.rollDiceBtn.classList.remove('opacity-50');
+    UI.diceElement.disabled = false;
     saveGameState();
+    UI.diceResultDiv.classList.add('hint-pulsate');
 }
 
 /**
@@ -1460,8 +1464,7 @@ function closePopupAndContinue() {
     if (gameState.lastAnswerWasCorrect) {
         // Player answered correctly, they get to roll again.
         UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
-        UI.rollDiceBtn.disabled = false;
-        UI.rollDiceBtn.classList.remove('opacity-50');
+        UI.diceElement.disabled = false;
     } else {
         // Player was incorrect, pass the turn.
         nextTurn();
@@ -1696,8 +1699,7 @@ function restoreGameState(stateToRestore) {
     renderCategoryLegend();
     updateUI();
 
-    UI.rollDiceBtn.disabled = false;
-    UI.rollDiceBtn.classList.remove('opacity-50');
+    UI.diceElement.disabled = false;
     UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
     UI.gameMessageDiv.textContent = '';
 }
@@ -1817,7 +1819,7 @@ export function initializeApp(apiAdapter) {
 
     UI.playerCountInput.addEventListener('input', updatePlayerNameInputs);
     UI.startGameBtn.addEventListener('click', initializeGame);
-    UI.rollDiceBtn.addEventListener('click', rollDice);
+    UI.diceElement.addEventListener('click', rollDice);
     UI.submitAnswerBtn.addEventListener('click', handleOpenAnswer);
     UI.answerInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleOpenAnswer(); });
     UI.acceptAnswerBtn.addEventListener('click', () => handleManualVerification(true));
