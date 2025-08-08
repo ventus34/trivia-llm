@@ -7,17 +7,17 @@ function initializeThemeSwitcher() {
     const switcher = document.getElementById('theme-switcher');
     if (!switcher) return;
 
-    // Przekształcenie labeli w przyciski dla lepszej stylizacji
+    // Convert labels into buttons for better styling
     switcher.querySelectorAll('label').forEach(label => {
         const radio = label.querySelector('input');
         const span = document.createElement('span');
-        span.textContent = label.textContent; // Przenosimy emoji do spana
+        span.textContent = label.textContent; // Move the emoji to the span
         label.textContent = '';
         label.appendChild(radio);
         label.appendChild(span);
     });
 
-    // Ustawienie aktywnego przycisku na podstawie zapisanego motywu
+    // Set the active button based on the saved theme
     const savedTheme = localStorage.getItem('trivia_theme') || 'light';
     const currentRadio = switcher.querySelector(`input[value="${savedTheme}"]`);
     if (currentRadio) {
@@ -30,5 +30,5 @@ function initializeThemeSwitcher() {
     });
 }
 
-// Inicjalizacja po załadowaniu DOM
+// Initialize after the DOM has loaded
 document.addEventListener('DOMContentLoaded', initializeThemeSwitcher);

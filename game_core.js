@@ -2,7 +2,7 @@
  * @file game_core.js
  * This file contains the core logic for the trivia board game, including setup,
  * game state management, UI rendering, game flow, and interaction with the
- * language model API.
+ * backend server.
  */
 
 // --- GAME CONFIGURATION ---
@@ -15,7 +15,7 @@ const CONFIG = {
     SQUARE_TYPES: { HQ: 'HEADQUARTERS', SPOKE: 'SPOKE', RING: 'RING', HUB: 'HUB', ROLL_AGAIN: 'ROLL_AGAIN' },
     // Delay in milliseconds for pawn movement animation
     ANIMATION_DELAY_MS: 50,
-    // // The maximum number of subcategory topics to remember per category to avoid repetition
+    // The maximum number of subcategory topics to remember per category to avoid repetition
     MAX_SUBCATEGORY_HISTORY_ITEMS: 15,
     // The maximum number of 'history items' to remember per category to avoid repetition
     MAX_ENTITY_HISTORY_ITEMS: 25,
@@ -25,12 +25,14 @@ const CONFIG = {
 
 // --- UI ELEMENTS ---
 // This object centralizes all DOM element selections for easy access and management.
-const UI = {
+export const UI = {
     setupScreen: document.getElementById('setup-screen'),
     gameScreen: document.getElementById('game-screen'),
+    gameMenuModelSelect: document.getElementById('game-menu-model-select'),
     winnerScreen: document.getElementById('winner-screen'),
     langPlBtn: document.getElementById('lang-pl'),
     langEnBtn: document.getElementById('lang-en'),
+    modelSelect: document.getElementById('model-select'),
     gameModeSelect: document.getElementById('game-mode'),
     gameModeDescription: document.getElementById('game-mode-description'),
     knowledgeLevelSelect: document.getElementById('knowledge-level'),
@@ -40,8 +42,6 @@ const UI = {
     categoriesContainer: document.getElementById('categories-container'),
     playerCountInput: document.getElementById('player-count'),
     playerNamesContainer: document.getElementById('player-names-container'),
-    temperatureSlider: document.getElementById('temperature-slider'),
-    temperatureValueSpan: document.getElementById('temperature-value'),
     includeThemeToggle: document.getElementById('include-theme-toggle'),
     mutateCategoriesToggle: document.getElementById('mutate-categories-toggle'),
     startGameBtn: document.getElementById('start-game-btn'),
@@ -102,7 +102,7 @@ const UI = {
     closeSuggestionModalBtn: document.getElementById('close-suggestion-modal-btn'),
     suggestionLoader: document.getElementById('suggestion-loader'),
     suggestionButtons: document.getElementById('suggestion-buttons'),
-    
+
     // NOWE ELEMENTY MENU
     openGameMenuBtn: document.getElementById('open-game-menu-btn'),
     gameMenuPanel: document.getElementById('game-menu-panel'),
@@ -128,20 +128,12 @@ export let gameState = {
 /**
  * An object containing all UI text translations for Polish and English.
  * The keys correspond to `data-lang-key` attributes in the HTML or are used directly in the code.
+ * All prompt-related translations have been moved to the server.
  */
 export const translations = {
     setup_title: { pl: "Ustawienia", en: "Settings" },
-    gemini_api_key_label: { pl: "Klucz API Google Gemini:", en: "Google Gemini API Key:" },
-    gemini_api_key_placeholder: { pl: "Wklej swój klucz API", en: "Paste your API key" },
-    gemini_api_key_help: { pl: "Gdzie znaleźć klucz?", en: "Where to find the key?" },
-    lm_studio_url_label: { pl: "Adres serwera LM Studio:", en: "LM Studio Server URL:" },
-    lm_studio_url_placeholder: { pl: "np. http://localhost:1234/v1/chat/completions", en: "e.g., http://localhost:1234/v1/chat/completions" },
-    lm_studio_help: { pl: "Upewnij się, że serwer LM Studio jest uruchomiony. Sugerowany model: Gemma 3 (>=4B)", en: "Make sure the LM Studio server is running. Suggested model: Gemma 3 (>=4B)" },
-    model_label: { pl: "Model Językowy:", en: "Language Model:" },
-    temperature_label: { pl: "Temperatura:", en: "Temperature:" },
-    refresh_models_title: { pl: "Odśwież listę modeli", en: "Refresh model list" },
-    api_key_alert: { pl: "Proszę podać klucz API.", en: "Please provide an API key." },
-    lm_studio_url_alert: { pl: "Proszę podać adres serwera LM Studio.", en: "Please provide the LM Studio server URL." },
+    api_error: { pl: "Błąd API", en: "API Error" },
+    model_label: {pl: "Model Językowy:", en: "Language Model:"},
     game_mode_label: { pl: "Tryb Gry:", en: "Game Mode:" },
     game_mode_mcq: { pl: "Pytania zamknięte", en: "Single Choice" },
     game_mode_short: { pl: "Pytania otwarte (krótkie)", en: "Open-ended (short)" },
@@ -197,197 +189,14 @@ export const translations = {
     play_again_btn: { pl: "Zagraj Ponownie", en: "Play Again" },
     restart_game_btn: { pl: "Zacznij od nowa", en: "Start Over" },
     restart_game_confirm: { pl: "Czy na pewno chcesz zrestartować grę? Cały postęp zostanie utracony.", en: "Are you sure you want to restart the game? All progress will be lost." },
-    creative_words: {
-        pl: [
-            'Przyczyna', 'Skutek', 'Proces', 'Wpływ', 'Kontekst', 'Struktura',
-            'Ewolucja', 'Funkcja', 'Porównanie', 'Kontrast', 'Symbol', 'Narzędzie',
-            'Mit', 'Początek', 'Przyszłość', 'Interakcja', 'Perspektywa', 'Anomalia',
-            'Zależność', 'Hierarchia', 'Transformacja', 'Cykl', 'Punkt zwrotny',
-            'Tradycja', 'Znaczenie', 'Ograniczenie', 'Potencjał', 'Zasada',
-            'Adaptacja', 'Innowacja'
-        ],
-        en: [
-            'Cause', 'Effect', 'Process', 'Impact', 'Context', 'Structure',
-            'Evolution', 'Function', 'Comparison', 'Contrast', 'Symbol', 'Tool',
-            'Myth', 'Origin', 'Future', 'Interaction', 'Perspective', 'Anomaly',
-            'Dependence', 'Hierarchy', 'Transformation', 'Cycle', 'Turning point',
-            'Tradition', 'Significance', 'Limitation', 'Potential', 'Principle',
-            'Adaptation', 'Innovation'
-        ]
-    },
-    single_category_generation_prompt: {
-        pl: `Jesteś BARDZO kreatywnym mistrzem gry. Twoim zadaniem jest stworzenie JEDNEJ świeżej, zaskakującej i unikalnej kategorii do quizu na podstawie motywu: "{theme}".\n\n# Kryteria:\n- Nazwa kategorii musi zawierać od 1 do 3 słów.\n- Kategoria NIE MOŻE być jedną z już istniejących: {existing_categories}.\n\n# Kreatywny katalizator (użyj jako inspiracji):\n{creative_word}\n\nZwróć odpowiedź WYŁĄCZNIE jako obiekt JSON w formacie: {"category": "Twoja unikalna kategoria"}`,
-        en: `You are a VERY creative game master. Your task is to create ONE fresh, surprising, and unique quiz category based on the theme: "{theme}".\n\n# Criteria:\n- The category name must be 1-3 words long.\n- The category MUST NOT be one of the already existing ones: {existing_categories}.\n\n# Creative Catalyst (use as inspiration):\n{creative_word}\n\nReturn the response ONLY as a JSON object in the format: {"category": "Your unique category"}`
-    },
-    broad_single_category_prompt: {
-        pl: `Jesteś mistrzem gry w popularnym teleturnieju. Twoim zadaniem jest stworzenie JEDNEJ, szerokiej i intuicyjnej kategorii do quizu na podstawie motywu: "{theme}". Kategoria powinna być zrozumiała dla każdego.\n\n# Przykład dla motywu "Kuchnia":\n- Dobre odpowiedzi: "Desery", "Wina", "Techniki gotowania", "Smaki świata"\n- Złe odpowiedzi: "Molekularna dekonstrukcja smaku", "Kulinarny symbolizm w baroku"\n\n# Kryteria:\n- Nazwa kategorii musi zawierać od 1 do 4 słów.\n- Kategoria NIE MOŻE być jedną z już istniejących: {existing_categories}.\n\nZwróć odpowiedź WYŁĄCZNIE jako obiekt JSON w formacie: {"category": "Twoja szeroka kategoria"}`,
-        en: `You are a game master for a popular TV quiz show. Your task is to create ONE broad and intuitive quiz category based on the theme: "{theme}". The category should be understandable to a general audience.\n\n# Example for the theme "Kitchen":\n- Good answers: "Desserts", "Wines", "Cooking Techniques", "World Flavors"\n- Bad answers: "Molecular Deconstruction of Flavor", "Culinary Symbolism in the Baroque Period"\n\n# Criteria:\n- The category name must be 1-4 words long.\n- The category MUST NOT be one of the already existing ones: {existing_categories}.\n\nReturn the response ONLY as a JSON object in the format: {"category": "Your broad category"}`
-    },
-    category_generation_prompt: {
-        pl: `Jesteś BARDZO kreatywnym mistrzem gry. Twoim zadaniem jest stworzenie zestawu 6 świeżych, zaskakujących i unikalnych kategorii do quizu na podstawie motywu: "{theme}". Unikaj typowych, oczywistych skojarzeń.\n\nKryteria:\n1.  **Zwięzłość**: Każda nazwa kategorii musi zawierać od jednego do trzech słów.\n2.  **Różnorodność**: Unikaj generowania kategorii, które już istnieją.\n\nIstniejące kategorie, których należy unikać: {existing_categories}\n\nKreatywny katalizator (użyj jako inspiracji, by stworzyć coś niepowtarzalnego): {creative_word}\n\nZwróć odpowiedź WYŁĄCZNIE jako obiekt JSON z jednym kluczem "categories". Przykład: {"categories": ["A", "B", "C", "D", "E", "F"]}`,
-        en: `You are a VERY creative game master. Your task is to create a set of 6 fresh, surprising, and unique quiz categories based on the theme: "{theme}". Avoid typical, obvious associations.\n\nCriteria:\n1.  **Brevity**: Each category name must contain from one to three words.\n2.  **Variety**: Avoid generating categories that already exist.\n\nExisting categories to avoid: {existing_categories}\n\nCreative Catalyst (use as inspiration to create something unique): {creative_word}\n\nReturn the response ONLY as a JSON object with a single key "categories". Example: {"categories": ["A", "B", "C", "D", "E", "F"]}`
-    },
-    question_prompt: {
-        pl: {
-            persona: "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego.",
-            chain_of_thought: `
-            # PROCES MYŚLOWY (Chain of Thought):
-            Zanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:
-            1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.
-            2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.
-            3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. Udoskonal pytanie.
-            4.  **Weryfikacja i Korekta:** Przejrzyj wybrane pytanie, odpowiedź i opcje. Sprawdź je KROK PO KROKU pod kątem WSZYSTKICH reguł (zwłaszcza reguły 'ZAKAZ POWTÓRZEŃ' i krytycznej zasady, że odpowiedź nie może być w pytaniu). Jeśli jakakolwiek reguła jest złamana, **POPRAW** treść, aby była w pełni zgodna.`,
-            context_header: "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
-            context_lines: [
-                "- Kategoria: \"{category}\"",
-                "- Poziom trudności: {knowledge_prompt}",
-                "- Tryb gry: {game_mode_prompt}",
-                "- Motyw przewodni: {theme_context}",
-                "- Słowa-inspiracje (użyj jako luźnego skojarzenia): {inspirational_words}"
-            ],
-            rules: [
-                "**JĘZYK WYJŚCIOWY:** Cała zawartość finalnego obiektu JSON (pytanie, odpowiedź, opcje, wyjaśnienie) MUSI być w języku {language_name}.",
-                "**DEFINIUJ SUBKATEGORIĘ:** Dla każdego pytania zdefiniuj jedno- lub dwuwyrazową, precyzyjną subkategorię (np. dla 'Historii' -> 'Starożytny Rzym').",
-                "**ZAKAZ POWTÓRZEŃ (SUBKATEGORIE):** Pytanie nie może dotyczyć następujących, ostatnio użytych subkategorii: {subcategory_history_prompt}.",
-                "**ZAKAZ POWTÓRZEŃ (NAZWY WŁASNE):** Pytanie nie może zawierać ani dotyczyć następujących, ostatnio użytych nazw własnych: {entity_history_prompt}.",                
-                "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
-                "**WYODRĘBNIJ NAZWY WŁASNE:** Zidentyfikuj kluczowe nazwy własne (np. tytuły seriali, miejsca, imiona i nazwiska) w treści pytania, odpowiedzi i wyjaśnienia, a następnie umieść je w tablicy 'key_entities'.",
-                "**JAKOŚĆ OPCJI (dla MCQ):** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
-                "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź.",
-                "**SPÓJNOŚĆ:** Pytanie musi ściśle trzymać się podanej kategorii."
-            ],
-            output_format: `
-            # OSTATECZNY WYNIK:
-            Wypisz wewnętrzny proces myślowowy, następnie zwróć odpowiedź jako jeden, czysty obiekt JSON o strukturze:
-            {
-              "question": "...",
-              "answer": "...",
-              "explanation": "...",
-              "subcategory": "Precyzyjna subkategoria...",
-              "key_entities": ["Nazwa Własna 1", "Nazwa Własna 2"],
-              "options": ["...", "...", "...", "..."]
-            }`        },
-        en: {
-            persona: "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
-            chain_of_thought: `
-            # CHAIN OF THOUGHT PROCESS:
-            Before providing the final JSON output, conduct an internal thought process. Step by step:
-            1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.
-            2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.
-            3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. Refine the question.
-            4.  **Verification and Correction:** Review the selected question, answer, and options. Check them STEP-BY-STEP against ALL the rules (especially the 'NO REPETITION' rule and the critical rule that the answer cannot be in the question). If any rule is violated, **CORRECT** the content to be fully compliant.`,
-            context_header: "\n# CONTEXT AND RULES TO APPLY:",
-            context_lines: [
-                "- Category: \"{category}\"",
-                "- Difficulty Level: {knowledge_prompt}",
-                "- Game Mode: {game_mode_prompt}",
-                "- Main Theme: {theme_context}",
-                "- Inspirational Words (use as a loose association): {inspirational_words}"
-            ],
-            rules: [
-                "**OUTPUT LANGUAGE:** The entire content of the final JSON object (question, answer, options, explanation) MUST be in {language_name}.",
-                "**DEFINE SUBCATEGORY:** For each question, define a precise, one or two-word subcategory (e.g., for 'History' -> 'Ancient Rome').",
-                "**EXTRACT PROPER NOUNS:** Identify key proper nouns (e.g., series titles, places, full names) within the question, answer, and explanation, then place them in the 'key_entities' array.",
-                "**NO REPETITION (SUBCATEGORIES):** The question must not be about the following, recently used subcategories: {subcategory_history_prompt}.",
-                "**NO REPETITION (PROPER NOUNS):** The question must not contain or be about the following, recently used proper nouns: {entity_history_prompt}.",                
-                "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
-                "**OPTION QUALITY (for MCQ):** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
-                "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer.",
-                "**CONSISTENCY:** The question must strictly adhere to the given category."
-            ],
-            output_format: `
-            # FINAL OUTPUT:
-            Write your internal thought process, after that return the response as a single, clean JSON object with the structure:
-            {
-              "question": "...",
-              "answer": "...",
-              "explanation": "...",
-              "subcategory": "Precise subcategory...",
-              "key_entities": ["Proper Noun 1", "Proper Noun 2"],
-              "options": ["...", "...", "...", "..."]
-            }`        }
-    },
-    batch_category_prompt_cot: {
-        pl: `Jesteś kreatywnym mistrzem teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich, ciekawych i intuicyjnych kategorii do quizu na podstawie podanego motywu.
-
-# PROCES MYŚLOWY (Chain of Thought):
-Zanim sformułujesz ostateczny JSON, przeprowadź wewnętrzny proces myślowy:
-1.  **Analiza Motywu:** Głęboko przeanalizuj motyw: "{theme}". Jakie są jego kluczowe aspekty, postacie, miejsca, koncepcje?
-2.  **Burza Mózgów:** Wypisz listę 10-12 potencjalnych pomysłów na kategorie.
-3.  **Selekcja i Dywersyfikacja:** Z tej listy wybierz 6 NAJLEPSZYCH opcji. Upewnij się, że są one od siebie RÓŻNORODNE, nie pokrywają się zbytnio tematycznie i są wystarczająco szerokie dla ogólnego quizu.
-
-# OSTATECZNY WYNIK:
-Po zakończeniu procesu myślowego, najpierw wypisz swoje myśli w tagach <thinking>...</thinking>. Następnie, w nowej linii, bez żadnych dodatkowych słów, zwróć ostateczną odpowiedź jako jeden, czysty obiekt JSON o strukturze:
-{
-  "categories": ["Kategoria 1", "Kategoria 2", "Kategoria 3", "Kategoria 4", "Kategoria 5", "Kategoria 6"]
-}`,
-        en: `You are a creative quiz show master. Your task is to create ONE set of 6 broad, interesting, and intuitive quiz categories based on the provided theme.
-
-# CHAIN OF THOUGHT PROCESS:
-Before you formulate the final JSON, conduct an internal thought process:
-1.  **Theme Analysis:** Deeply analyze the theme: "{theme}". What are its key aspects, characters, places, concepts?
-2.  **Brainstorm:** Write a list of 10-12 potential category ideas.
-3.  **Selection & Diversification:** From this list, select the 6 BEST options. Ensure they are DIVERSE, do not overlap too much thematically, and are broad enough for a general quiz.
-
-# FINAL OUTPUT:
-After your thought process, first write out your thoughts inside <thinking>...</thinking> tags. Then, on a new line, without any other words, return the final answer as a single, clean JSON object with the structure:
-{
-  "categories": ["Category 1", "Category 2", "Category 3", "Category 4", "Category 5", "Category 6"]
-}`
-    },
-    inspirational_words: {
-        pl: ['Wiele', 'Mało', 'Odległe', 'Bliskie', 'Nowe', 'Stare', 'Pierwsze', 'Ostatnie', 'Ukryte', 'Oczywiste', 'Proste', 'Złożone', 'Wielkie', 'Drobne', 'Szybkie', 'Wolne', 'Głośne', 'Ciche', 'Publiczne', 'Prywatne'],
-        en: ['Many', 'Few', 'Distant', 'Close', 'New', 'Old', 'First', 'Last', 'Hidden', 'Obvious', 'Simple', 'Complex', 'Great', 'Tiny', 'Fast', 'Slow', 'Loud', 'Quiet', 'Public', 'Private']
-    },
-    incorrect_answer_explanation_prompt: {
-        pl: `Jesteś pomocnym nauczycielem w grze quizowej. Gracz właśnie odpowiedział niepoprawnie. Twoim zadaniem jest wyjaśnienie mu, dlaczego jego odpowiedź była błędna. Bądź zwięzły, empatyczny i edukacyjny.\n\nKontekst:\n- Pytanie: "{question}"\n- Poprawna odpowiedź: "{correct_answer}"\n- Błędna odpowiedź gracza: "{player_answer}"\n\nZadanie:\nNapisz krótkie (1-2 zdania) wyjaśnienie, dlaczego odpowiedź gracza jest niepoprawna. Skup się na błędzie w rozumowaniu gracza lub wskaż kluczową różnicę.\n\nZwróć odpowiedź jako obiekt JSON w formacie: {"explanation": "Twoje wyjaśnienie..."}`,
-        en: `You are a helpful teacher in a quiz game. A player has just answered incorrectly. Your task is to explain to them why their answer was wrong. Be concise, empathetic, and educational.\n\nContext:\n- Question: "{question}"\n- Correct answer: "{correct_answer}"\n- Player's incorrect answer: "{player_answer}"\n\nTask:\nWrite a short (1-2 sentences) explanation for why the player's answer is incorrect. Focus on the player's reasoning error or point out the key difference.\n\nReturn the response as a JSON object in the format: {"explanation": "Your explanation..."}`
-    },
-    category_mutation_prompt: {
-        pl: `Jesteś mistrzem gry. Twoim zadaniem jest zaproponowanie PIĘCIU alternatywnych kategorii, które zastąpią starą kategorię: "{old_category}".
-
-# PROCES MYŚLOWY (Chain of Thought):
-1.  **Analiza:** Jaka jest esencja kategorii "{old_category}" i jej związek z motywem gry: "{theme}"?
-2.  **Burza Mózgów:** Wypisz 7-8 pomysłów na kategorie, które są rozwinięciem lub alternatywą dla "{old_category}".
-3.  **Selekcja:** Wybierz 5 najlepszych pomysłów. Upewnij się, że nie powtarzają pozostałych kategorii w grze ({existing_categories}) i że są od siebie różne. Dla każdego sformułuj zwięzły opis.
-
-# OSTATECZNY WYNIK:
-Po procesie myślowym zwróć WYŁĄCZNIE obiekt JSON w formacie: {"choices": [{"name": "Nazwa 1", "description": "Opis 1"}, ...]}`,
-        en: `You are a game master. Your task is to propose FIVE alternative categories to replace the old category: "{old_category}".
-
-# CHAIN OF THOUGHT PROCESS:
-1.  **Analysis:** What is the essence of the category "{old_category}" and its relation to the game theme: "{theme}"?
-2.  **Brainstorm:** List 7-8 ideas for categories that are an evolution or alternative to "{old_category}".
-3.  **Selection:** Choose the 5 best ideas. Ensure they do not repeat the other categories in the game ({existing_categories}) and are distinct from each other. Formulate a concise description for each.
-
-# FINAL OUTPUT:
-After your thought process, return ONLY a JSON object in the format: {"choices": [{"name": "Name 1", "description": "Description 1"}, ...]}`
-    },
     suggestion_modal_title: { pl: "Sugestie", en: "Suggestions" },
     suggestion_loader_text: { pl: "Generuję sugestie...", en: "Generating suggestions..." },
     suggestion_error: { pl: "Nie udało się wygenerować sugestii.", en: "Could not generate suggestions." },
     suggestion_input_needed: { pl: "Proszę wpisać kategorię, aby uzyskać sugestie.", en: "Please enter a category to get suggestions for." },
     suggestion_button_title: { pl: "Zasugeruj alternatywy", en: "Suggest alternatives" },
-    main_theme_context_prompt: {
-        pl: "Pytanie musi dotyczyć motywu: {theme}.",
-        en: "The question must relate to the theme: {theme}."
-    },
-    knowledge_prompts: {
-        basic: { pl: "Podstawowy. Pytanie powinno dotyczyć powszechnie znanych faktów.", en: "Basic. The question should be about commonly known facts." },
-        intermediate: { pl: "Średniozaawansowany. Trudniejsze niż wiedza ogólna, ale nie specjalistyczne.", en: "Intermediate. More difficult than common knowledge, but not specialized." },
-        expert: { pl: "Ekspercki. Dotyczące mniej znanych faktów, dla znawców tematu.", en: "Expert. Concerning lesser-known facts, for connoisseurs of the subject." }
-    },
-    game_mode_prompts: {
-        mcq: { pl: "Pytanie jednokrotnego wyboru (MCQ).", en: "Single Choice Question (MCQ)." },
-        short_answer: { pl: "Pytanie otwarte z krótką odpowiedzią (1-3 słowa).", en: "Open-ended question with a short answer (1-3 words)." },
-    },
-    question_history_prompt: {
-        pl: `"{topics}"`,
-        en: `"{topics}"`
-    },
     infobox_title: { pl: "Jak działają te opcje?", en: "How do these options work?" },
     infobox_rules_title: { pl: "📜 Zasady Gry", en: "📜 Game Rules" },
-    infobox_rules_desc: { 
+    infobox_rules_desc: {
         pl: `
             <ul class="list-disc list-inside space-y-1 mt-1 mb-2 text-slate-600">
                 <li><b>Cel:</b> Zdobądź jako pierwszy "cząstkę" z każdej z 6 kategorii.</li>
@@ -395,7 +204,7 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
                 <li><b>Zdobywanie cząstek:</b> Cząstki zdobywa się za poprawną odpowiedź na polu-matce (duże, okrągłe pole na końcu "ramienia").</li>
                 <li><b>Pola specjalne:</b> Pole centralne pozwala wybrać dowolną kategorię, a niektóre pola na pierścieniu pozwalają rzucić kostką jeszcze raz.</li>
             </ul>
-        `, 
+        `,
         en: `
             <ul class="list-disc list-inside space-y-1 mt-1 mb-2 text-slate-600">
                 <li><b>Objective:</b> Be the first to collect a "wedge" from each of the 6 categories.</li>
@@ -403,23 +212,17 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
                 <li><b>Earning Wedges:</b> Wedges are earned for a correct answer on an HQ square (the large, circular square at the end of a spoke).</li>
                 <li><b>Special Squares:</b> The center HUB square lets you choose any category, and some squares on the outer ring let you roll the dice again.</li>
             </ul>
-        ` 
+        `
     },
-    infobox_temp_title: { pl: "🌡️ Temperatura", en: "🌡️ Temperature" },
-    infobox_temp_desc: { pl: "Kontroluje \"kreatywność\" modelu AI. Niska wartość (np. 0.2) tworzy bardziej przewidywalne i zachowawcze treści. Wysoka wartość (np. 1.2) zachęca do tworzenia bardziej zróżnicowanych i nieoczekiwanych pytań, co może czasem prowadzić do dziwnych wyników.", en: "Controls the \"creativity\" of the AI model. A low value (e.g., 0.2) produces more predictable and conservative content. A high value (e.g., 1.2) encourages more diverse and unexpected questions, which can sometimes lead to strange results." },
     infobox_mutation_title: { pl: "🧬 Mutacja Kategorii", en: "🧬 Category Mutation" },
     infobox_mutation_desc: { pl: "Gdy ta opcja jest włączona, po zdobyciu \"cząstki\" w danej kategorii, kategoria ta zostanie zastąpiona nową, spokrewnioną tematycznie. Utrzymuje to grę świeżą i dynamiczną.", en: "When this option is enabled, after winning a wedge in a category (on an HQ square), that category will be replaced with a new, thematically related one. This keeps the game fresh and dynamic." },
     infobox_theme_title: { pl: "📝 Dodaj Temat do Pytań", en: "📝 Add Theme to Questions" },
     infobox_theme_desc: { pl: "Jeśli wpisano motyw w polu \"Temat do generacji kategorii\", zaznaczenie tej opcji sprawi, że model AI będzie musiał tworzyć pytania, które są związane nie tylko z kategorią (np. \"Historia\"), ale również z głównym motywem gry (np. \"Władca Pierścieni\").", en: "If a theme was entered in the \"Category Generation Theme\" field, checking this option will force the AI model to create questions that relate not only to the category (e.g., \"History\") but also to the main game theme (e.g., \"Lord of the Rings\")." },
-    infobox_cors_title: { pl: "🚨 Ważne dla LM Studio (CORS)", en: "🚨 Important for LM Studio (CORS)" },
-    infobox_cors_desc: { pl: "Aby ta aplikacja mogła komunikować się z Twoim lokalnym serwerem LM Studio, musisz włączyć w nim obsługę CORS. W LM Studio przejdź do zakładki 'Developer', a następnie w sekcji 'Settings' zaznacz pole 'Enable CORS'. Użytkownicy przeglądarki Safari mogą nadal napotykać problemy, nawet po włączeniu tej opcji.", en: "For this application to communicate with your local LM Studio server, you must enable CORS support. In LM Studio, go to the 'Developer' tab, and in the 'Settings' section, check the 'Enable CORS' box. Safari users may still experience issues even after enabling this option." },
-    api_error: { pl: "Błąd API", en: "API Error" },
-    fetch_models_error: { pl: "Nie udało się pobrać listy modeli. Sprawdź klucz API i spróbuj ponownie.", en: "Failed to fetch model list. Check your API key and try again." },
     generate_categories_error: { pl: "Nie udało się wygenerować kategorii. Sprawdź ustawienia API i spróbuj ponownie.", en: "Failed to generate categories. Check API settings and try again." },
     category_mutated: { pl: "Kategoria zmutowała!", en: "Category has mutated!" },
     new_category_msg: { pl: '"{old_cat}" zmienia się w "{new_cat}"!', en: '"{old_cat}" changes into "{new_cat}"!' },
-    history_modal_title: { pl: "Historia Promptów", en: "Prompt History" },
-    history_prompt_title: { pl: "Wysłany Prompt", en: "Sent Prompt" },
+    history_modal_title: { pl: "Historia Zapytań", en: "Request History" },
+    history_prompt_title: { pl: "Wysłane Zapytanie (do backendu)", en: "Sent Request (to backend)" },
     history_response_title: { pl: "Otrzymana Odpowiedź", en: "Received Response" },
     history_empty: { pl: "Historia jest jeszcze pusta.", en: "History is empty." },
     rate_limit_title: { pl: "Przekroczono limit zapytań", en: "Request Limit Exceeded" },
@@ -441,6 +244,15 @@ After your thought process, return ONLY a JSON object in the format: {"choices":
 function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
     textarea.style.height = `${textarea.scrollHeight}px`; // Set height to content height
+}
+
+function updateModelSelection(selectedValue) {
+    if (UI.modelSelect.value !== selectedValue) {
+        UI.modelSelect.value = selectedValue;
+    }
+    if (UI.gameMenuModelSelect.value !== selectedValue) {
+        UI.gameMenuModelSelect.value = selectedValue;
+    }
 }
 
 /**
@@ -505,13 +317,6 @@ function setLanguage(lang) {
         }
     });
 
-    // Manually set placeholders for elements that might not have a `data-lang-key`
-    const geminiKeyInput = document.getElementById('gemini-api-key');
-    if (geminiKeyInput) geminiKeyInput.placeholder = translations.gemini_api_key_placeholder[lang];
-
-    const lmStudioUrlInput = document.getElementById('lmstudio-url-input');
-    if (lmStudioUrlInput) lmStudioUrlInput.placeholder = translations.lm_studio_url_placeholder[lang];
-
     // Update suggestion modal title on language change
     if (UI.suggestionModalTitle) {
         UI.suggestionModalTitle.textContent = translations.suggestion_modal_title[lang];
@@ -540,7 +345,7 @@ function updateDescriptions() {
  */
 async function handleSuggestAlternatives(targetTextarea) {
     if (!gameState.api.isConfigured()) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: gameState.api.configErrorMsg }, 'error');
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
         return;
     }
 
@@ -550,24 +355,19 @@ async function handleSuggestAlternatives(targetTextarea) {
         return;
     }
 
-    // Show the modal and the loader immediately for better UX.
     UI.suggestionModal.classList.remove('hidden');
     UI.suggestionLoader.classList.remove('hidden');
     UI.suggestionLoader.querySelector('span').textContent = translations.suggestion_loader_text[gameState.currentLanguage];
     UI.suggestionButtons.classList.add('hidden');
-    UI.suggestionButtons.innerHTML = ''; // Clear old suggestions
+    UI.suggestionButtons.innerHTML = '';
 
-    // Gather context from other categories to avoid generating duplicates.
     const allCategoryInputs = Array.from(UI.categoriesContainer.querySelectorAll('.category-input'));
     const existingCategories = allCategoryInputs
         .map(input => input.value.trim())
-        // Exclude the current and empty categories to create a clean context list.
         .filter(cat => cat !== oldCategory && cat !== '');
 
     try {
-        // Pass the dynamically gathered list of existing categories to the function.
         const choices = await gameState.api.getCategoryMutationChoices(oldCategory, existingCategories);
-
 
         UI.suggestionLoader.classList.add('hidden');
         UI.suggestionButtons.classList.remove('hidden');
@@ -577,14 +377,13 @@ async function handleSuggestAlternatives(targetTextarea) {
             return;
         }
 
-        // Create a button for each suggestion from the API.
         choices.forEach(choice => {
             const button = document.createElement('button');
             button.className = 'w-full p-4 text-white rounded-lg transition-transform hover:scale-105 text-left bg-indigo-600 themed-button';
             button.innerHTML = `<span class="block font-bold text-lg">${choice.name || ""}</span><p class="text-sm font-normal opacity-90 mt-1">${choice.description || ""}</p>`;
             button.onclick = () => {
                 targetTextarea.value = choice.name;
-                autoResizeTextarea(targetTextarea); // Adjust height for new content
+                autoResizeTextarea(targetTextarea);
                 UI.suggestionModal.classList.add('hidden');
             };
             UI.suggestionButtons.appendChild(button);
@@ -607,7 +406,6 @@ async function handleSuggestAlternatives(targetTextarea) {
 function updateCategoryInputs(cats) {
     UI.categoriesContainer.innerHTML = '';
     for (let i = 0; i < 6; i++) {
-        // Create a wrapper to contain both the textarea and the suggestion button.
         const wrapper = document.createElement('div');
         wrapper.className = 'relative';
 
@@ -618,12 +416,11 @@ function updateCategoryInputs(cats) {
         textarea.rows = 1;
         textarea.addEventListener('input', () => autoResizeTextarea(textarea));
 
-        // Create the 'suggest alternatives' button.
         const suggestBtn = document.createElement('button');
-        suggestBtn.type = 'button'; // Prevent form submission.
+        suggestBtn.type = 'button';
         suggestBtn.className = 'category-suggestion-btn';
         suggestBtn.title = translations.suggestion_button_title[gameState.currentLanguage];
-        suggestBtn.innerHTML = '✨'; // A magic wand emoji to signify suggestion.
+        suggestBtn.innerHTML = '✨';
         suggestBtn.addEventListener('click', () => handleSuggestAlternatives(textarea));
 
         wrapper.appendChild(textarea);
@@ -686,11 +483,6 @@ function updatePlayerNameInputs() {
  * Initializes the game state based on setup screen settings and transitions to the game screen.
  */
 function initializeGame() {
-    if (!gameState.api.isConfigured()) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: gameState.api.configErrorMsg }, 'error');
-        return;
-    }
-
     const playerCount = parseInt(UI.playerCountInput.value);
     const playerInputs = document.querySelectorAll('#player-names-container > .player-entry');
     const playerNames = Array.from(playerInputs).map(div => div.querySelector('.player-name-input').value || div.querySelector('.player-name-input').placeholder);
@@ -715,7 +507,6 @@ function initializeGame() {
         lastAnswerWasCorrect: false,
         gameMode: UI.gameModeSelect.value,
         knowledgeLevel: UI.knowledgeLevelSelect.value,
-        temperature: parseFloat(UI.temperatureSlider.value),
         currentQuestionData: null,
         categoryTopicHistory: JSON.parse(localStorage.getItem('globalQuizHistory')) || {},
         possiblePaths: {},
@@ -757,7 +548,7 @@ async function generateCategories() {
     if (!theme) return;
 
     if (!gameState.api.isConfigured()) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: gameState.api.configErrorMsg }, 'error');
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
         return;
     }
 
@@ -770,12 +561,6 @@ async function generateCategories() {
         updateCategoryInputs(generatedCats.slice(0, 6));
     } catch (error) {
         console.error("Category generation error:", error);
-        if (error.message && error.message.includes('rate limit')) {
-            UI.generateCategoriesBtn.textContent = originalBtnText;
-            UI.generateCategoriesBtn.disabled = false;
-            await promptForModelChange();
-            return generateCategories(); // Retry after model change
-        }
         showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.generate_categories_error[gameState.currentLanguage] }, 'error');
     } finally {
         UI.generateCategoriesBtn.textContent = originalBtnText;
@@ -792,7 +577,7 @@ async function askQuestion(forcedCategoryIndex = null) {
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = forcedCategoryIndex !== null ? forcedCategoryIndex : square.categoryIndex;
-    
+
     if (categoryIndex === null || categoryIndex === undefined) {
         console.error("Invalid category index on the current square:", square);
         nextTurn();
@@ -821,11 +606,8 @@ async function askQuestion(forcedCategoryIndex = null) {
             UI.mcqOptionsContainer.classList.remove('hidden');
             data.options.forEach(option => {
                 const button = document.createElement('button');
-
                 button.className = "w-full p-3 text-center bg-gray-100 hover:bg-indigo-100 rounded-lg transition-colors flex justify-center items-center";
-                
                 button.innerHTML = `<span>${option}</span>`;
-                
                 button.onclick = () => handleMcqAnswer(option);
                 UI.mcqOptionsContainer.appendChild(button);
             });
@@ -839,12 +621,6 @@ async function askQuestion(forcedCategoryIndex = null) {
 
     } catch (error) {
         console.error('Question generation error:', error);
-        if (error.message && error.message.includes('rate limit')) {
-            await promptForModelChange();
-            return askQuestion(forcedCategoryIndex); // Retry the question generation
-        }
-        
-        // Handle other errors
         UI.llmLoader.classList.add('hidden');
         UI.questionTextP.textContent = translations.question_generation_error[gameState.currentLanguage];
         UI.questionContent.classList.remove('hidden');
@@ -965,7 +741,7 @@ function renderBoard() {
 
         const categoryColor = square.categoryIndex !== null ? CONFIG.CATEGORY_COLORS[square.categoryIndex] : '#f3f4f6';
         squareEl.style.backgroundColor = categoryColor;
-        
+
         if (square.type === CONFIG.SQUARE_TYPES.HQ) {
             squareEl.style.transform = 'scale(1.4)';
             squareEl.style.borderRadius = '50%';
@@ -1063,7 +839,6 @@ function updateUI() {
 
 /*
  * Creates a realistic, multi-step tumble animation for the dice.
- * The animation simulates a continuous, decelerating spin without any random speed-ups.
  * @param {number} roll - The final dice roll result (1-6).
  */
 async function animateDiceRoll(roll) {
@@ -1073,61 +848,41 @@ async function animateDiceRoll(roll) {
     };
     const finalTransform = rotations[roll];
 
-    // --- State for a continuous, momentum-based roll ---
     let currentX = 0;
     let currentY = 0;
-
-    // Generate a strong, consistent initial spin direction.
     const spinX = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
     const spinY = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
-
     const tumbleCount = 2;
     const tumbleDelay = 100;
 
-    // Use a fast, linear transition for the main tumbles
     UI.diceElement.style.transition = 'transform 0.1s linear';
 
     for (let i = 0; i < tumbleCount; i++) {
-        // The rotation now only decelerates based on the initial spin.
-        // A non-linear divisor (i * 1.5 + 1) creates a more natural slowdown.
-        // The random "wobble" has been removed to prevent perceived speed-ups.
         currentX += spinX / (i * 1.5 + 1);
         currentY += spinY / (i * 1.5 + 1);
-
         const tumbleTransform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
-
         UI.diceElement.style.transform = tumbleTransform;
         await new Promise(resolve => setTimeout(resolve, tumbleDelay));
     }
 
-    // Use a final, long, and smooth transition for the "settling" effect.
     UI.diceElement.style.transition = 'transform 0.8s cubic-bezier(0.2, 1, 0.2, 1)';
-
-    // Apply the final, correct face rotation
     UI.diceElement.style.transform = finalTransform;
-
-    // Wait for the final animation to complete
     await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Reset the inline style
     UI.diceElement.style.transition = '';
 }
 
 
 /**
  * Handles the dice roll action, calculates possible moves, and highlights them.
- * This function is now async to await the new animation.
  */
 async function rollDice() {
-    // Prevent multiple rolls while one is in progress or awaiting a move
     UI.diceResultDiv.classList.remove('hint-pulsate');
     if (UI.diceElement.disabled || gameState.isAwaitingMove) return;
 
-    UI.diceElement.disabled = true; // Disable button immediately
+    UI.diceElement.disabled = true;
     UI.gameMessageDiv.textContent = '';
     const roll = Math.floor(Math.random() * 6) + 1;
 
-    // Await the new, more complex animation before showing results
     await animateDiceRoll(roll);
 
     UI.diceResultDiv.querySelector('span').textContent = translations.dice_roll_result[gameState.currentLanguage].replace('{roll}', roll);
@@ -1140,41 +895,34 @@ async function rollDice() {
 
     if (destinationIds.length > 0) {
         gameState.isAwaitingMove = true;
-        // The button remains disabled while the player chooses a move
         UI.gameMessageDiv.textContent = translations.choose_move[gameState.currentLanguage];
         destinationIds.forEach(id => document.getElementById(`square-${id}`).classList.add('highlighted-move'));
     } else {
-        // No possible moves, so proceed to the next turn (which re-enables the button)
         nextTurn();
     }
 }
 
 /**
  * Finds all possible destination squares given a start position and number of steps.
- * Uses a breadth-first search approach.
  * @param {number} startId - The starting square ID.
  * @param {number} steps - The number of steps to move.
- * @returns {object} An object where keys are destination square IDs and values are the paths (array of IDs).
+ * @returns {object} An object where keys are destination square IDs and values are the paths.
  */
 function findPossibleMoves(startId, steps) {
-    let queue = [[startId, [startId]]]; // [currentId, path_so_far]
+    let queue = [[startId, [startId]]];
     const finalPaths = {};
 
     while (queue.length > 0) {
         const [currentId, path] = queue.shift();
-
         if (path.length - 1 === steps) {
             finalPaths[currentId] = path;
             continue;
         }
-
         if (path.length - 1 > steps) continue;
 
         const currentSquare = gameState.board.find(s => s.id === currentId);
         for (const neighborId of currentSquare.connections) {
-            // Prevent moving back immediately, which would be an inefficient path.
             if (path.length > 1 && neighborId === path[path.length - 2]) continue;
-
             const newPath = [...path, neighborId];
             queue.push([neighborId, newPath]);
         }
@@ -1190,7 +938,7 @@ async function handleSquareClick(squareId) {
     if (!gameState.isAwaitingMove) return;
 
     const path = gameState.possiblePaths[squareId];
-    if (!path) return; // Clicked on a non-highlighted square
+    if (!path) return;
 
     document.querySelectorAll('.highlighted-move').forEach(el => el.classList.remove('highlighted-move'));
     gameState.isAwaitingMove = false;
@@ -1286,21 +1034,18 @@ async function handleManualVerification(isCorrect) {
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = gameState.currentForcedCategoryIndex !== null ? gameState.currentForcedCategoryIndex : square.categoryIndex;
-    const oldCategory = gameState.categories[categoryIndex]; // Save the old category name before potential mutation
+    const oldCategory = gameState.categories[categoryIndex];
 
-    // Record the subcategory to history to avoid repetition, regardless of answer correctness
     if (oldCategory && gameState.currentQuestionData.subcategory) {
         if (!gameState.categoryTopicHistory[oldCategory] || Array.isArray(gameState.categoryTopicHistory[oldCategory])) {
             gameState.categoryTopicHistory[oldCategory] = { subcategories: [], entities: [] };
         }
-        
-        const history = gameState.categoryTopicHistory[oldCategory];
 
+        const history = gameState.categoryTopicHistory[oldCategory];
         const newSubcategory = gameState.currentQuestionData.subcategory;
         if (!history.subcategories.includes(newSubcategory)) {
             history.subcategories.push(newSubcategory);
         }
-
         if (Array.isArray(gameState.currentQuestionData.key_entities)) {
             gameState.currentQuestionData.key_entities.forEach(entity => {
                 if (!history.entities.includes(entity)) {
@@ -1308,7 +1053,7 @@ async function handleManualVerification(isCorrect) {
                 }
             });
         }
-        
+
         if (history.subcategories.length > CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS) {
             history.subcategories = history.subcategories.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS);
         }
@@ -1341,7 +1086,7 @@ async function handleManualVerification(isCorrect) {
             UI.mutationLoader.classList.add('hidden');
             UI.mutationButtons.classList.remove('hidden');
             UI.mutationButtons.innerHTML = '';
-            
+
             if (!Array.isArray(choices)) throw new Error("Invalid choices received from API");
 
             choices.forEach(choice => {
@@ -1359,7 +1104,7 @@ async function handleManualVerification(isCorrect) {
                         gameState.categoryTopicHistory[newCategoryName] = { subcategories: [], entities: [] };
                     }
                     showNotification({ title: translations.category_mutated[gameState.currentLanguage], body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategoryName) }, 'info');
-                    
+
                     closePopupAndContinue();
                 };
                 UI.mutationButtons.appendChild(button);
@@ -1455,18 +1200,15 @@ function closePopupAndContinue() {
     UI.answerPopup.classList.add('opacity-0', 'scale-90');
     setTimeout(() => {
         UI.answerPopup.classList.add('hidden');
-        // Reset the popup's appearance for the next time it's opened
         UI.standardPopupContent.classList.remove('hidden');
         UI.mutationContent.classList.add('hidden');
         UI.closePopupBtn.classList.remove('hidden');
     }, 500);
 
     if (gameState.lastAnswerWasCorrect) {
-        // Player answered correctly, they get to roll again.
         UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
         UI.diceElement.disabled = false;
     } else {
-        // Player was incorrect, pass the turn.
         nextTurn();
     }
     updateUI();
@@ -1497,46 +1239,6 @@ function hideModal() {
 }
 
 /**
- * Displays a modal forcing the user to change the language model, typically after a rate limit error.
- * @returns {Promise<void>} A promise that resolves when the user confirms their choice.
- */
-function promptForModelChange() {
-    return new Promise(async (resolve) => {
-        const modal = document.getElementById('model-choice-modal');
-        const title = document.getElementById('model-choice-title');
-        const select = document.getElementById('modal-model-select');
-        const confirmBtn = document.getElementById('confirm-model-choice-btn');
-
-        // Set translations
-        const lang = gameState.currentLanguage;
-        title.textContent = translations.rate_limit_title[lang];
-        confirmBtn.textContent = translations.confirm_choice_btn[lang];
-        document.querySelector('[data-lang-key="rate_limit_desc"]').textContent = translations.rate_limit_desc[lang];
-        document.querySelector('[for="modal-model-select"]').textContent = translations.model_label[lang];
-
-        // Refresh and copy the model list from the main settings
-        if (gameState.api.fetchModels) await gameState.api.fetchModels();
-        const mainModelSelect = document.getElementById('model-select');
-        select.innerHTML = mainModelSelect.innerHTML;
-        select.value = mainModelSelect.value;
-
-        modal.classList.add('visible');
-
-        const onConfirm = () => {
-            const mainModelSelect = document.getElementById('model-select');
-            mainModelSelect.value = select.value; // Update the main select
-            if (gameState.api.saveSettings) gameState.api.saveSettings(); // Save the new setting
-
-            modal.classList.remove('visible');
-            confirmBtn.removeEventListener('click', onConfirm);
-            resolve();
-        };
-
-        confirmBtn.addEventListener('click', onConfirm);
-    });
-}
-
-/**
  * Renders the prompt history in its dedicated modal.
  */
 function renderPromptHistory() {
@@ -1549,8 +1251,6 @@ function renderPromptHistory() {
     }
 
     const fragment = document.createDocumentFragment();
-
-    // Iterate in reverse to show the latest entries first
     gameState.promptHistory.slice().reverse().forEach((entry, index) => {
         const entryDiv = document.createElement('div');
         entryDiv.className = 'p-4 border rounded-lg bg-gray-50';
@@ -1636,12 +1336,12 @@ function downloadGameState() {
     const stateToSave = getCleanedState();
     const jsonString = JSON.stringify(stateToSave, null, 2);
     const blob = new Blob([jsonString], { type: "application/json;charset=utf-8" });
-    
+
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:]/g, "-");
     link.download = `trivia_save_${timestamp}.json`;
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1669,7 +1369,7 @@ function handleStateUpload(event) {
             console.error("Failed to load or parse game state:", error);
             showNotification({ title: "Error", body: translations.game_loaded_error[gameState.currentLanguage] }, 'error');
         } finally {
-            event.target.value = ''; // Reset input
+            event.target.value = '';
         }
     };
     reader.readAsText(file, 'UTF-8');
@@ -1681,20 +1381,19 @@ function handleStateUpload(event) {
  */
 function restoreGameState(stateToRestore) {
     Object.assign(gameState, stateToRestore);
-    
+
     gameState.isAwaitingMove = false;
     gameState.lastAnswerWasCorrect = false;
-    
-    createBoardLayout();
 
+    createBoardLayout();
     setLanguage(gameState.currentLanguage);
-    
+
     UI.setupScreen.classList.add('hidden');
     UI.gameScreen.classList.remove('hidden');
-    
+
     const oldSvg = UI.boardWrapper.querySelector('.board-connections');
     if (oldSvg) oldSvg.remove();
-    
+
     renderBoard();
     renderCategoryLegend();
     updateUI();
@@ -1706,7 +1405,7 @@ function restoreGameState(stateToRestore) {
 
 /**
  * Creates a "clean" version of the game state for saving.
- * This removes transient, reconstructible, or sensitive data to create a lean save file.
+ * This removes transient, reconstructible, or sensitive data.
  * @returns {object} The cleaned game state object.
  */
 function getCleanedState() {
@@ -1734,7 +1433,7 @@ function getCleanedState() {
 }
 
 /**
- * NOWA FUNKCJA DO OBSŁUGI PANELU BOCZNEGO
+ * Sets up the side menu panel for game options.
  */
 function setupGameMenu() {
     const openBtn = UI.openGameMenuBtn;
@@ -1751,13 +1450,9 @@ function setupGameMenu() {
         overlay.classList.add('visible');
     }
 
-    // Dodajemy event listenery, upewniając się, że elementy istnieją
     if(openBtn) openBtn.addEventListener('click', openMenu);
     if(overlay) overlay.addEventListener('click', closeMenu);
 
-    // Dodajemy event listenery do przycisków wewnątrz panelu
-    // Uwaga: większość z nich (restart, download, etc.) już ma listenery dodane przez ID.
-    // Jedynie dla przycisku historii, który może być klikany, by zamknąć panel, dodajemy logikę.
     if(UI.showHistoryBtn) {
         UI.showHistoryBtn.addEventListener('click', () => {
             closeMenu();
@@ -1771,8 +1466,7 @@ function setupGameMenu() {
 
 /**
  * Initializes the entire application, sets up event listeners, and injects the API adapter.
- * This is the main entry point for the game logic.
- * @param {object} apiAdapter - An object with methods for communicating with the AI API.
+ * @param {object} apiAdapter - An object with methods for communicating with the backend.
  */
 export function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
@@ -1782,14 +1476,16 @@ export function initializeApp(apiAdapter) {
         const urlParams = new URLSearchParams(window.location.search);
         const shouldLoadGame = urlParams.get('loadGame') === 'true';
         const savedGame = loadGameState();
+
+        // Initialize API adapter if needed
+        if (gameState.api.loadSettings) {
+            gameState.api.loadSettings();
+        }
+
         if (shouldLoadGame && savedGame) {
             restoreGameState(savedGame);
         } else {
-            setLanguage('pl');
-        }
-    
-        if (gameState.api.loadSettings) {
-            gameState.api.loadSettings();
+            setLanguage(localStorage.getItem('trivia_lang') || 'pl');
         }
     });
 
@@ -1797,24 +1493,28 @@ export function initializeApp(apiAdapter) {
     UI.langEnBtn.addEventListener('click', () => setLanguage('en'));
     UI.gameModeSelect.addEventListener('change', updateDescriptions);
     UI.knowledgeLevelSelect.addEventListener('change', updateDescriptions);
-
-    UI.temperatureSlider.addEventListener('input', (e) => {
-        const temp = parseFloat(e.target.value);
-        UI.temperatureValueSpan.textContent = temp.toFixed(1);
-        e.target.style.setProperty('--thumb-color', `hsl(${(1 - temp / 2) * 240}, 70%, 50%)`);
-        if (gameState.api.saveSettings) gameState.api.saveSettings();
-    });
-
     UI.includeThemeToggle.addEventListener('change', () => { if (gameState.api.saveSettings) gameState.api.saveSettings(); });
     UI.mutateCategoriesToggle.addEventListener('change', () => { if (gameState.api.saveSettings) gameState.api.saveSettings(); });
-
     UI.generateCategoriesBtn.addEventListener('click', generateCategories);
     UI.regenerateQuestionBtn.addEventListener('click', () => askQuestion(gameState.currentForcedCategoryIndex));
-
     UI.popupRegenerateBtn.addEventListener('click', () => {
         UI.answerPopup.classList.add('opacity-0', 'scale-90');
         setTimeout(() => UI.answerPopup.classList.add('hidden'), 500);
         askQuestion(gameState.currentForcedCategoryIndex);
+    });
+
+      UI.modelSelect.addEventListener('change', (e) => {
+        updateModelSelection(e.target.value);
+        if (gameState.api.saveSettings) {
+            gameState.api.saveSettings();
+        }
+    });
+
+    UI.gameMenuModelSelect.addEventListener('change', (e) => {
+        updateModelSelection(e.target.value);
+        if (gameState.api.saveSettings) {
+            gameState.api.saveSettings();
+        }
     });
 
     UI.playerCountInput.addEventListener('input', updatePlayerNameInputs);
@@ -1825,20 +1525,14 @@ export function initializeApp(apiAdapter) {
     UI.acceptAnswerBtn.addEventListener('click', () => handleManualVerification(true));
     UI.rejectAnswerBtn.addEventListener('click', () => handleManualVerification(false));
     UI.closePopupBtn.addEventListener('click', closePopupAndContinue);
-    
-    // Zmieniamy listener dla przycisku historii - teraz jest w menu
-    // UI.showHistoryBtn.addEventListener('click', showHistoryModal); 
-    
     UI.closeHistoryBtn.addEventListener('click', hideHistoryModal);
     UI.restartGameBtn.addEventListener('click', restartGame);
     UI.downloadStateBtn.addEventListener('click', downloadGameState);
     UI.uploadStateInput.addEventListener('change', handleStateUpload);
-
     UI.closeSuggestionModalBtn.addEventListener('click', () => {
         UI.suggestionModal.classList.add('hidden');
     });
     UI.suggestionModalTitle.textContent = translations.suggestion_modal_title[gameState.currentLanguage];
-
     UI.playAgainBtn.addEventListener('click', () => {
         UI.winnerScreen.classList.add('hidden');
         UI.setupScreen.classList.remove('hidden');
@@ -1854,6 +1548,6 @@ export function initializeApp(apiAdapter) {
         });
     });
 
-    // WYWOŁANIE FUNKCJI KONFIGURUJĄCEJ PANEL MENU
+    // Initialize the side menu
     setupGameMenu();
 }

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  trivia-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: trivia-game-image
+    container_name: trivia-game
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"

@@ -1,0 +1,104 @@
+{
+  "inspirational_words": {
+    "pl": [
+      "Przyczyna", "Skutek", "Proces", "Wpływ", "Kontekst", "Struktura",
+      "Ewolucja", "Funkcja", "Porównanie", "Kontrast", "Symbol", "Narzędzie",
+      "Mit", "Początek", "Przyszłość", "Interakcja", "Perspektywa", "Anomalia",
+      "Zależność", "Hierarchia", "Transformacja", "Cykl", "Punkt zwrotny",
+      "Tradycja", "Znaczenie", "Ograniczenie", "Potencjał", "Zasada",
+      "Adaptacja", "Innowacja"
+    ],
+    "en": [
+      "Cause", "Effect", "Process", "Impact", "Context", "Structure",
+      "Evolution", "Function", "Comparison", "Contrast", "Symbol", "Tool",
+      "Myth", "Origin", "Future", "Interaction", "Perspective", "Anomaly",
+      "Dependence", "Hierarchy", "Transformation", "Cycle", "Turning point",
+      "Tradition", "Significance", "Limitation", "Potential", "Principle",
+      "Adaptation", "Innovation"
+    ]
+  },
+  "knowledge_prompts": {
+    "basic": {
+      "pl": "Podstawowy. Pytanie powinno dotyczyć powszechnie znanych faktów.",
+      "en": "Basic. The question should be about commonly known facts."
+    },
+    "intermediate": {
+      "pl": "Średniozaawansowany. Trudniejsze niż wiedza ogólna, ale nie specjalistyczne.",
+      "en": "Intermediate. More difficult than common knowledge, but not specialized."
+    },
+    "expert": {
+      "pl": "Ekspercki. Dotyczące mniej znanych faktów, dla znawców tematu.",
+      "en": "Expert. Concerning lesser-known facts, for connoisseurs of the subject."
+    }
+  },
+  "game_mode_prompts": {
+    "mcq": {
+      "pl": "Pytanie jednokrotnego wyboru (MCQ).",
+      "en": "Single Choice Question (MCQ)."
+    },
+    "short_answer": {
+      "pl": "Pytanie otwarte z krótką odpowiedzią (1-3 słowa).",
+      "en": "Open-ended question with a short answer (1-3 words)."
+    }
+  },
+  "generate_question": {
+    "pl": {
+      "persona": "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego.",
+      "chain_of_thought": "# PROCES MYŚLOWY (Chain of Thought):\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. Udoskonal pytanie.\n4.  **Weryfikacja i Korekta:** Przejrzyj wybrane pytanie, odpowiedź i opcje. Sprawdź je KROK PO KROKU pod kątem WSZYSTKICH reguł (zwłaszcza reguły 'ZAKAZ POWTÓRZEŃ' i krytycznej zasady, że odpowiedź nie może być w pytaniu). Jeśli jakakolwiek reguła jest złamana, **POPRAW** treść, aby była w pełni zgodna.",
+      "context_header": "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
+      "context_lines": [
+        "- Kategoria: \"{category}\"",
+        "- Poziom trudności: {knowledge_prompt}",
+        "- Tryb gry: {game_mode_prompt}",
+        "- Motyw przewodni: {theme_context}",
+        "- Słowa-inspiracje (użyj jako luźnego skojarzenia): {inspirational_words}"
+      ],
+      "rules": [
+        "**JĘZYK WYJŚCIOWY:** Cała zawartość finalnego obiektu JSON (pytanie, odpowiedź, opcje, wyjaśnienie) MUSI być w języku polskim.",
+        "**DEFINIUJ SUBKATEGORIĘ:** Dla każdego pytania zdefiniuj jedno- lub dwuwyrazową, precyzyjną subkategorię (np. dla 'Historii' -> 'Starożytny Rzym').",
+        "**ZAKAZ POWTÓRZEŃ (SUBKATEGORIE):** Pytanie nie może dotyczyć następujących, ostatnio użytych subkategorii: {subcategory_history_prompt}.",
+        "**ZAKAZ POWTÓRZEŃ (NAZWY WŁASNE):** Pytanie nie może zawierać ani dotyczyć następujących, ostatnio użytych nazw własnych: {entity_history_prompt}.",
+        "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
+        "**WYODRĘBNIJ NAZWY WŁASNE:** Zidentyfikuj kluczowe nazwy własne w treści pytania, odpowiedzi i wyjaśnienia, a następnie umieść je w tablicy 'key_entities'.",
+        "**JAKOŚĆ OPCJI (dla MCQ):** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
+        "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź."
+      ],
+      "output_format": "\n# OSTATECZNY WYNIK:\nWypisz wewnętrzny proces myślowy, następnie zwróć odpowiedź jako jeden, czysty obiekt JSON o strukturze:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa Własna 1\", \"Nazwa Własna 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
+    },
+    "en": {
+      "persona": "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
+      "chain_of_thought": "# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. Refine the question.\n4.  **Verification and Correction:** Review the selected question, answer, and options. Check them STEP-BY-STEP against ALL the rules. If any rule is violated, **CORRECT** the content to be fully compliant.",
+      "context_header": "\n# CONTEXT AND RULES TO APPLY:",
+      "context_lines": [
+        "- Category: \"{category}\"",
+        "- Difficulty Level: {knowledge_prompt}",
+        "- Game Mode: {game_mode_prompt}",
+        "- Main Theme: {theme_context}",
+        "- Inspirational Words (use as a loose association): {inspirational_words}"
+      ],
+      "rules": [
+        "**OUTPUT LANGUAGE:** The entire content of the final JSON object (question, answer, options, explanation) MUST be in English.",
+        "**DEFINE SUBCATEGORY:** For each question, define a precise, one or two-word subcategory (e.g., for 'History' -> 'Ancient Rome').",
+        "**NO REPETITION (SUBCATEGORIES):** The question must not be about the following, recently used subcategories: {subcategory_history_prompt}.",
+        "**NO REPETITION (PROPER NOUNS):** The question must not contain or be about the following, recently used proper nouns: {entity_history_prompt}.",
+        "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
+        "**EXTRACT PROPER NOUNS:** Identify key proper nouns in the question, answer, and explanation, then place them in the 'key_entities' array.",
+        "**OPTION QUALITY (for MCQ):** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
+        "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer."
+      ],
+      "output_format": "\n# FINAL OUTPUT:\nWrite your internal thought process, after that return the response as a single, clean JSON object with the structure:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Proper Noun 1\", \"Proper Noun 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
+    }
+  },
+  "generate_categories": {
+    "pl": "Jesteś kreatywnym mistrzem teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich, ciekawych i intuicyjnych kategorii do quizu na podstawie podanego motywu: \"{theme}\". Upewnij się, że są one od siebie RÓŻNORODNE. Zwróć odpowiedź WYŁĄCZNIE jako obiekt JSON: {{\"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]}}",
+    "en": "You are a creative quiz show master. Your task is to create ONE set of 6 broad, interesting, and intuitive quiz categories based on the provided theme: \"{theme}\". Ensure they are DIVERSE. Return the response ONLY as a JSON object: {{\"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]}}"
+  },
+  "mutate_category": {
+    "pl": "Jesteś mistrzem gry. Twoim zadaniem jest zaproponowanie PIĘCIU alternatywnych kategorii, które zastąpią starą kategorię: \"{old_category}\".\n\n# KONTEKST:\n- Ogólny motyw gry to: \"{theme}\".\n- Unikaj generowania kategorii, które już istnieją w grze: {existing_categories}.\n\n# FORMAT WYJŚCIOWY:\nZwróć WYŁĄCZNIE obiekt JSON w formacie: {{\"choices\": [{{\"name\": \"Nazwa 1\", \"description\": \"Opis 1\"}}, ...]}}",
+    "en": "You are a game master. Your task is to propose FIVE alternative categories to replace the old category: \"{old_category}\".\n\n# CONTEXT:\n- The overall game theme is: \"{theme}\".\n- Avoid generating categories that already exist in the game: {existing_categories}.\n\n# OUTPUT FORMAT:\nReturn ONLY a JSON object in the format: {{\"choices\": [{{\"name\": \"Name 1\", \"description\": \"Description 1\"}}, ...]}}"
+  },
+  "explain_incorrect": {
+    "pl": "Jesteś pomocnym nauczycielem w grze quizowej. Gracz właśnie odpowiedział niepoprawnie. Twoim zadaniem jest wyjaśnienie mu, dlaczego jego odpowiedź była błędna. Bądź zwięzły, empatyczny i edukacyjny.\n\nKontekst:\n- Pytanie: \"{question}\"\n- Poprawna odpowiedź: \"{correct_answer}\"\n- Błędna odpowiedź gracza: \"{player_answer}\"\n\nZadanie:\nNapisz krótkie (1-2 zdania) wyjaśnienie w języku polskim, dlaczego odpowiedź gracza jest niepoprawna.\n\nZwróć odpowiedź jako obiekt JSON w formacie: {{\"explanation\": \"Twoje wyjaśnienie...\"}}",
+    "en": "You are a helpful teacher in a quiz game. A player has just answered incorrectly. Your task is to explain to them why their answer was wrong. Be concise, empathetic, and educational.\n\nContext:\n- Question: \"{question}\"\n- Correct answer: \"{correct_answer}\"\n- Player's incorrect answer: \"{player_answer}\"\n\nTask:\nWrite a short (1-2 sentences) explanation in English for why the player's answer is incorrect.\n\nReturn the response as a JSON object in the format: {{\"explanation\": \"Your explanation...\"}}"
+  }
+}
