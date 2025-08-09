@@ -45,6 +45,7 @@ export const UI = {
     includeThemeToggle: document.getElementById('include-theme-toggle'),
     mutateCategoriesToggle: document.getElementById('mutate-categories-toggle'),
     startGameBtn: document.getElementById('start-game-btn'),
+    loadGameBtn: document.getElementById('load-game-btn'),
     boardWrapper: document.querySelector('.board-wrapper'),
     boardElement: document.getElementById('board'),
     categoryLegend: document.getElementById('category-legend'),
@@ -156,7 +157,8 @@ export const translations = {
     players_label: { pl: "Gracze", en: "Players" },
     player_count_label: { pl: "Liczba:", en: "Count:" },
     player_name_placeholder: { pl: "Imię Gracza {i}", en: "Player {i}'s Name" },
-    start_game_btn: { pl: "Rozpocznij Grę", en: "Start Game" },
+    start_game_btn: { pl: "Rozpocznij grę", en: "Start game" },
+    load_game_btn: { pl: "Wczytaj ostatnią grę", en: "Load last game" },
     min_categories_alert: { pl: "Wszystkie 6 pól kategorii musi być wypełnione.", en: "All 6 category fields must be filled." },
     player_turn: { pl: "Tura Gracza", en: "Player's Turn" },
     roll_to_start: { pl: "Rzuć kostką, aby rozpocząć!", en: "Roll the dice to start!" },
@@ -199,18 +201,17 @@ export const translations = {
     infobox_rules_desc: {
         pl: `
             <ul class="list-disc list-inside space-y-1 mt-1 mb-2 text-slate-600">
-                <li><b>Cel:</b> Zdobądź jako pierwszy "cząstkę" z każdej z 6 kategorii.</li>
-                <li><b>Rozgrywka:</b> Rzuć kostką, przesuń pionek i odpowiedz na pytanie z kategorii pola, na którym wylądujesz.</li>
-                <li><b>Zdobywanie cząstek:</b> Cząstki zdobywa się za poprawną odpowiedź na polu-matce (duże, okrągłe pole na końcu "ramienia").</li>
-                <li><b>Pola specjalne:</b> Pole centralne pozwala wybrać dowolną kategorię, a niektóre pola na pierścieniu pozwalają rzucić kostką jeszcze raz.</li>
+                <li><b>Cel gry:</b> Jako pierwszy zdobyć 6 kolorowych kółek – po jednym z każdej kategorii.</li>
+                <li><b>Tura gracza:</b> Rzuć kostką, przesuń pionek i odpowiedz na pytanie z kategorii pola, na którym staniesz.</li>
+                <li><b>Zdobywanie kółek:</b> Poprawna odpowiedź na "polu głównym" (duże pole na końcu ramienia) nagradzana jest kółkiem w kolorze tego pola.</li>
+                <li><b>Pola specjalne:</b> Pole centralne ("piasta") pozwala wybrać dowolną kategorię, a pola "Rzuć ponownie" dają dodatkowy ruch.</li>
             </ul>
-        `,
-        en: `
+        `, en: `
             <ul class="list-disc list-inside space-y-1 mt-1 mb-2 text-slate-600">
-                <li><b>Objective:</b> Be the first to collect a "wedge" from each of the 6 categories.</li>
-                <li><b>Gameplay:</b> Roll the dice, move your pawn, and answer a question from the category of the square you land on.</li>
-                <li><b>Earning Wedges:</b> Wedges are earned for a correct answer on an HQ square (the large, circular square at the end of a spoke).</li>
-                <li><b>Special Squares:</b> The center HUB square lets you choose any category, and some squares on the outer ring let you roll the dice again.</li>
+                <li><b>Objective:</b> Be the first to collect a colored disc from each of the six categories.</li>
+                <li><b>Gameplay:</b> Roll the die, move your pawn, and answer the question for the category you land on.</li>
+                <li><b>Earning Discs:</b> Correctly answer a question on a category "HQ" (Headquarters) to earn that category's disc.</li>
+                <li><b>Special Squares:</b> The central "Hub" lets you choose any category, while "Roll Again" squares grant an extra turn.</li>
             </ul>
         `
     },
@@ -1471,29 +1472,40 @@ function setupGameMenu() {
 export function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
 
-    // --- EVENT LISTENERS ---
-    window.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const shouldLoadGame = urlParams.get('loadGame') === 'true';
-        const savedGame = loadGameState();
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldLoadGame = urlParams.get('loadGame') === 'true';
+    const savedGame = loadGameState();
 
-        // Initialize API adapter if needed
-        if (gameState.api.loadSettings) {
-            gameState.api.loadSettings();
-        }
-
-        if (shouldLoadGame && savedGame) {
+    if (savedGame) {
+        UI.loadGameBtn.classList.remove('hidden');
+        UI.loadGameBtn.addEventListener('click', () => {
             restoreGameState(savedGame);
-        } else {
-            setLanguage(localStorage.getItem('trivia_lang') || 'pl');
-        }
-    });
+        });
+    }
+
+    // Initialize API adapter if needed
+    if (gameState.api.loadSettings) {
+        gameState.api.loadSettings();
+    }
+
+    if (shouldLoadGame && savedGame) {
+        restoreGameState(savedGame);
+    } else {
+        setLanguage(localStorage.getItem('trivia_lang') || 'pl');
+    }
+
+    // // --- EVENT LISTENERS ---
+    // window.addEventListener('DOMContentLoaded', () => {
+    //
+    // });
 
     UI.langPlBtn.addEventListener('click', () => setLanguage('pl'));
     UI.langEnBtn.addEventListener('click', () => setLanguage('en'));
     UI.gameModeSelect.addEventListener('change', updateDescriptions);
     UI.knowledgeLevelSelect.addEventListener('change', updateDescriptions);
-    UI.includeThemeToggle.addEventListener('change', () => { if (gameState.api.saveSettings) gameState.api.saveSettings(); });
+    UI.includeThemeToggle.addEventListener('change', () => {
+        if (gameState.api.saveSettings) gameState.api.saveSettings();
+    });
     UI.mutateCategoriesToggle.addEventListener('change', () => { if (gameState.api.saveSettings) gameState.api.saveSettings(); });
     UI.generateCategoriesBtn.addEventListener('click', generateCategories);
     UI.regenerateQuestionBtn.addEventListener('click', () => askQuestion(gameState.currentForcedCategoryIndex));

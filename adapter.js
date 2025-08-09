@@ -4,8 +4,10 @@
  * which in turn communicates with the Google Gemini API.
  */
 
-import { initializeApp, gameState, translations, UI } from './game_core.js';
-import { callApi } from './utils.js';
+import {initializeApp, gameState, translations, UI} from './game_core.js';
+import {callApi} from './utils.js';
+
+const apiPath = '/api/';
 
 function updateModelSelection(selectedValue) {
     if (UI.modelSelect && UI.modelSelect.value !== selectedValue) {
@@ -44,17 +46,23 @@ const backendApiAdapter = {
     },
 
     async generateCategories(theme) {
-        const payload = this._buildPayload({ theme, language: gameState.currentLanguage });
-        const response = await callApi('/api/generate-categories', payload);
+        const payload = this._buildPayload({theme, language: gameState.currentLanguage});
+        const response = await callApi(apiPath + 'generate-categories', payload);
         if (!response || !Array.isArray(response.categories) || response.categories.length < 6) {
             console.error("Backend did not return valid categories.", response);
             throw new Error("Failed to generate categories from backend.");
         }
+
+        gameState.promptHistory.push({
+            prompt: JSON.stringify(payload, null, 2),
+            response: JSON.stringify(response, null, 2)
+        });
         return response.categories.slice(0, 6);
     },
 
+
     async generateQuestion(category) {
-        let history = gameState.categoryTopicHistory[category] || { subcategories: [], entities: [] };
+        let history = gameState.categoryTopicHistory[category] || {subcategories: [], entities: []};
         const payload = this._buildPayload({
             category,
             gameMode: gameState.gameMode,
@@ -65,12 +73,16 @@ const backendApiAdapter = {
             subcategoryHistory: history.subcategories || [],
             entityHistory: history.entities || [],
         });
-        const response = await callApi('/api/generate-question', payload);
+        const response = await callApi(apiPath + 'generate-question', payload);
         if (!response || typeof response.question !== 'string') {
             console.error("Backend response is not a valid question object.", response);
             throw new Error("Failed to generate question from backend.");
         }
-        gameState.promptHistory.push({ prompt: `[Backend Call: /api/generate-question]`, response: JSON.stringify(response, null, 2) });
+
+        gameState.promptHistory.push({
+            prompt: JSON.stringify(payload, null, 2),
+            response: JSON.stringify(response, null, 2)
+        });
         return response;
     },
 
@@ -81,7 +93,12 @@ const backendApiAdapter = {
             correct_answer: gameState.currentQuestionData.answer,
             player_answer: gameState.currentPlayerAnswer,
         });
-        const data = await callApi('/api/explain-incorrect', payload);
+        const data = await callApi(apiPath + 'explain-incorrect', payload);
+
+        gameState.promptHistory.push({
+            prompt: JSON.stringify(payload, null, 2),
+            response: typeof data?.explanation === 'string' ? data.explanation : JSON.stringify(data, null, 2)
+        });
         return data.explanation;
     },
 
@@ -92,9 +109,15 @@ const backendApiAdapter = {
             theme: gameState.theme || null,
             existing_categories: existingCategories,
         });
-        const data = await callApi('/api/mutate-category', payload);
+        const data = await callApi(apiPath + 'mutate-category', payload);
+        // Loguj payload i odpowiedź jako tekst
+        gameState.promptHistory.push({
+            prompt: JSON.stringify(payload, null, 2),
+            response: JSON.stringify(data, null, 2)
+        });
         return data.choices;
     }
+
 };
 
 // Add an event listener to save the model choice
