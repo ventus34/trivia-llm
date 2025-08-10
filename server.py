@@ -230,25 +230,32 @@ async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
     print(f"[{game_id}] Preload started for missing categories: {categories_to_preload}")
 
     async def generate_for_category(category: str):
-        try:
-            final_prompt = build_question_prompt(request_data.model_dump(), category)
-            question_data = await call_generative_model(final_prompt, model)
-            if question_data and isinstance(question_data, dict) and question_data.get("question"):
-                game_sessions[game_id]["preloaded_questions"][category] = question_data
-                database.add_question(question_data, single_question_params)
-                print(f"[{game_id}] Success: preloaded question for '{category}'")
-            else:
-                raise ValueError("Invalid data received from the model.")
-        except Exception as e:
-            game_sessions[game_id]["preloaded_questions"][category] = None
-            print(f"[{game_id}] Error: failed to preload question for '{category}'. Reason: {e}")
+            try:
+                single_question_params = request_data.model_dump()
+                single_question_params['category'] = category
 
-    await asyncio.gather(*(generate_for_category(cat) for cat in categories_to_preload))
+                final_prompt = build_question_prompt(single_question_params, category)
+                question_data = await call_generative_model(final_prompt, model)
 
-    game_sessions[game_id]["is_preloading"] = False
-    if game_id in game_sessions and game_sessions[game_id].get("preload_event"):
-        game_sessions[game_id]["preload_event"].set()
-    print(f"[{game_id}] Preload finished.")
+                if question_data and isinstance(question_data, dict) and question_data.get("question"):
+
+                    game_sessions[game_id]["preloaded_questions"][category] = question_data
+
+                    database.add_question(question_data, single_question_params)
+
+                    print(f"[{game_id}] Success: preloaded and saved question for '{category}'")
+                else:
+                     raise ValueError("Invalid data received from the model.")
+            except Exception as e:
+                game_sessions[game_id]["preloaded_questions"][category] = None
+                print(f"[{game_id}] Error: failed to preload question for '{category}'. Reason: {e}")
+
+        await asyncio.gather(*(generate_for_category(cat) for cat in categories_to_preload))
+
+        game_sessions[game_id]["is_preloading"] = False
+        if game_id in game_sessions and game_sessions[game_id].get("preload_event"):
+            game_sessions[game_id]["preload_event"].set()
+        print(f"[{game_id}] Preload finished.")
 
 
 # --- API Endpoints ---
