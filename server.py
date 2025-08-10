@@ -50,17 +50,14 @@ except Exception as e:
 # Global dictionary to store game session states, including the preload event
 game_sessions = {}
 
-
 # --- Pydantic Models ---
 class BaseModelWithModel(BaseModel):
     model: str
     gameId: str
 
-
 class ThemeRequest(BaseModelWithModel):
     theme: str
     language: str
-
 
 class QuestionRequest(BaseModelWithModel):
     category: str
@@ -72,20 +69,17 @@ class QuestionRequest(BaseModelWithModel):
     subcategoryHistory: List[str] = Field(default_factory=list)
     entityHistory: List[str] = Field(default_factory=list)
 
-
 class ExplanationRequest(BaseModelWithModel):
     language: str
     question: str
     correct_answer: str
     player_answer: str
 
-
 class MutationRequest(BaseModelWithModel):
     language: str
     old_category: str
     theme: str | None = None
     existing_categories: List[str]
-
 
 class PreloadRequest(BaseModelWithModel):
     categories: List[str]
@@ -97,14 +91,14 @@ class PreloadRequest(BaseModelWithModel):
     subcategoryHistory: Dict[str, List[str]]
     entityHistory: Dict[str, List[str]]
 
-
 # --- Helper Logic ---
 def validate_model(model: str):
+    """Checks if the provided model is in the allowed list."""
     if model not in ALLOWED_MODELS:
         raise HTTPException(status_code=400, detail=f"Model '{model}' is not supported.")
 
-
 def build_question_prompt(params: Dict[str, Any], category: str) -> str:
+    """Builds the complete prompt for question generation based on the provided parameters."""
     lang = params.get("language")
     prompt_struct = PROMPTS["generate_question"][lang]
 
@@ -117,15 +111,13 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
 
     knowledge_prompt = PROMPTS["knowledge_prompts"][params.get("knowledgeLevel")][lang]
     game_mode_prompt = PROMPTS["game_mode_prompts"][params.get("gameMode")][lang]
-    theme_context = f"The question must relate to the theme: {params.get('theme')}." if params.get(
-        "includeCategoryTheme") and params.get("theme") else "No additional theme."
+    theme_context = f"The question must relate to the theme: {params.get('theme')}." if params.get("includeCategoryTheme") and params.get("theme") else "No additional theme."
 
     inspirational_words_pool = PROMPTS["inspirational_words"][lang]
     random.shuffle(inspirational_words_pool)
     inspirational_words = ", ".join(inspirational_words_pool[:2])
 
-    subcategory_history_prompt = ', '.join(
-        f'"{item}"' for item in subcategory_history) if subcategory_history else "No history."
+    subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "No history."
     entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "No history."
 
     context_lines = [
@@ -155,8 +147,8 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
         prompt_struct["output_format"]
     ])
 
-
 def extract_json_from_response(text: str) -> Any:
+    """Reliably extracts a JSON object from the model's text response."""
     json_str = ""
     try:
         json_match_md = re.search(r'```json\s*({[\s\S]*?})\s*```', text, re.DOTALL)
@@ -169,30 +161,26 @@ def extract_json_from_response(text: str) -> Any:
                 open_braces = 0
                 end_index = -1
                 for i, char in enumerate(full_match):
-                    if char == '{':
-                        open_braces += 1
-                    elif char == '}':
-                        open_braces -= 1
+                    if char == '{': open_braces += 1
+                    elif char == '}': open_braces -= 1
                     if open_braces == 0:
                         end_index = i + 1
                         break
-                if end_index != -1:
-                    json_str = full_match[:end_index]
-                else:
-                    json_str = full_match
+                if end_index != -1: json_str = full_match[:end_index]
+                else: json_str = full_match
         if not json_str: raise ValueError("No JSON object found in response.")
         return json.loads(json_str)
     except (json.JSONDecodeError, ValueError) as e:
         print(f"JSON parsing failed, returning raw text. Reason: {e}")
         return text
 
-
 async def call_generative_model(prompt: str, model_name: str):
+    """Calls the generative model, dynamically adjusting parameters based on model type."""
     validate_model(model_name)
     if DEBUG_MODE:
-        print(f"\n{'=' * 25} PROMPT TO API (model: {model_name}) {'=' * 25}")
+        print(f"\n{'='*25} PROMPT TO API (model: {model_name}) {'='*25}")
         print(prompt)
-        print("=" * 80 + "\n")
+        print("="*80 + "\n")
 
     use_json_mode = not model_name.startswith("gemma")
     try:
@@ -203,17 +191,19 @@ async def call_generative_model(prompt: str, model_name: str):
         generation_config = genai.types.GenerationConfig(**config)
         response = await model.generate_content_async(prompt, generation_config=generation_config)
         if DEBUG_MODE:
-            print(f"\n{'*' * 25} RAW RESPONSE FROM API ({model_name}) {'*' * 25}")
+            print(f"\n{'*'*25} RAW RESPONSE FROM API ({model_name}) {'*'*25}")
             print(response.text)
-            print("*" * 80 + "\n")
+            print("*"*80 + "\n")
         return extract_json_from_response(response.text)
     except Exception as e:
         print(f"API call error ({model_name}): {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # --- Background Task for Preloading ---
 async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
+    """
+    Generates questions in the background, only for categories missing from the cache.
+    """
     if game_id not in game_sessions:
         game_sessions[game_id] = {"preloaded_questions": {}, "is_preloading": False}
 
@@ -229,9 +219,8 @@ async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
     game_sessions[game_id]["is_preloading"] = True
     print(f"[{game_id}] Preload started for missing categories: {categories_to_preload}")
 
-async def generate_for_category(category: str):
+    async def generate_for_category(category: str):
         try:
-
             single_question_params = request_data.model_dump()
             single_question_params['category'] = category
 
@@ -240,9 +229,7 @@ async def generate_for_category(category: str):
 
             if question_data and isinstance(question_data, dict) and question_data.get("question"):
                 game_sessions[game_id]["preloaded_questions"][category] = question_data
-
                 database.add_question(question_data, single_question_params)
-
                 print(f"[{game_id}] Success: preloaded and saved question for '{category}'")
             else:
                  raise ValueError("Invalid data received from the model.")
@@ -257,10 +244,10 @@ async def generate_for_category(category: str):
         game_sessions[game_id]["preload_event"].set()
     print(f"[{game_id}] Preload finished.")
 
-
 # --- API Endpoints ---
 @app.post("/api/preload-questions", status_code=202)
 async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTasks):
+    """Accepts a request and starts the question preloading in the background."""
     if req.gameId not in game_sessions:
         game_sessions[req.gameId] = {"preloaded_questions": {}, "is_preloading": False}
 
@@ -271,9 +258,9 @@ async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTas
 
     return {"message": "Preloading started."}
 
-
 @app.post("/api/generate-question")
 async def generate_question(req: QuestionRequest):
+    """Provides a question, waiting for the preload cache if necessary."""
     preloaded_question = game_sessions.get(req.gameId, {}).get("preloaded_questions", {}).pop(req.category, None)
 
     if preloaded_question:
@@ -302,7 +289,6 @@ async def generate_question(req: QuestionRequest):
 
     return JSONResponse(content=response_data)
 
-
 @app.post("/api/mutate-category")
 async def get_category_mutation(req: MutationRequest):
     prompt = PROMPTS["mutate_category"][req.language].format(
@@ -312,7 +298,6 @@ async def get_category_mutation(req: MutationRequest):
     )
     response_data = await call_generative_model(prompt, req.model)
     return JSONResponse(content=response_data)
-
 
 @app.post("/api/explain-incorrect")
 async def get_incorrect_explanation(req: ExplanationRequest):
@@ -330,16 +315,14 @@ async def get_incorrect_explanation(req: ExplanationRequest):
     else:
         raise HTTPException(status_code=500, detail="Invalid response format from the generative model.")
 
-
 # --- App Lifecycle and Static Files ---
 @app.on_event("startup")
 async def startup_event():
+    """Function to run when the server starts."""
     database.init_db()
-
 
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse('trivia.html')
-
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
