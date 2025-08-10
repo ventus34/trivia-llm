@@ -2,6 +2,7 @@ import os
 import re
 import json
 import random
+import sqlite3
 import asyncio
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
@@ -17,7 +18,6 @@ import google.generativeai as genai
 load_dotenv()
 app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 
-# Defined, constant list of allowed models
 ALLOWED_MODELS = {
     "gemini-2.5-flash-lite",
     "gemini-2.5-flash",
@@ -26,7 +26,7 @@ ALLOWED_MODELS = {
     "gemma-3-27b-it",
 }
 
-# --- Global Configuration ---
+# --- Global Configuration & State ---
 try:
     DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
     MODEL_TEMPERATURE = float(os.getenv("MODEL_TEMPERATURE", "1.0"))
@@ -46,6 +46,9 @@ try:
 except Exception as e:
     print(f"CRITICAL ERROR: {e}")
     exit(1)
+
+# Global dictionary to store game session states, including the preload event
+game_sessions = {}
 
 
 # --- Pydantic Models ---
@@ -105,8 +108,12 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     lang = params.get("language")
     prompt_struct = PROMPTS["generate_question"][lang]
 
-    subcategory_history = params.get("subcategoryHistory", {}).get(category, [])
-    entity_history = params.get("entityHistory", {}).get(category, [])
+    if isinstance(params.get("subcategoryHistory"), dict):
+        subcategory_history = params.get("subcategoryHistory", {}).get(category, [])
+        entity_history = params.get("entityHistory", {}).get(category, [])
+    else:
+        subcategory_history = params.get("subcategoryHistory", [])
+        entity_history = params.get("entityHistory", [])
 
     knowledge_prompt = PROMPTS["knowledge_prompts"][params.get("knowledgeLevel")][lang]
     game_mode_prompt = PROMPTS["game_mode_prompts"][params.get("gameMode")][lang]
@@ -206,14 +213,21 @@ async def call_generative_model(prompt: str, model_name: str):
 
 
 # --- Background Task for Preloading ---
-game_sessions = {}
-
-
 async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
     if game_id not in game_sessions:
         game_sessions[game_id] = {"preloaded_questions": {}, "is_preloading": False}
+
+    current_cache = game_sessions[game_id].get("preloaded_questions", {})
+    categories_to_preload = [cat for cat in request_data.categories if not current_cache.get(cat)]
+
+    if not categories_to_preload:
+        print(f"[{game_id}] Cache is full. No preload needed.")
+        if game_sessions[game_id].get("preload_event"):
+            game_sessions[game_id]["preload_event"].set()
+        return
+
     game_sessions[game_id]["is_preloading"] = True
-    print(f"[{game_id}] Preload started for categories: {request_data.categories}")
+    print(f"[{game_id}] Preload started for missing categories: {categories_to_preload}")
 
     async def generate_for_category(category: str):
         try:
@@ -228,8 +242,11 @@ async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
             game_sessions[game_id]["preloaded_questions"][category] = None
             print(f"[{game_id}] Error: failed to preload question for '{category}'. Reason: {e}")
 
-    await asyncio.gather(*(generate_for_category(cat) for cat in request_data.categories))
+    await asyncio.gather(*(generate_for_category(cat) for cat in categories_to_preload))
+
     game_sessions[game_id]["is_preloading"] = False
+    if game_id in game_sessions and game_sessions[game_id].get("preload_event"):
+        game_sessions[game_id]["preload_event"].set()
     print(f"[{game_id}] Preload finished.")
 
 
@@ -238,24 +255,43 @@ async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
 async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTasks):
     if req.gameId not in game_sessions:
         game_sessions[req.gameId] = {"preloaded_questions": {}, "is_preloading": False}
+
+    game_sessions[req.gameId]["preload_event"] = asyncio.Event()
+
     if not game_sessions[req.gameId].get("is_preloading"):
         background_tasks.add_task(_preload_task, req.gameId, req.model, req)
+
     return {"message": "Preloading started."}
 
 
 @app.post("/api/generate-question")
 async def generate_question(req: QuestionRequest):
-    if req.gameId in game_sessions and req.category in game_sessions[req.gameId]["preloaded_questions"]:
-        question_data = game_sessions[req.gameId]["preloaded_questions"].pop(req.category, None)
-        if question_data:
-            print(f"[{req.gameId}] Serving preloaded question for '{req.category}'")
-            return JSONResponse(content=question_data)
+    preloaded_question = game_sessions.get(req.gameId, {}).get("preloaded_questions", {}).pop(req.category, None)
 
-    print(f"[{req.gameId}] Cache miss for '{req.category}'. Generating on demand.")
+    if preloaded_question:
+        print(f"[{req.gameId}] Serving preloaded question for '{req.category}'")
+        return JSONResponse(content=preloaded_question)
+
+    print(f"[{req.gameId}] Cache miss for '{req.category}'. Waiting for preload to finish...")
+
+    session_event = game_sessions.get(req.gameId, {}).get("preload_event")
+    if session_event:
+        try:
+            await asyncio.wait_for(session_event.wait(), timeout=15.0)
+            rechecked_question = game_sessions[req.gameId]["preloaded_questions"].pop(req.category, None)
+            if rechecked_question:
+                print(f"[{req.gameId}] Question available after waiting. Serving for '{req.category}'")
+                return JSONResponse(content=rechecked_question)
+        except asyncio.TimeoutError:
+            print(f"[{req.gameId}] Preload wait timed out. Generating question on demand.")
+
+    print(f"[{req.gameId}] Question unavailable after preload. Generating on demand (fallback).")
     final_prompt = build_question_prompt(req.model_dump(), req.category)
     response_data = await call_generative_model(final_prompt, req.model)
+
     if response_data and isinstance(response_data, dict) and response_data.get("question"):
         database.add_question(response_data, req.model_dump())
+
     return JSONResponse(content=response_data)
 
 

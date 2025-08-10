@@ -543,6 +543,11 @@ function initializeGame() {
         });
     }
 
+    if (gameState.api.preloadQuestions) {
+        console.log("Triggering question preload...");
+        gameState.api.preloadQuestions();
+    }
+
     createBoardLayout();
     renderBoard();
     renderCategoryLegend();
@@ -633,6 +638,11 @@ async function askQuestion(forcedCategoryIndex = null) {
         }
         UI.questionContent.classList.remove('hidden');
         UI.llmLoader.classList.add('hidden');
+
+        if (gameState.api.preloadQuestions) {
+            console.log("Triggering question preload while player is thinking...");
+            gameState.api.preloadQuestions();
+        }
 
     } catch (error) {
         console.error('Question generation error:', error);
@@ -997,10 +1007,6 @@ async function animatePawnMovement(path) {
 function nextTurn() {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
     updateUI();
-
-    if (gameState.api.preloadQuestions) {
-        gameState.api.preloadQuestions();
-    }
 
     UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
     UI.diceElement.disabled = false;

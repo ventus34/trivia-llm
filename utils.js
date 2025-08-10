@@ -35,7 +35,13 @@ export async function callApi(endpoint, payload) {
         });
 
         if (!response.ok) {
-            const errorBody = await response.json().catch(() => response.text());
+            const errorText = await response.text();
+            let errorBody;
+            try {
+                errorBody = JSON.parse(errorText);
+            } catch (e) {
+                errorBody = { detail: errorText || `Request failed with status ${response.status}` };
+            }
             console.error(`Backend API Error: ${response.status}`, errorBody);
             throw new ApiError(errorBody.detail || `Request failed with status ${response.status}`, response.status);
         }
