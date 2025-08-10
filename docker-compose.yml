@@ -10,5 +10,7 @@ services:
     restart: unless-stopped
     env_file:
       - ./.env
+    volumes:
+      - ./questions.db:/app/questions.db
     ports:
       - "8000:8000"

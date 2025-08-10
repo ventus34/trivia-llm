@@ -179,6 +179,7 @@ export const translations = {
     answer_evaluation: { pl: "Oceń odpowiedź", en: "Evaluate Answer" },
     player_answer_was: { pl: "Odpowiedź gracza:", en: "Player's answer:" },
     correct_answer_is: { pl: "Poprawna odpowiedź:", en: "Correct answer:" },
+    roll_again: { pl: "Rzuć ponownie", en: "Roll again" },
     explanation: { pl: "Wyjaśnienie poprawnej odpowiedzi:", en: "Explanation of the correct answer:" },
     your_answer_explanation: { pl: "Uzasadnienie Twojego błędu:", en: "Reasoning for your error:" },
     incorrect_answer_analysis_error: { pl: "Nie udało się przeanalizować odpowiedzi.", en: "Failed to analyze the answer." },
@@ -196,6 +197,8 @@ export const translations = {
     suggestion_error: { pl: "Nie udało się wygenerować sugestii.", en: "Could not generate suggestions." },
     suggestion_input_needed: { pl: "Proszę wpisać kategorię, aby uzyskać sugestie.", en: "Please enter a category to get suggestions for." },
     suggestion_button_title: { pl: "Zasugeruj alternatywy", en: "Suggest alternatives" },
+    infobox_temp_desc: { pl: "Kontroluje \"kreatywność\" modelu AI. Niska wartość (np. 0.2) tworzy bardziej przewidywalne i zachowawcze pytania. Wysoka wartość (np. 1.2) zachęca do tworzenia bardziej zróżnicowanych i nieoczekiwanych treści, co może czasem prowadzić do dziwnych wyników.", en: "Controls the 'creativity' of the AI model. A low value (e.g., 0.2) generates more predictable and conservative questions. A high value (e.g., 1.2) encourages more diverse and unexpected content, which can sometimes lead to strange results." },
+    generating_mutation: { pl: "Generuję nowe kategorie...", en: "Generating new categories..." },
     infobox_title: { pl: "Jak działają te opcje?", en: "How do these options work?" },
     infobox_rules_title: { pl: "📜 Zasady Gry", en: "📜 Game Rules" },
     infobox_rules_desc: {
@@ -219,6 +222,8 @@ export const translations = {
     infobox_mutation_desc: { pl: "Gdy ta opcja jest włączona, po zdobyciu \"cząstki\" w danej kategorii, kategoria ta zostanie zastąpiona nową, spokrewnioną tematycznie. Utrzymuje to grę świeżą i dynamiczną.", en: "When this option is enabled, after winning a wedge in a category (on an HQ square), that category will be replaced with a new, thematically related one. This keeps the game fresh and dynamic." },
     infobox_theme_title: { pl: "📝 Dodaj Temat do Pytań", en: "📝 Add Theme to Questions" },
     infobox_theme_desc: { pl: "Jeśli wpisano motyw w polu \"Temat do generacji kategorii\", zaznaczenie tej opcji sprawi, że model AI będzie musiał tworzyć pytania, które są związane nie tylko z kategorią (np. \"Historia\"), ale również z głównym motywem gry (np. \"Władca Pierścieni\").", en: "If a theme was entered in the \"Category Generation Theme\" field, checking this option will force the AI model to create questions that relate not only to the category (e.g., \"History\") but also to the main game theme (e.g., \"Lord of the Rings\")." },
+    game_menu_title: { pl: "Menu Gry", en: "Game Menu" },
+    show_history_btn: { pl: "Pokaż historię promptów", en: "Show prompt history" },
     generate_categories_error: { pl: "Nie udało się wygenerować kategorii. Sprawdź ustawienia API i spróbuj ponownie.", en: "Failed to generate categories. Check API settings and try again." },
     category_mutated: { pl: "Kategoria zmutowała!", en: "Category has mutated!" },
     new_category_msg: { pl: '"{old_cat}" zmienia się w "{new_cat}"!', en: '"{old_cat}" changes into "{new_cat}"!' },
@@ -231,6 +236,10 @@ export const translations = {
     confirm_choice_btn: { pl: "Zatwierdź wybór", en: "Confirm Choice" },
     download_state_btn: { pl: "Pobierz zapis", en: "Download State" },
     upload_state_btn: { pl: "Wczytaj grę", en: "Load Game" },
+    theme_title: { pl: "Motyw", en: "Theme" },
+    theme_light_label: { pl: "Jasny", en: "Light" },
+    theme_dark_label: { pl: "Ciemny", en: "Dark" },
+    theme_oled_label: { pl: "OLED", en: "OLED" },
     game_loaded_success: { pl: "Gra wczytana pomyślnie!", en: "Game loaded successfully!" },
     game_loaded_error: { pl: "Błąd wczytywania pliku. Upewnij się, że to poprawny plik zapisu.", en: "Error loading file. Make sure it's a valid save file." }
 };
@@ -338,6 +347,10 @@ function updateDescriptions() {
 
 
 // --- GAME SETUP ---
+
+function generateGameId() {
+    return 'game-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+}
 
 /**
  * Handles the click event for the category suggestion button.
@@ -489,6 +502,7 @@ function initializeGame() {
     const playerNames = Array.from(playerInputs).map(div => div.querySelector('.player-name-input').value || div.querySelector('.player-name-input').placeholder);
     const playerEmojis = Array.from(playerInputs).map(div => div.querySelector('.emoji-button').textContent);
     const categories = Array.from(document.querySelectorAll('#categories-container .category-input')).map(input => input.value.trim());
+    gameState.gameId = generateGameId();
 
     if (categories.some(c => c === '')) {
         showNotification({ title: "Setup Error", body: translations.min_categories_alert[gameState.currentLanguage] }, 'error');
@@ -952,7 +966,7 @@ async function handleSquareClick(squareId) {
 
     const landedSquare = gameState.board.find(s => s.id === squareId);
     if (landedSquare.type === CONFIG.SQUARE_TYPES.ROLL_AGAIN) {
-        UI.diceResultDiv.querySelector('span').textContent = 'Roll Again!';
+        UI.diceResultDiv.querySelector('span').textContent = translations.roll_again[gameState.currentLanguage];
         UI.diceElement.disabled = false;
     } else if (landedSquare.type === CONFIG.SQUARE_TYPES.HUB) {
         promptCategoryChoice();
@@ -983,6 +997,11 @@ async function animatePawnMovement(path) {
 function nextTurn() {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
     updateUI();
+
+    if (gameState.api.preloadQuestions) {
+        gameState.api.preloadQuestions();
+    }
+
     UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
     UI.diceElement.disabled = false;
     saveGameState();
@@ -1382,6 +1401,12 @@ function handleStateUpload(event) {
  */
 function restoreGameState(stateToRestore) {
     Object.assign(gameState, stateToRestore);
+
+    if (!gameState.gameId) {
+        console.warn("Loaded game state is missing a gameId. Generating a new one.");
+        gameState.gameId = generateGameId();
+    }
+
 
     gameState.isAwaitingMove = false;
     gameState.lastAnswerWasCorrect = false;

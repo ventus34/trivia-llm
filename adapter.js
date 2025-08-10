@@ -1,9 +1,3 @@
-/**
- * @file adapter.js
- * This module serves as the adapter for the application's Python backend,
- * which in turn communicates with the Google Gemini API.
- */
-
 import {initializeApp, gameState, translations, UI} from './game_core.js';
 import {callApi} from './utils.js';
 
@@ -41,6 +35,7 @@ const backendApiAdapter = {
     _buildPayload(data) {
         return {
             model: UI.modelSelect.value,
+            gameId: gameState.gameId,
             ...data
         };
     },
@@ -110,7 +105,7 @@ const backendApiAdapter = {
             existing_categories: existingCategories,
         });
         const data = await callApi(apiPath + 'mutate-category', payload);
-        // Loguj payload i odpowiedź jako tekst
+        // Log the payload and response as text
         gameState.promptHistory.push({
             prompt: JSON.stringify(payload, null, 2),
             response: JSON.stringify(data, null, 2)
