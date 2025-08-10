@@ -325,16 +325,16 @@
 
         async function tryAutoLoadDatabase() {
             try {
-                const response = await fetch('/data/questions.db');
+                const response = await fetch('data/questions.db');
                 if (response.ok) {
                     const arrayBuffer = await response.arrayBuffer();
                     const uInt8Array = new Uint8Array(arrayBuffer);
                     // If autoload is successful, hide the drop area immediately and show loading
                     dropArea.classList.add('hidden');
                     loadingIndicator.classList.remove('hidden');
-                    await handleFileContent(uInt8Array, '/data/questions.db');
+                    await handleFileContent(uInt8Array, 'data/questions.db');
                 } else {
-                    console.log('Default database /data/questions.db not found. Waiting for user to drop a file.');
+                    console.log('Default database data/questions.db not found. Waiting for user to drop a file.');
                     dropArea.classList.remove('hidden');
                 }
             } catch (error) {
