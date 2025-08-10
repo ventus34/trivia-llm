@@ -1,7 +1,15 @@
+/**
+ * @file adapter.js
+ * This module serves as the adapter for the application's Python backend,
+ * which in turn communicates with the Google Gemini API.
+ */
+
 import {initializeApp, gameState, translations, UI} from './game_core.js';
 import {callApi} from './utils.js';
 
-const apiPath = '/api/';
+// Construct the API path dynamically from the deployment config.
+const basePath = window.APP_CONFIG?.API_BASE_PATH || '/trivia';
+const apiPath = `${basePath}/api/`.replace('//', '/');
 
 function updateModelSelection(selectedValue) {
     if (UI.modelSelect && UI.modelSelect.value !== selectedValue) {
@@ -11,7 +19,6 @@ function updateModelSelection(selectedValue) {
         UI.gameMenuModelSelect.value = selectedValue;
     }
 }
-
 
 const backendApiAdapter = {
     isConfigured() {
@@ -31,13 +38,45 @@ const backendApiAdapter = {
         }
     },
 
-    // A helper function to build the payload with the selected model
+    // A helper function to build the payload with the selected model and gameId
     _buildPayload(data) {
         return {
             model: UI.modelSelect.value,
             gameId: gameState.gameId,
             ...data
         };
+    },
+
+    // A new method to trigger the preload on the server
+    async preloadQuestions() {
+        if (!gameState.gameId) return; // Don't do anything if the game hasn't started
+
+        const payload = this._buildPayload({
+            categories: gameState.categories,
+            gameMode: gameState.gameMode,
+            knowledgeLevel: gameState.knowledgeLevel,
+            language: gameState.currentLanguage,
+            theme: gameState.theme,
+            includeCategoryTheme: gameState.includeCategoryTheme,
+            subcategoryHistory: Object.fromEntries(
+                Object.entries(gameState.categoryTopicHistory).map(([k, v]) => [k, v.subcategories])
+            ),
+            entityHistory: Object.fromEntries(
+                Object.entries(gameState.categoryTopicHistory).map(([k, v]) => [k, v.entities])
+            )
+        });
+
+        try {
+            // Fire-and-forget request, we don't need to wait for the response
+            fetch(apiPath + 'preload-questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            console.log('Preload request sent.');
+        } catch (error) {
+            console.error('Failed to send preload request:', error);
+        }
     },
 
     async generateCategories(theme) {
@@ -54,7 +93,6 @@ const backendApiAdapter = {
         });
         return response.categories.slice(0, 6);
     },
-
 
     async generateQuestion(category) {
         let history = gameState.categoryTopicHistory[category] || {subcategories: [], entities: []};
@@ -105,19 +143,12 @@ const backendApiAdapter = {
             existing_categories: existingCategories,
         });
         const data = await callApi(apiPath + 'mutate-category', payload);
-        // Log the payload and response as text
         gameState.promptHistory.push({
             prompt: JSON.stringify(payload, null, 2),
             response: JSON.stringify(data, null, 2)
         });
         return data.choices;
     }
-
 };
-
-// Add an event listener to save the model choice
-if (UI.modelSelect) {
-    UI.modelSelect.addEventListener('change', backendApiAdapter.saveSettings);
-}
 
 initializeApp(backendApiAdapter);
