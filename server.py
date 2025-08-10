@@ -235,6 +235,7 @@ async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
             question_data = await call_generative_model(final_prompt, model)
             if question_data and isinstance(question_data, dict) and question_data.get("question"):
                 game_sessions[game_id]["preloaded_questions"][category] = question_data
+                database.add_question(question_data, single_question_params)
                 print(f"[{game_id}] Success: preloaded question for '{category}'")
             else:
                 raise ValueError("Invalid data received from the model.")
