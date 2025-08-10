@@ -3,7 +3,7 @@ import sqlite3
 import json
 from typing import List, Dict, Any
 
-DATABASE_FILE = "questions.db"
+DATABASE_FILE = "/app/data/questions.db"
 
 def get_db_connection():
     """Creates and returns a database connection."""

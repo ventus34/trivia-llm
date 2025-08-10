@@ -11,6 +11,6 @@ services:
     env_file:
       - ./.env
     volumes:
-      - ./questions.db:/app/questions.db
+      - ./data:/app/data
     ports:
       - "8000:8000"
