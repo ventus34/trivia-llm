@@ -783,7 +783,11 @@ html.oled #model-choice-modal {
         z-index: 2;
         gap: 1.5rem;
     }
-    #mcq-options-container button, #answer-popup .text-left p {
+    #mcq-options-container button,
+    #player-answer-text,
+    #correct-answer-text,
+    #incorrect-explanation-text,
+    #explanation-text {
         font-size: 1.75rem;
     }
 }
