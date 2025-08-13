@@ -75,11 +75,14 @@ class ExplanationRequest(BaseModelWithModel):
     correct_answer: str
     player_answer: str
 
-class MutationRequest(BaseModelWithModel):
+class MutationRequest(BaseModel):
+    model: str
+    gameId: str | None = None
     language: str
     old_category: str
     theme: str | None = None
     existing_categories: List[str]
+
 
 class PreloadRequest(BaseModelWithModel):
     categories: List[str]
