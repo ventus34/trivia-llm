@@ -104,7 +104,7 @@ export const UI = {
     suggestionLoader: document.getElementById('suggestion-loader'),
     suggestionButtons: document.getElementById('suggestion-buttons'),
 
-    // NOWE ELEMENTY MENU
+    // NEW MENU ELEMENTS
     openGameMenuBtn: document.getElementById('open-game-menu-btn'),
     gameMenuPanel: document.getElementById('game-menu-panel'),
     gameMenuOverlay: document.getElementById('game-menu-overlay'),
@@ -520,6 +520,7 @@ function initializeGame() {
         currentPlayerIndex: 0,
         isAwaitingMove: false,
         lastAnswerWasCorrect: false,
+        isMutationPending: false,
         gameMode: UI.gameModeSelect.value,
         knowledgeLevel: UI.knowledgeLevelSelect.value,
         currentQuestionData: null,
@@ -539,7 +540,7 @@ function initializeGame() {
             emoji: playerEmojis[i],
             position: 0,
             color: CONFIG.PLAYER_COLORS[i],
-            wedges: []
+            wedges: [] // Wedges are stored by index (0-5), not by name
         });
     }
 
@@ -849,7 +850,7 @@ function updateUI() {
         scoreDiv.style.border = `1px solid ${player.color}`;
         let wedgesHTML = '';
         gameState.categories.forEach((cat, i) => {
-            const hasWedge = player.wedges.includes(cat);
+            const hasWedge = player.wedges.includes(i); // Check for wedge by index
             wedgesHTML += `<span class="category-wedge" style="background-color: ${hasWedge ? CONFIG.CATEGORY_COLORS[i] : '#e5e7eb'};" title="${cat}"></span>`;
         });
         scoreDiv.innerHTML = `<p class="font-semibold" style="color: ${player.color};">${player.emoji} ${player.name}</p><div>${wedgesHTML}</div>`;
@@ -1018,7 +1019,7 @@ function nextTurn() {
  * Checks if a player has met the win condition (collected all 6 wedges).
  */
 function checkWinCondition() {
-    const winner = gameState.players.find(p => p.wedges.length === gameState.categories.length);
+    const winner = gameState.players.find(p => new Set(p.wedges).size === gameState.categories.length);
     if (winner) {
         UI.gameScreen.classList.add('hidden');
         UI.winnerScreen.classList.remove('hidden');
@@ -1056,13 +1057,26 @@ function handleOpenAnswer() {
  * @param {boolean} isCorrect - Whether the player's answer was deemed correct.
  */
 async function handleManualVerification(isCorrect) {
+    // Set the result of the turn
     gameState.lastAnswerWasCorrect = isCorrect;
+
+    // Get current game context
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = gameState.currentForcedCategoryIndex !== null ? gameState.currentForcedCategoryIndex : square.categoryIndex;
-    const oldCategory = gameState.categories[categoryIndex];
+    const isHqSquare = square.type === CONFIG.SQUARE_TYPES.HQ;
 
-    if (oldCategory && gameState.currentQuestionData.subcategory) {
+    // --- SCORING LOGIC ---
+    // Award a point (the category index) if the answer is correct on an HQ square
+    // and the player doesn't already have this point.
+    if (isCorrect && isHqSquare && !player.wedges.includes(categoryIndex)) {
+        player.wedges.push(categoryIndex);
+    }
+
+    // --- HISTORY UPDATE LOGIC ---
+    // Update the history of topics for the given category to avoid repetition.
+    if (categoryIndex !== null && gameState.currentQuestionData.subcategory) {
+        const oldCategory = gameState.categories[categoryIndex];
         if (!gameState.categoryTopicHistory[oldCategory] || Array.isArray(gameState.categoryTopicHistory[oldCategory])) {
             gameState.categoryTopicHistory[oldCategory] = { subcategories: [], entities: [] };
         }
@@ -1080,6 +1094,7 @@ async function handleManualVerification(isCorrect) {
             });
         }
 
+        // Prune history to save space and keep it relevant
         if (history.subcategories.length > CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS) {
             history.subcategories = history.subcategories.slice(-CONFIG.MAX_SUBCATEGORY_HISTORY_ITEMS);
         }
@@ -1090,77 +1105,28 @@ async function handleManualVerification(isCorrect) {
         localStorage.setItem('globalQuizHistory', JSON.stringify(gameState.categoryTopicHistory));
     }
 
+    // Set a flag if a mutation is pending for the next step.
+    const shouldMutate = isCorrect && isHqSquare && gameState.mutateCategories;
+    gameState.isMutationPending = shouldMutate;
+
+    // --- UI UPDATE FOR POPUP ---
+    // Switch from verification buttons to post-verification/continue buttons.
     UI.verificationButtons.classList.add('hidden');
     UI.postVerificationButtons.classList.remove('hidden');
 
-    const shouldMutate = isCorrect &&
-                         square.type === CONFIG.SQUARE_TYPES.HQ &&
-                         !player.wedges.includes(oldCategory) &&
-                         gameState.mutateCategories;
-
-    if (shouldMutate) {
-        UI.standardPopupContent.classList.add('hidden');
-        UI.mutationContent.classList.remove('hidden');
-        UI.mutationLoader.classList.remove('hidden');
-        UI.mutationButtons.classList.add('hidden');
-        UI.closePopupBtn.classList.add('hidden');
-
+    // Always show the explanation popup. The "Continue" button will handle the next step.
+    UI.explanationContainer.classList.remove('hidden');
+    if (!isCorrect) {
+        UI.incorrectExplanationContainer.classList.remove('hidden');
+        UI.incorrectExplanationLoader.classList.remove('hidden');
         try {
-            const otherCategories = gameState.categories.filter(c => c !== oldCategory);
-            const choices = await gameState.api.getCategoryMutationChoices(oldCategory, otherCategories);
-
-            UI.mutationLoader.classList.add('hidden');
-            UI.mutationButtons.classList.remove('hidden');
-            UI.mutationButtons.innerHTML = '';
-
-            if (!Array.isArray(choices)) throw new Error("Invalid choices received from API");
-
-            choices.forEach(choice => {
-                const button = document.createElement('button');
-                button.className = 'w-full p-4 text-white rounded-lg transition-transform hover:scale-105 text-left themed-button';
-                button.style.backgroundColor = CONFIG.CATEGORY_COLORS[categoryIndex];
-                button.innerHTML = `<span class="block font-bold text-lg">${choice.name || ""}</span><p class="text-sm font-normal opacity-90 mt-1">${choice.description || ""}</p>`;
-                button.onclick = () => {
-                    const newCategoryName = choice.name;
-                    gameState.categories[categoryIndex] = newCategoryName;
-                    player.wedges.push(newCategoryName);
-                    renderCategoryLegend();
-                    delete gameState.categoryTopicHistory[oldCategory];
-                    if (!gameState.categoryTopicHistory[newCategoryName]) {
-                        gameState.categoryTopicHistory[newCategoryName] = { subcategories: [], entities: [] };
-                    }
-                    showNotification({ title: translations.category_mutated[gameState.currentLanguage], body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategoryName) }, 'info');
-
-                    closePopupAndContinue();
-                };
-                UI.mutationButtons.appendChild(button);
-            });
+            const explanation = await gameState.api.getIncorrectAnswerExplanation();
+            UI.incorrectExplanationText.textContent = explanation;
         } catch (error) {
-            console.error("Category mutation failed:", error);
-            player.wedges.push(oldCategory); // As a fallback, award the wedge for the old category.
-            showNotification({ title: translations.api_error[gameState.currentLanguage], body: "Failed to mutate category." }, 'error');
-            closePopupAndContinue();
-        }
-    } else {
-        // Standard flow (no mutation).
-        if (isCorrect && square.type === CONFIG.SQUARE_TYPES.HQ) {
-            if (oldCategory && !player.wedges.includes(oldCategory)) {
-                player.wedges.push(oldCategory);
-            }
-        }
-        UI.explanationContainer.classList.remove('hidden');
-        if (!isCorrect) {
-            UI.incorrectExplanationContainer.classList.remove('hidden');
-            UI.incorrectExplanationLoader.classList.remove('hidden');
-            try {
-                const explanation = await gameState.api.getIncorrectAnswerExplanation();
-                UI.incorrectExplanationText.textContent = explanation;
-            } catch (error) {
-                console.error("Incorrect answer explanation error:", error);
-                UI.incorrectExplanationText.textContent = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
-            } finally {
-                UI.incorrectExplanationLoader.classList.add('hidden');
-            }
+            console.error("Incorrect answer explanation error:", error);
+            UI.incorrectExplanationText.textContent = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
+        } finally {
+            UI.incorrectExplanationLoader.classList.add('hidden');
         }
     }
 }
@@ -1220,15 +1186,83 @@ function showAnswerPopup() {
 }
 
 /**
+ * A helper function to handle the UI transition to the mutation screen.
+ */
+async function showMutationScreen() {
+    // 1. Switch the content inside the still-open popup
+    UI.standardPopupContent.classList.add('hidden');
+    UI.mutationContent.classList.remove('hidden');
+    UI.mutationLoader.classList.remove('hidden');
+    UI.mutationButtons.classList.add('hidden');
+    UI.postVerificationButtons.classList.add('hidden'); // Hide the "Continue" button
+    UI.mutationContent.querySelector('h3').textContent = translations.choose_mutation_title[gameState.currentLanguage];
+
+    // 2. Get context for the API call
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const square = gameState.board.find(s => s.id === player.position);
+    const categoryIndex = gameState.currentForcedCategoryIndex !== null ? gameState.currentForcedCategoryIndex : square.categoryIndex;
+
+    // 3. Call the API and render the mutation choices
+    try {
+        const oldCategory = gameState.categories[categoryIndex];
+        const otherCategories = gameState.categories.filter((c, i) => i !== categoryIndex);
+        const choices = await gameState.api.getCategoryMutationChoices(oldCategory, otherCategories);
+
+        UI.mutationLoader.classList.add('hidden');
+        UI.mutationButtons.classList.remove('hidden');
+        UI.mutationButtons.innerHTML = '';
+
+        choices.forEach(choice => {
+            const button = document.createElement('button');
+            button.className = 'w-full p-4 text-white rounded-lg transition-transform hover:scale-105 text-left themed-button';
+            button.style.backgroundColor = CONFIG.CATEGORY_COLORS[categoryIndex];
+            button.innerHTML = `<span class="block font-bold text-lg">${choice.name || ""}</span><p class="text-sm font-normal opacity-90 mt-1">${choice.description || ""}</p>`;
+
+            button.onclick = () => {
+                const newCategoryName = choice.name;
+                gameState.categories[categoryIndex] = newCategoryName;
+
+                renderCategoryLegend();
+                delete gameState.categoryTopicHistory[oldCategory];
+                if (!gameState.categoryTopicHistory[newCategoryName]) {
+                    gameState.categoryTopicHistory[newCategoryName] = { subcategories: [], entities: [] };
+                }
+                showNotification({ title: translations.category_mutated[gameState.currentLanguage], body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategoryName) }, 'info');
+
+                // 4. After a choice is made, call closePopupAndContinue again to finally close the popup.
+                closePopupAndContinue();
+            };
+            UI.mutationButtons.appendChild(button);
+        });
+    } catch (error) {
+        console.error("Category mutation failed:", error);
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: "Failed to mutate category." }, 'error');
+        // Close the popup anyway in case of an error
+        closePopupAndContinue();
+    }
+}
+
+
+/**
  * Closes the answer verification popup and continues the game.
+ * It also handles the transition to the mutation screen if a mutation is pending.
  */
 function closePopupAndContinue() {
+    // If a mutation is pending, handle that instead of closing the popup.
+    if (gameState.isMutationPending) {
+        gameState.isMutationPending = false; // Consume the flag to avoid loops
+        showMutationScreen();
+        return; // Stop execution here
+    }
+
+    // Standard logic to close the popup and continue the game
     UI.answerPopup.classList.add('opacity-0', 'scale-90');
     setTimeout(() => {
         UI.answerPopup.classList.add('hidden');
+        // Reset the UI for the next time the popup is used
         UI.standardPopupContent.classList.remove('hidden');
         UI.mutationContent.classList.add('hidden');
-        UI.closePopupBtn.classList.remove('hidden');
+        UI.postVerificationButtons.classList.remove('hidden');
     }, 500);
 
     if (gameState.lastAnswerWasCorrect) {
@@ -1446,7 +1480,7 @@ function getCleanedState() {
     const excludeKeys = [
         'api', 'promptHistory', 'possiblePaths', 'currentQuestionData',
         'currentForcedCategoryIndex', 'currentPlayerAnswer', 'isAwaitingMove',
-        'lastAnswerWasCorrect', 'board'
+        'lastAnswerWasCorrect', 'board', 'isMutationPending'
     ];
     excludeKeys.forEach(key => delete stateToSave[key]);
 
@@ -1525,11 +1559,7 @@ export function initializeApp(apiAdapter) {
         setLanguage(localStorage.getItem('trivia_lang') || 'pl');
     }
 
-    // // --- EVENT LISTENERS ---
-    // window.addEventListener('DOMContentLoaded', () => {
-    //
-    // });
-
+    // --- EVENT LISTENERS ---
     UI.langPlBtn.addEventListener('click', () => setLanguage('pl'));
     UI.langEnBtn.addEventListener('click', () => setLanguage('en'));
     UI.gameModeSelect.addEventListener('change', updateDescriptions);
@@ -1546,7 +1576,7 @@ export function initializeApp(apiAdapter) {
         askQuestion(gameState.currentForcedCategoryIndex);
     });
 
-      UI.modelSelect.addEventListener('change', (e) => {
+    UI.modelSelect.addEventListener('change', (e) => {
         updateModelSelection(e.target.value);
         if (gameState.api.saveSettings) {
             gameState.api.saveSettings();
