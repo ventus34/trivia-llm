@@ -1,20 +1,24 @@
 {
   "inspirational_words": {
     "pl": [
-      "Przyczyna", "Skutek", "Proces", "Wpływ", "Kontekst", "Struktura",
-      "Ewolucja", "Funkcja", "Porównanie", "Kontrast", "Symbol", "Narzędzie",
-      "Mit", "Początek", "Przyszłość", "Interakcja", "Perspektywa", "Anomalia",
-      "Zależność", "Hierarchia", "Transformacja", "Cykl", "Punkt zwrotny",
-      "Tradycja", "Znaczenie", "Ograniczenie", "Potencjał", "Zasada",
-      "Adaptacja", "Innowacja"
+      "Początek", "Koniec", "Cykl", "Struktura", "System", "Zasada", "Prawo",
+      "Anomalia", "Paradoks", "Symbol", "Mit", "Dogmat", "Utopia", "Idea",
+      "Ewolucja", "Rewolucja", "Transformacja", "Proces", "Interakcja",
+      "Konflikt", "Kryzys", "Odkrycie", "Wynalazek", "Upadek", "Wzrost",
+      "Porównanie", "Kontrast", "Analogia", "Metafora", "Przyczyna", "Skutek",
+      "Wpływ", "Funkcja", "Zależność", "Hierarchia", "Sieć", "Granica",
+      "Narzędzie", "Mechanizm", "Źródło", "Potencjał", "Ograniczenie",
+      "Harmonia", "Chaos", "Piękno", "Forma", "Materia"
     ],
     "en": [
-      "Cause", "Effect", "Process", "Impact", "Context", "Structure",
-      "Evolution", "Function", "Comparison", "Contrast", "Symbol", "Tool",
-      "Myth", "Origin", "Future", "Interaction", "Perspective", "Anomaly",
-      "Dependence", "Hierarchy", "Transformation", "Cycle", "Turning point",
-      "Tradition", "Significance", "Limitation", "Potential", "Principle",
-      "Adaptation", "Innovation"
+      "Origin", "End", "Cycle", "Structure", "System", "Principle", "Law",
+      "Anomaly", "Paradox", "Symbol", "Myth", "Dogma", "Utopia", "Idea",
+      "Evolution", "Revolution", "Transformation", "Process", "Interaction",
+      "Conflict", "Crisis", "Discovery", "Invention", "Decline", "Growth",
+      "Comparison", "Contrast", "Analogy", "Metaphor", "Cause", "Effect",
+      "Impact", "Function", "Dependence", "Hierarchy", "Network", "Boundary",
+      "Tool", "Mechanism", "Source", "Potential", "Limitation",
+      "Harmony", "Chaos", "Beauty", "Form", "Matter"
     ]
   },
   "knowledge_prompts": {
@@ -61,6 +65,8 @@
         "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
         "**WYODRĘBNIJ NAZWY WŁASNE:** Zidentyfikuj kluczowe nazwy własne w treści pytania, odpowiedzi i wyjaśnienia, a następnie umieść je w tablicy 'key_entities'.",
         "**JAKOŚĆ OPCJI (dla MCQ):** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
+        "**OBSŁUGA SUBIEKTYWNOŚCI**: Jeśli kategoria jest z natury subiektywna (np. sztuka, filozofia), sformułuj pytanie w oparciu o udokumentowane poglądy konkretnego nurtu, szkoły myślenia, krytyka lub w kontekście historycznym, aby zachować jego weryfikowalność (np. 'Według surrealistów, co było głównym źródłem twórczości?' zamiast 'Jaki jest najlepszy obraz surrealistyczny?').",
+        "**JAKOŚĆ PYTANIA**: Pytanie musi wymagać czegoś więcej niż prostej definicji lub znajomości jednej daty. Powinno sprawdzać zrozumienie kontekstu, przyczyny, skutku lub powiązań między faktami.",
         "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź."
       ],
       "output_format": "\n# OSTATECZNY WYNIK:\nWypisz wewnętrzny proces myślowy, następnie zwróć odpowiedź jako jeden, czysty obiekt JSON o strukturze:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa Własna 1\", \"Nazwa Własna 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
@@ -84,21 +90,23 @@
         "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
         "**EXTRACT PROPER NOUNS:** Identify key proper nouns in the question, answer, and explanation, then place them in the 'key_entities' array.",
         "**OPTION QUALITY (for MCQ):** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
+        "**QUESTION QUALITY**: The question must require more than a simple definition or knowledge of a single date. It should test understanding of context, cause, effect, or the relationships between facts.",
+        "**HANDLING SUBJECTIVITY**: If the category is inherently subjective (e.g., art, philosophy), formulate the question around the documented views of a specific movement, school of thought, or critic, or within a historical context, to maintain its verifiability (e.g., 'According to the Surrealists, what was the primary source of creativity?' instead of 'What is the best Surrealist painting?').",
         "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer."
       ],
       "output_format": "\n# FINAL OUTPUT:\nWrite your internal thought process, after that return the response as a single, clean JSON object with the structure:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Proper Noun 1\", \"Proper Noun 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
     }
   },
   "generate_categories": {
-    "pl": "Jesteś kreatywnym mistrzem teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich, ciekawych i intuicyjnych kategorii do quizu na podstawie podanego motywu: \"{theme}\". Upewnij się, że są one od siebie RÓŻNORODNE. Zwróć odpowiedź WYŁĄCZNIE jako obiekt JSON: {{\"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]}}",
-    "en": "You are a creative quiz show master. Your task is to create ONE set of 6 broad, interesting, and intuitive quiz categories based on the provided theme: \"{theme}\". Ensure they are DIVERSE. Return the response ONLY as a JSON object: {{\"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]}}"
+    "pl": "Jesteś kreatywnym mistrzem teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich i intuicyjnych kategorii do quizu na podstawie podanego motywu: \"{theme}\". Upewnij się, że kategorie są od siebie różnorodne i pokrywają różne aspekty świata przedstawionego, takie jak: postacie, miejsca, wydarzenia, przedmioty/technologie, koncepcje/wiedza, kultura/wpływ. Zwróć odpowiedź WYŁĄCZNIE jako obiekt JSON: {{\"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]}}",
+    "en": "You are a creative quiz show master. Your task is to create ONE set of 6 broad and intuitive quiz categories based on the provided theme: \"{theme}\". Ensure the categories are diverse and cover different facets of the subject, such as: key figures/characters, places/locations, events/timeline, items/technologies, concepts/lore, and culture/impact. Return the response ONLY as a JSON object: {{\"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]}}"
   },
   "mutate_category": {
-    "pl": "Jesteś mistrzem gry. Twoim zadaniem jest zaproponowanie PIĘCIU alternatywnych kategorii, które zastąpią starą kategorię: \"{old_category}\".\n\n# KONTEKST:\n- Ogólny motyw gry to: \"{theme}\".\n- Unikaj generowania kategorii, które już istnieją w grze: {existing_categories}.\n\n# FORMAT WYJŚCIOWY:\nZwróć WYŁĄCZNIE obiekt JSON w formacie: {{\"choices\": [{{\"name\": \"Nazwa 1\", \"description\": \"Opis 1\"}}, ...]}}",
-    "en": "You are a game master. Your task is to propose FIVE alternative categories to replace the old category: \"{old_category}\".\n\n# CONTEXT:\n- The overall game theme is: \"{theme}\".\n- Avoid generating categories that already exist in the game: {existing_categories}.\n\n# OUTPUT FORMAT:\nReturn ONLY a JSON object in the format: {{\"choices\": [{{\"name\": \"Name 1\", \"description\": \"Description 1\"}}, ...]}}"
+    "pl": "Jesteś kreatywnym mistrzem gry. Twoim zadaniem jest zaproponowanie PIĘCIU tematycznie powiązanych alternatyw dla kategorii: \"{old_category}\".\n\n# ZASADY I KONTEKST:\n1.  **LOGICZNE POWIĄZANIE**: Wszystkie pięć propozycji MUSI być w jakiś sposób powiązane z kategorią \"{old_category}\". Mogą to być jej poddziedziny, dziedziny nadrzędne, tematy pokrewne lub kategorie z nią kontrastujące.\n2.  **RÓŻNORODNOŚĆ PERSPEKTYW**: Unikaj generowania synonimów. Każda propozycja powinna oferować unikalne spojrzenie lub zakres tematyczny. Na przykład, dla 'Mitologii Greckiej' dobre alternatywy to 'Herosi i Potwory', 'Bogowie Olimpu', 'Mity Rzymskie' (pokrewna), 'Filozofia Starożytna' (kontekst kulturowy), ale NIE 'Greckie Mity'.\n3.  **DOPASOWANIE DO GRY**: Propozycje muszą być na tyle szerokie, by mogły funkcjonować jako kategorie w quizie.\n4.  **KONTEKST GRY**: Ogólny motyw gry to: \"{theme}\". Unikaj generowania kategorii, które już istnieją: {existing_categories}.\n\n# FORMAT WYJŚCIOWY:\nOpis ('description') powinien krótko wyjaśniać, w jaki sposób nowa kategoria łączy się z oryginalną. Zwróć WYŁĄCZNIE obiekt JSON w formacie: {{\"choices\": [{{\"name\": \"Nazwa 1\", \"description\": \"Opis 1: Wyjaśnienie powiązania...\"}}, ...]}}",
+    "en": "You are a creative game master. Your task is to propose FIVE thematically related alternatives for the category: \"{old_category}\".\n\n# RULES & CONTEXT:\n1.  **LOGICAL CONNECTION**: All five suggestions MUST be related in some way to the \"{old_category}\". They can be its sub-fields, parent fields, related topics, or contrasting concepts.\n2.  **DIVERSITY OF PERSPECTIVES**: Avoid generating synonyms. Each suggestion should offer a unique perspective or scope. For example, for 'Greek Mythology', good alternatives are 'Heroes and Monsters', 'Gods of Olympus', 'Roman Myths' (a related field), 'Ancient Philosophy' (cultural context), but NOT 'Greek Myths'.\n3.  **GAME-FRIENDLY**: The suggestions must be broad enough to function as quiz categories.\n4.  **GAME CONTEXT**: The overall game theme is: \"{theme}\". Avoid generating categories that already exist: {existing_categories}.\n\n# OUTPUT FORMAT:\nThe 'description' should briefly explain how the new category relates to the original one. Return ONLY a JSON object in the format: {{\"choices\": [{{\"name\": \"Name 1\", \"description\": \"Description 1: Explanation of the connection...\"}}, ...]}}"
   },
   "explain_incorrect": {
-    "pl": "Jesteś pomocnym nauczycielem w grze quizowej. Gracz właśnie odpowiedział niepoprawnie. Twoim zadaniem jest wyjaśnienie mu, dlaczego jego odpowiedź była błędna. Bądź zwięzły, empatyczny i edukacyjny.\n\nKontekst:\n- Pytanie: \"{question}\"\n- Poprawna odpowiedź: \"{correct_answer}\"\n- Błędna odpowiedź gracza: \"{player_answer}\"\n\nZadanie:\nNapisz krótkie (1-2 zdania) wyjaśnienie w języku polskim, dlaczego odpowiedź gracza jest niepoprawna.\n\nZwróć odpowiedź jako obiekt JSON w formacie: {{\"explanation\": \"Twoje wyjaśnienie...\"}}",
-    "en": "You are a helpful teacher in a quiz game. A player has just answered incorrectly. Your task is to explain to them why their answer was wrong. Be concise, empathetic, and educational.\n\nContext:\n- Question: \"{question}\"\n- Correct answer: \"{correct_answer}\"\n- Player's incorrect answer: \"{player_answer}\"\n\nTask:\nWrite a short (1-2 sentences) explanation in English for why the player's answer is incorrect.\n\nReturn the response as a JSON object in the format: {{\"explanation\": \"Your explanation...\"}}"
+    "pl": "Jesteś przyjaznym i wspierającym mistrzem gry. Gracz właśnie odpowiedział niepoprawnie. Twoim zadaniem jest wyjaśnienie błędu w sposób, który jest edukacyjny, ale jednocześnie sprawia, że gracz czuje się dobrze i jest zmotywowany do dalszej gry.\n\n# PROCES MYŚLOWY:\n1.  **Analiza Błędu**: Rozważ odpowiedź gracza ('{player_answer}'). Czy jest to częsta pomyłka? Czy jest w jakiś sposób logicznie powiązana z poprawną odpowiedzią ('{correct_answer}')? A może to zupełnie losowa odpowiedź?\n2.  **Strategia Wyjaśnienia**: Na podstawie analizy, przygotuj krótkie wyjaśnienie. Jeśli to możliwe, zacznij od pozytywnego wzmocnienia lub odniesienia się do prawdopodobnej przyczyny błędu.\n\n# KONTEKST:\n- Pytanie: \"{question}\"\n- Poprawna odpowiedź: \"{correct_answer}\"\n- Błędna odpowiedź gracza: \"{player_answer}\"\n\n# ZASADY:\n- **TON**: Bądź empatyczny i pozytywny. Unikaj stwierdzeń typu \"Twoja odpowiedź jest błędna\". Zamiast tego użyj zwrotów takich jak \"Blisko!\", \"To częsta pomyłka!\", \"Dobry trop, ale...\" lub \"Rozumiem, skąd to skojarzenie, jednak...\".\n- **STRUKTURA**: Wyjaśnienie powinno najpierw odnieść się do odpowiedzi gracza, a następnie płynnie przejść do przedstawienia poprawnej odpowiedzi i krótkiego uzasadnienia faktu.\n- **ZWIĘZŁOŚĆ**: Całość powinna zamknąć się w 2-3 zdaniach.\n\n# FORMAT WYJŚCIOWY:\nZwróć odpowiedź jako obiekt JSON: {{\"explanation\": \"Twoje wspierające wyjaśnienie...\"}}",
+    "en": "You are a friendly and supportive quiz master. A player has just answered incorrectly. Your task is to explain the mistake in a way that is educational but also makes the player feel good and motivated to keep playing.\n\n# THOUGHT PROCESS:\n1.  **Analyze the Mistake**: Consider the player's answer ('{player_answer}'). Is it a common misconception? Is it logically related to the correct answer ('{correct_answer}') in some way? Or is it a completely random guess?\n2.  **Explanation Strategy**: Based on the analysis, craft a brief explanation. If possible, start with positive reinforcement or by acknowledging the likely source of the error.\n\n# CONTEXT:\n- Question: \"{question}\"\n- Correct answer: \"{correct_answer}\"\n- Player's incorrect answer: \"{player_answer}\"\n\n# RULES:\n- **TONE**: Be empathetic and positive. Avoid statements like 'Your answer is wrong'. Instead, use phrases like 'Close!', 'That's a common mistake!', 'Good thinking, but...' or 'I can see where you're coming from, however...'.\n- **STRUCTURE**: The explanation should first address the player's answer, then smoothly transition to presenting the correct answer and a brief rationale.\n- **BREVITY**: Keep the entire explanation to 2-3 sentences.\n\n# OUTPUT FORMAT:\nReturn the response as a JSON object: {{\"explanation\": \"Your supportive explanation...\"}}"
   }
 }
