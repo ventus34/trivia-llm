@@ -59,6 +59,16 @@
             margin-right: 6px;
             margin-bottom: 6px;
         }
+        .question-details {
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .details-visible {
+            max-height: 1000px; /* Large enough to fit content */
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -97,6 +107,33 @@
             <!-- Statistics Section -->
             <section id="stats-section">
                 <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Statystyki Bazy Danych</h2>
+
+                <!-- Numerical Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                        <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Wszystkich Pytań</p>
+                            <p id="total-questions-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                        <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Unikalne Kategorie</p>
+                            <p id="unique-categories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                        <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 8v5a2 2 0 002 2h6" /></svg></div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Unikalne Subkategorie</p>
+                            <p id="unique-subcategories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-xl font-semibold mb-4 text-gray-700">Kategorie</h3>
@@ -122,23 +159,43 @@
                 <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Przeglądaj Pytania</h2>
 
                 <!-- Controls: Search and Sort -->
-                <div class="flex flex-col md:flex-row gap-4 mb-6 bg-white p-4 rounded-xl shadow-md">
-                    <div class="relative flex-grow">
-                        <input type="text" id="search-input" placeholder="Wyszukaj w pytaniach..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <div class="bg-white p-4 rounded-xl shadow-md space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="relative flex-grow">
+                            <input type="text" id="search-input" placeholder="Wyszukaj..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <div>
+                            <select id="sort-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="created_at_desc">Sortuj: Najnowsze</option>
+                                <option value="created_at_asc">Sortuj: Najstarsze</option>
+                                <option value="category_asc">Sortuj: Kategoria (A-Z)</option>
+                                <option value="category_desc">Sortuj: Kategoria (Z-A)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="flex-shrink-0">
-                        <select id="sort-select" class="w-full md:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="created_at_desc">Najnowsze</option>
-                            <option value="created_at_asc">Najstarsze</option>
-                            <option value="category_asc">Kategoria (A-Z)</option>
-                            <option value="category_desc">Kategoria (Z-A)</option>
-                        </select>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label for="model-filter" class="text-sm font-medium text-gray-700">Model</label>
+                            <select id="model-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+                        </div>
+                        <div>
+                            <label for="level-filter" class="text-sm font-medium text-gray-700">Poziom</label>
+                            <select id="level-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+                        </div>
+                        <div>
+                            <label for="date-from-filter" class="text-sm font-medium text-gray-700">Data od</label>
+                            <input type="date" id="date-from-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
+                        </div>
+                        <div>
+                            <label for="date-to-filter" class="text-sm font-medium text-gray-700">Data do</label>
+                            <input type="date" id="date-to-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
+                        </div>
                     </div>
                 </div>
 
                 <!-- Questions Container -->
-                <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                     <!-- Question cards will be injected here -->
                 </div>
 
@@ -163,6 +220,10 @@
         const errorText = document.getElementById('error-text');
         const searchInput = document.getElementById('search-input');
         const sortSelect = document.getElementById('sort-select');
+        const modelFilter = document.getElementById('model-filter');
+        const levelFilter = document.getElementById('level-filter');
+        const dateFromFilter = document.getElementById('date-from-filter');
+        const dateToFilter = document.getElementById('date-to-filter');
         const questionsContainer = document.getElementById('questions-container');
         const paginationControls = document.getElementById('pagination-controls');
         const headerSubtitle = document.getElementById('header-subtitle');
@@ -195,14 +256,12 @@
         // Event Listeners
         dropArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-        searchInput.addEventListener('input', () => {
+
+        const filterElements = [searchInput, sortSelect, modelFilter, levelFilter, dateFromFilter, dateToFilter];
+        filterElements.forEach(el => el.addEventListener('input', () => {
             currentPage = 1;
             renderApp();
-        });
-        sortSelect.addEventListener('change', () => {
-            currentPage = 1;
-            renderApp();
-        });
+        }));
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => dropArea.addEventListener(eventName, preventDefaults, false));
         ['dragenter', 'dragover'].forEach(eventName => dropArea.addEventListener(eventName, () => dropArea.classList.add('drag-area-highlight'), false));
@@ -284,9 +343,7 @@
                     return;
                 }
 
-                if (allQuestions[0] && 'created_at' in allQuestions[0]) {
-                    allQuestions.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-                }
+                populateFilters(allQuestions);
 
                 contentArea.classList.remove('hidden');
                 dropArea.classList.add('hidden');
@@ -322,15 +379,56 @@
             }
         }
 
+        function populateFilters(questions) {
+            const models = [...new Set(questions.map(q => q.model).filter(Boolean))];
+            const levels = [...new Set(questions.map(q => q.knowledge_level).filter(Boolean))];
+
+            modelFilter.innerHTML = '<option value="">Wszystkie modele</option>';
+            models.forEach(model => {
+                modelFilter.innerHTML += `<option value="${model}">${model}</option>`;
+            });
+
+            levelFilter.innerHTML = '<option value="">Wszystkie poziomy</option>';
+            levels.forEach(level => {
+                levelFilter.innerHTML += `<option value="${level}">${level}</option>`;
+            });
+        }
+
         function renderApp() {
             try {
+                // Get filter values
                 const searchTerm = searchInput.value.toLowerCase();
-                filteredQuestions = allQuestions.filter(q =>
-                    (q.question_text || '').toLowerCase().includes(searchTerm) ||
-                    (q.answer_text || '').toLowerCase().includes(searchTerm) ||
-                    (q.category || '').toLowerCase().includes(searchTerm)
-                );
+                const selectedModel = modelFilter.value;
+                const selectedLevel = levelFilter.value;
+                const dateFrom = dateFromFilter.value ? new Date(dateFromFilter.value).getTime() : 0;
+                const dateTo = dateToFilter.value ? new Date(dateToFilter.value).setHours(23, 59, 59, 999) : Infinity;
 
+                // Apply filters
+                filteredQuestions = allQuestions.filter(q => {
+                    // Search filter
+                    let keywordMatch = false;
+                    try {
+                        const keys = JSON.parse(q.key_entities_json || '[]');
+                        if (Array.isArray(keys)) {
+                            keywordMatch = keys.some(key => key.toLowerCase().includes(searchTerm));
+                        }
+                    } catch(e) {}
+
+                    const searchMatch = !searchTerm ||
+                        (q.question_text || '').toLowerCase().includes(searchTerm) ||
+                        (q.category || '').toLowerCase().includes(searchTerm) ||
+                        keywordMatch;
+
+                    // Other filters
+                    const modelMatch = !selectedModel || q.model === selectedModel;
+                    const levelMatch = !selectedLevel || q.knowledge_level === selectedLevel;
+                    const questionDate = q.created_at ? new Date(q.created_at).getTime() : 0;
+                    const dateMatch = questionDate >= dateFrom && questionDate <= dateTo;
+
+                    return searchMatch && modelMatch && levelMatch && dateMatch;
+                });
+
+                // Apply sorting
                 const [sortKey, sortOrder] = sortSelect.value.split('_');
                 if (sortKey === 'created_at' && allQuestions[0] && 'created_at' in allQuestions[0]) {
                     const isAsc = sortOrder === 'asc';
@@ -369,7 +467,7 @@
 
             paginatedItems.forEach(q => {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-6 rounded-xl shadow-md flex flex-col gap-4';
+                card.className = 'bg-white p-6 rounded-xl shadow-md flex flex-col gap-4 cursor-pointer hover:shadow-lg transition-shadow';
 
                 let optionsHTML = 'Brak';
                 try {
@@ -395,25 +493,33 @@
                         </div>
                         <h3 class="text-lg font-bold mt-2">${q.question_text || 'Brak pytania'}</h3>
                     </div>
-                    <div>
-                        <p class="font-semibold text-green-700">Odpowiedź: ${q.answer_text || 'Brak odpowiedzi'}</p>
-                    </div>
-                    <div class="text-sm text-gray-600">
-                        <p class="font-semibold">Wyjaśnienie:</p>
-                        <p>${q.explanation || 'Brak wyjaśnienia.'}</p>
-                    </div>
-                    <div class="text-sm">
-                        <p class="font-semibold">Opcje:</p>
-                        ${optionsHTML}
-                    </div>
-                     <div class="text-sm">
-                        <p class="font-semibold">Słowa kluczowe:</p>
-                        <div>${keysHTML}</div>
+                    <div class="question-details space-y-4">
+                        <div>
+                            <p class="font-semibold text-green-700">Odpowiedź: ${q.answer_text || 'Brak odpowiedzi'}</p>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <p class="font-semibold">Wyjaśnienie:</p>
+                            <p>${q.explanation || 'Brak wyjaśnienia.'}</p>
+                        </div>
+                        <div class="text-sm">
+                            <p class="font-semibold">Opcje:</p>
+                            ${optionsHTML}
+                        </div>
+                         <div class="text-sm">
+                            <p class="font-semibold">Słowa kluczowe:</p>
+                            <div>${keysHTML}</div>
+                        </div>
                     </div>
                     <div class="text-xs text-gray-400 mt-auto pt-2 border-t">
                         Subkategoria: ${q.subcategory || 'Brak'} | Poziom: ${q.knowledge_level || 'Brak'} | Utworzono: ${q.created_at ? new Date(q.created_at).toLocaleString('pl-PL') : 'Brak daty'}
                     </div>
                 `;
+
+                card.addEventListener('click', () => {
+                    const details = card.querySelector('.question-details');
+                    details.classList.toggle('details-visible');
+                });
+
                 questionsContainer.appendChild(card);
             });
         }
@@ -455,8 +561,16 @@
                 charts.model.destroy();
             }
 
-            wordCloudData.category = Object.entries(countBy(questions, 'category'));
-            wordCloudData.subcategory = Object.entries(countBy(questions, 'subcategory'));
+            // Numerical stats
+            document.getElementById('total-questions-stat').textContent = questions.length;
+            const categoryCounts = countBy(questions, 'category');
+            document.getElementById('unique-categories-stat').textContent = Object.keys(categoryCounts).length;
+            const subcategoryCounts = countBy(questions, 'subcategory');
+            document.getElementById('unique-subcategories-stat').textContent = Object.keys(subcategoryCounts).length;
+
+            // Data for visualizations
+            wordCloudData.category = Object.entries(categoryCounts);
+            wordCloudData.subcategory = Object.entries(subcategoryCounts);
 
             const keyEntitiesCounts = questions.reduce((acc, q) => {
                 try {
@@ -532,12 +646,12 @@
             const maxSize = d3.max(words, d => d.size);
             const fontSizeScale = d3.scaleSqrt()
                 .domain([0, maxSize])
-                .range([12, 55]); // Adjusted font size range for more words
+                .range([12, 55]);
 
             const layout = d3.layout.cloud()
                 .size([width, height])
                 .words(words)
-                .padding(4) // Adjusted padding
+                .padding(4)
                 .rotate(() => (~~(Math.random() * 2) * 90))
                 .font("Inter")
                 .fontSize(d => fontSizeScale(d.size))
