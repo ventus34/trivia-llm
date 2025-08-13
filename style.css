@@ -377,16 +377,18 @@ textarea.category-input {
 #question-modal,
 #history-modal,
 #category-choice-modal,
-#model-choice-modal {
+#model-choice-modal,
+#suggestion-modal {
     display: none;
 }
 
 #question-modal.visible,
 #history-modal.visible,
 #category-choice-modal.visible,
-#model-choice-modal.visible {
+#model-choice-modal.visible,
+#suggestion-modal.visible {
     display: flex;
-    align-items: center; 
+    align-items: center;
     justify-content: center;
 }
 

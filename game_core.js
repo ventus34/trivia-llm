@@ -369,7 +369,7 @@ async function handleSuggestAlternatives(targetTextarea) {
         return;
     }
 
-    UI.suggestionModal.classList.remove('hidden');
+    UI.suggestionModal.classList.add('visible');
     UI.suggestionLoader.classList.remove('hidden');
     UI.suggestionLoader.querySelector('span').textContent = translations.suggestion_loader_text[gameState.currentLanguage];
     UI.suggestionButtons.classList.add('hidden');
@@ -398,7 +398,7 @@ async function handleSuggestAlternatives(targetTextarea) {
             button.onclick = () => {
                 targetTextarea.value = choice.name;
                 autoResizeTextarea(targetTextarea);
-                UI.suggestionModal.classList.add('hidden');
+                UI.suggestionModal.classList.remove('visible');
             };
             UI.suggestionButtons.appendChild(button);
         });
@@ -1117,7 +1117,7 @@ async function handleManualVerification(isCorrect) {
 
             choices.forEach(choice => {
                 const button = document.createElement('button');
-                button.className = 'w-full p-4 text-white rounded-lg transition-transform hover:scale-105 text-left';
+                button.className = 'w-full p-4 text-white rounded-lg transition-transform hover:scale-105 text-left themed-button';
                 button.style.backgroundColor = CONFIG.CATEGORY_COLORS[categoryIndex];
                 button.innerHTML = `<span class="block font-bold text-lg">${choice.name || ""}</span><p class="text-sm font-normal opacity-90 mt-1">${choice.description || ""}</p>`;
                 button.onclick = () => {
@@ -1573,7 +1573,7 @@ export function initializeApp(apiAdapter) {
     UI.downloadStateBtn.addEventListener('click', downloadGameState);
     UI.uploadStateInput.addEventListener('change', handleStateUpload);
     UI.closeSuggestionModalBtn.addEventListener('click', () => {
-        UI.suggestionModal.classList.add('hidden');
+        UI.suggestionModal.classList.remove('visible');
     });
     UI.suggestionModalTitle.textContent = translations.suggestion_modal_title[gameState.currentLanguage];
     UI.playAgainBtn.addEventListener('click', () => {
