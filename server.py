@@ -59,6 +59,11 @@ class ThemeRequest(BaseModelWithModel):
     theme: str
     language: str
 
+class GenerateCategoriesRequest(BaseModel):
+    model: str
+    theme: str
+    language: str
+
 class QuestionRequest(BaseModelWithModel):
     category: str
     gameMode: str
@@ -290,6 +295,13 @@ async def generate_question(req: QuestionRequest):
     if response_data and isinstance(response_data, dict) and response_data.get("question"):
         database.add_question(response_data, req.model_dump())
 
+    return JSONResponse(content=response_data)
+
+@app.post("/api/generate-categories")
+async def generate_categories(req: GenerateCategoriesRequest):
+    """Generates a new set of 6 categories based on a theme."""
+    prompt = PROMPTS["generate_categories"][req.language].format(theme=req.theme)
+    response_data = await call_generative_model(prompt, req.model)
     return JSONResponse(content=response_data)
 
 @app.post("/api/mutate-category")
