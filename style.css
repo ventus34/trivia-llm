@@ -226,6 +226,15 @@ textarea.category-input {
     line-height: 1.6;
 }
 
+#mutation-buttons button span,
+#mutation-buttons button p {
+    text-shadow:
+        -1px -1px 0 rgb(0 0 0 / 0.6),
+         1px -1px 0 rgb(0 0 0 / 0.6),
+        -1px  1px 0 rgb(0 0 0 / 0.6),
+         1px  1px 0 rgb(0 0 0 / 0.6);
+}
+
 #standard-popup-content, #mutation-content {
     flex-grow: 1;
     overflow-y: auto;
@@ -751,7 +760,6 @@ html.oled #model-choice-modal {
         container-name: game-controls;
     }
 
-    /* Duże, skalowalne czcionki TYLKO dla widoku desktop/TV */
     @container game-controls (min-width: 300px) {
         .js-game-grid-layout h2 {
             font-size: clamp(1.5rem, 8cqi, 3rem);
@@ -776,7 +784,7 @@ html.oled #model-choice-modal {
         font-size: clamp(1.5rem, 3vw, 2.25rem);
     }
     #question-modal #question-text, #answer-popup h3 {
-        font-size: 3rem;
+        font-size: 1.75rem;
     }
     #mcq-options-container {
         position: relative;
