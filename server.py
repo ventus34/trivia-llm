@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from typing import List, Any, Dict
 from dotenv import load_dotenv
+from aiolimiter import AsyncLimiter
 
 import database
 import google.generativeai as genai
@@ -17,6 +18,12 @@ import google.generativeai as genai
 # --- Configuration ---
 load_dotenv()
 app = FastAPI(title="Trivia Game Backend", version="1.0.0")
+
+# --- Throttler Initialization ---
+# Create a limiter that allows 10 calls every 60 seconds.
+# Instead of rejecting, it will queue and wait.
+generative_api_limiter = AsyncLimiter(10, 60)
+
 
 ALLOWED_MODELS = {
     "gemini-2.5-flash-lite",
@@ -44,10 +51,10 @@ try:
         print(f"DEBUG mode is enabled. Model temperature set to: {MODEL_TEMPERATURE}")
 
 except Exception as e:
-    print(f"CRITICAL ERROR: {e}")
+    print(f"CRITICAL ERROR during server initialization: {e}")
     exit(1)
 
-# Global dictionary to store game session states, including the preload event
+# Global dictionary to store game session states
 game_sessions = {}
 
 # --- Pydantic Models ---
@@ -106,7 +113,7 @@ def validate_model(model: str):
         raise HTTPException(status_code=400, detail=f"Model '{model}' is not supported.")
 
 def build_question_prompt(params: Dict[str, Any], category: str) -> str:
-    """Builds the complete prompt for question generation based on the provided parameters."""
+    """Builds the complete prompt for question generation."""
     lang = params.get("language")
     prompt_struct = PROMPTS["generate_question"][lang]
 
@@ -179,39 +186,38 @@ def extract_json_from_response(text: str) -> Any:
         if not json_str: raise ValueError("No JSON object found in response.")
         return json.loads(json_str)
     except (json.JSONDecodeError, ValueError) as e:
-        print(f"JSON parsing failed, returning raw text. Reason: {e}")
+        print(f"ERROR: JSON parsing failed in extract_json_from_response. Reason: {e}. Raw text will be returned.")
         return text
 
 async def call_generative_model(prompt: str, model_name: str):
-    """Calls the generative model, dynamically adjusting parameters based on model type."""
-    validate_model(model_name)
-    if DEBUG_MODE:
-        print(f"\n{'='*25} PROMPT TO API (model: {model_name}) {'='*25}")
-        print(prompt)
-        print("="*80 + "\n")
-
-    use_json_mode = not model_name.startswith("gemma")
-    try:
-        model = genai.GenerativeModel(model_name)
-        config = {"temperature": MODEL_TEMPERATURE}
-        if use_json_mode:
-            config["response_mime_type"] = "application/json"
-        generation_config = genai.types.GenerationConfig(**config)
-        response = await model.generate_content_async(prompt, generation_config=generation_config)
+    """Calls the generative model, respecting the global rate limit by waiting if necessary."""
+    async with generative_api_limiter:
+        validate_model(model_name)
         if DEBUG_MODE:
-            print(f"\n{'*'*25} RAW RESPONSE FROM API ({model_name}) {'*'*25}")
-            print(response.text)
-            print("*"*80 + "\n")
-        return extract_json_from_response(response.text)
-    except Exception as e:
-        print(f"API call error ({model_name}): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            print(f"\n{'='*25} PROMPT TO API (model: {model_name}) {'='*25}")
+            print(prompt)
+            print("="*80 + "\n")
+
+        use_json_mode = not model_name.startswith("gemma")
+        try:
+            model = genai.GenerativeModel(model_name)
+            config = {"temperature": MODEL_TEMPERATURE}
+            if use_json_mode:
+                config["response_mime_type"] = "application/json"
+            generation_config = genai.types.GenerationConfig(**config)
+            response = await model.generate_content_async(prompt, generation_config=generation_config)
+            if DEBUG_MODE:
+                print(f"\n{'*'*25} RAW RESPONSE FROM API ({model_name}) {'*'*25}")
+                print(response.text)
+                print("*"*80 + "\n")
+            return extract_json_from_response(response.text)
+        except Exception as e:
+            print(f"ERROR: Exception during call_generative_model for model '{model_name}'. Exception: {e}")
+            raise HTTPException(status_code=500, detail=f"An error occurred while communicating with the generative model: {e}")
 
 # --- Background Task for Preloading ---
 async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
-    """
-    Generates questions in the background, only for categories missing from the cache.
-    """
+    """Generates questions in the background."""
     if game_id not in game_sessions:
         game_sessions[game_id] = {"preloaded_questions": {}, "is_preloading": False}
 
@@ -243,7 +249,7 @@ async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
                  raise ValueError("Invalid data received from the model.")
         except Exception as e:
             game_sessions[game_id]["preloaded_questions"][category] = None
-            print(f"[{game_id}] Error: failed to preload question for '{category}'. Reason: {e}")
+            print(f"ERROR [{game_id}]: Failed to preload question for category '{category}'. Reason: {e}")
 
     await asyncio.gather(*(generate_for_category(cat) for cat in categories_to_preload))
 
