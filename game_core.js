@@ -577,12 +577,13 @@ async function generateCategories() {
     UI.generateCategoriesBtn.textContent = translations.generating_categories[gameState.currentLanguage];
     UI.generateCategoriesBtn.disabled = true;
 
-    try {
+ try {
         const generatedCats = await gameState.api.generateCategories(theme);
         updateCategoryInputs(generatedCats.slice(0, 6));
     } catch (error) {
         console.error("Category generation error:", error);
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: translations.generate_categories_error[gameState.currentLanguage] }, 'error');
+        const errorMessage = error.message || translations.generate_categories_error[gameState.currentLanguage];
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: errorMessage }, 'error');
     } finally {
         UI.generateCategoriesBtn.textContent = originalBtnText;
         UI.generateCategoriesBtn.disabled = false;
@@ -647,6 +648,9 @@ async function askQuestion(forcedCategoryIndex = null) {
 
     } catch (error) {
         console.error('Question generation error:', error);
+        const errorMessage = error.message || translations.question_generation_error[gameState.currentLanguage];
+        showNotification({ title: translations.api_error[gameState.currentLanguage], body: errorMessage }, 'error');
+
         UI.llmLoader.classList.add('hidden');
         UI.questionTextP.textContent = translations.question_generation_error[gameState.currentLanguage];
         UI.questionContent.classList.remove('hidden');
@@ -654,7 +658,7 @@ async function askQuestion(forcedCategoryIndex = null) {
             hideModal();
             UI.diceElement.disabled = false;
             UI.gameMessageDiv.textContent = 'Error, roll again.';
-        }, 3000);
+        }, 10000);
     }
 }
 
