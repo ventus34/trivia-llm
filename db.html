@@ -1,215 +1,231 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Przeglądarka Bazy Pytań SQLite</title>
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- sql.js for reading SQLite database in the browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js" crossorigin="anonymous"></script>
-    <!-- D3.js and d3-cloud for word clouds -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/jasondavies/d3-cloud@1.2.7/build/d3.layout.cloud.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .chart-container {
-            position: relative;
-            height: 40vh;
-            width: 100%;
-        }
-        .wordcloud-container {
-            position: relative;
-            height: 40vh;
-            width: 100%;
-            cursor: pointer;
-        }
-        /* Custom scrollbar for better aesthetics */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        .drag-area-highlight {
-            border-color: #2563eb;
-            background-color: #eff6ff;
-        }
-        .card-tag {
-            display: inline-block;
-            background-color: #e0e7ff;
-            color: #4338ca;
-            padding: 2px 8px;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin-right: 6px;
-            margin-bottom: 6px;
-        }
-        .question-details {
-            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-        }
-        .details-visible {
-            max-height: 1000px; /* Large enough to fit content */
-            opacity: 1;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; height: 40vh; width: 100%; }
+        .wordcloud-container { position: relative; height: 40vh; width: 100%; cursor: pointer; }
+        .network-container { position: relative; height: 50vh; width: 100%; background: #fff; border-radius: 0.5rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .drag-area-highlight { border-color: #2563eb; background-color: #eff6ff; }
+        .card-tag { display: inline-block; background-color: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; margin-right: 6px; margin-bottom: 6px; }
+        .question-details { transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
+        .details-visible { max-height: 1000px; opacity: 1; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
-
-<div class="container mx-auto p-4 md:p-8">
-    <header class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-900">Interaktywna Przeglądarka Bazy Pytań</h1>
-        <p id="header-subtitle" class="text-lg text-gray-600 mt-2">Przeciągnij i upuść plik bazy danych SQLite, aby zwizualizować dane.</p>
-    </header>
-
-    <main>
-        <!-- Drop zone for the database file -->
-        <div id="drop-area" class="border-4 border-dashed border-gray-300 rounded-xl p-8 text-center bg-white shadow-md transition-all duration-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50">
-            <div id="drop-area-content">
-                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <p class="mt-2 text-xl font-semibold text-gray-700">Upuść plik <span class="text-blue-600">.db</span> tutaj</p>
-                <p class="text-sm text-gray-500">lub kliknij, aby wybrać plik</p>
-                <input type="file" id="file-input" class="hidden" accept=".db,.sqlite,.sqlite3">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Interaktywna Przeglądarka Bazy Pytań</h1>
+            <p id="header-subtitle" class="text-lg text-gray-600 mt-2">Przeciągnij i upuść plik bazy danych SQLite, aby zwizualizować dane.</p>
+        </header>
+        <main>
+            <div id="drop-area" class="border-4 border-dashed border-gray-300 rounded-xl p-8 text-center bg-white shadow-md transition-all duration-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50">
+                <div id="drop-area-content">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <p class="mt-2 text-xl font-semibold text-gray-700">Upuść plik <span class="text-blue-600">.db</span> tutaj</p>
+                    <p class="text-sm text-gray-500">lub kliknij, aby wybrać plik</p>
+                    <input type="file" id="file-input" class="hidden" accept=".db,.sqlite,.sqlite3"/>
+                </div>
+                <div id="loading-indicator" class="hidden">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p class="mt-4 text-lg font-medium text-gray-700">Przetwarzanie bazy danych...</p>
+                </div>
             </div>
-            <div id="loading-indicator" class="hidden">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p class="mt-4 text-lg font-medium text-gray-700">Przetwarzanie bazy danych...</p>
+
+            <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4" role="alert">
+                <strong class="font-bold">Błąd!</strong>
+                <span class="block sm:inline" id="error-text"></span>
             </div>
-        </div>
 
-        <!-- Error message display -->
-        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4" role="alert">
-            <strong class="font-bold">Błąd!</strong>
-            <span class="block sm:inline" id="error-text"></span>
-        </div>
-
-        <!-- Main content area for stats and questions -->
-        <div id="content-area" class="hidden mt-8">
-            <!-- Statistics Section -->
-            <section id="stats-section">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Statystyki Bazy Danych</h2>
-
-                <!-- Numerical Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
-                        <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
-                        <div>
-                            <p class="text-gray-500 text-sm">Wszystkich Pytań</p>
-                            <p id="total-questions-stat" class="text-2xl font-bold text-gray-900">0</p>
+            <div id="content-area" class="hidden mt-8">
+                <section id="stats-section">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Statystyki Bazy Danych</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                            <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Wszystkich Pytań</p>
+                                <p id="total-questions-stat" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                            <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Unikalne Kategorie</p>
+                                <p id="unique-categories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                            <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 8v5a2 2 0 002 2h6" /></svg></div>
+                            <div>
+                                <p class="text-gray-500 text-sm">Unikalne Subkategorie</p>
+                                <p id="unique-subcategories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
-                        <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
-                        <div>
-                            <p class="text-gray-500 text-sm">Unikalne Kategorie</p>
-                            <p id="unique-categories-stat" class="text-2xl font-bold text-gray-900">0</p>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
-                        <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 8v5a2 2 0 002 2h6" /></svg></div>
-                        <div>
-                            <p class="text-gray-500 text-sm">Unikalne Subkategorie</p>
-                            <p id="unique-subcategories-stat" class="text-2xl font-bold text-gray-900">0</p>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Visual Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Kategorie</h3>
-                        <div id="category-wordcloud" class="wordcloud-container"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-md">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Kategorie</h3>
+                            <div id="category-wordcloud" class="wordcloud-container"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Subkategorie</h3>
+                            <div id="subcategory-wordcloud" class="wordcloud-container"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Słowa Kluczowe</h3>
+                            <div id="keys-wordcloud" class="wordcloud-container"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-md">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Pytania wg Modelu</h3>
+                            <div class="chart-container"><canvas id="model-chart"></canvas></div>
+                        </div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Subkategorie</h3>
-                        <div id="subcategory-wordcloud" class="wordcloud-container"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Słowa Kluczowe</h3>
-                        <div id="keys-wordcloud" class="wordcloud-container"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Pytania wg Modelu</h3>
-                        <div class="chart-container"><canvas id="model-chart"></canvas></div>
-                    </div>
-                </div>
-            </section>
 
-            <!-- Questions List Section -->
-            <section id="questions-section" class="mt-12">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Przeglądaj Pytania</h2>
-
-                <!-- Controls: Search and Sort -->
-                <div class="bg-white p-4 rounded-xl shadow-md space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="relative flex-grow">
-                            <input type="text" id="search-input" placeholder="Wyszukaj..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <div class="mb-8">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-2 sm:mb-0">Graf powiązań</h3>
+                            <button id="render-graph-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition self-start sm:self-center hidden">Wyświetl Graf</button>
                         </div>
-                        <div>
-                            <select id="sort-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="created_at_desc">Sortuj: Najnowsze</option>
-                                <option value="created_at_asc">Sortuj: Najstarsze</option>
-                                <option value="category_asc">Sortuj: Kategoria (A-Z)</option>
-                                <option value="category_desc">Sortuj: Kategoria (Z-A)</option>
-                            </select>
+
+                        <div id="graph-controls" class="hidden bg-gray-50 p-4 rounded-lg mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 border">
+
+                            <div class="lg:col-span-4">
+                                <label class="block text-sm font-medium text-gray-700">Tryb Grafu (Relacja)</label>
+                                <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="graph-mode-controls">
+                                    <button data-mode="keywords" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Kategoria ↔ Słowo kluczowe</button>
+                                    <button data-mode="subcategories" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Kategoria ↔ Subkategoria</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="charge-slider" class="block text-sm font-medium text-gray-700">Siła odpychania</label>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <input type="range" id="charge-slider" min="-1000" max="0" value="-300" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="charge-value" class="text-sm font-mono w-12 text-center">-300</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="link-dist-slider" class="block text-sm font-medium text-gray-700">Długość powiązań</label>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <input type="range" id="link-dist-slider" min="10" max="300" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="link-dist-value" class="text-sm font-mono w-12 text-center">100</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="gravity-slider" class="block text-sm font-medium text-gray-700">Grawitacja (do centrum)</label>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <input type="range" id="gravity-slider" min="0" max="1" step="0.05" value="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="gravity-value" class="text-sm font-mono w-12 text-center">0.1</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Uporządkuj Graf</label>
+                                <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="layout-controls">
+                                    <button data-layout="default" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Domyślny</button>
+                                    <button data-layout="group" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Grupuj</button>
+                                    <button data-layout="radial" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Radialny</button>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-2">
+                                <label for="min-node-weight-slider" class="block text-sm font-medium text-gray-700">Min. waga węzła (ilość powiązań)</label>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <input type="range" id="min-node-weight-slider" min="0" max="50" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="min-node-weight-value" class="text-sm font-mono w-12 text-center">0</span>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-2">
+                                <label for="min-link-strength-slider" class="block text-sm font-medium text-gray-700">Min. siła powiązania (współwystąpienia)</label>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <input type="range" id="min-link-strength-slider" min="0" max="10" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="min-link-strength-value" class="text-sm font-mono w-12 text-center">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="network-graph" class="hidden network-container p-4"></div>
+                    </div>
+                </section>
+
+                <section id="questions-section" class="mt-12">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Przeglądaj Pytania</h2>
+                    <div class="bg-white p-4 rounded-xl shadow-md space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="relative flex-grow md:col-span-1">
+                                <input type="text" id="search-input" placeholder="Wyszukaj..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </div>
+                            <div>
+                                <select id="sort-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="created_at_desc">Sortuj: Najnowsze</option>
+                                    <option value="created_at_asc">Sortuj: Najstarsze</option>
+                                    <option value="category_asc">Sortuj: Kategoria (A-Z)</option>
+                                    <option value="category_desc">Sortuj: Kategoria (Z-A)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <select id="items-per-page-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="9">9 wyników na stronie</option>
+                                    <option value="18">18 wyników na stronie</option>
+                                    <option value="36">36 wyników na stronie</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label for="model-filter" class="text-sm font-medium text-gray-700">Model</label>
+                                <select id="model-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+                            </div>
+                            <div>
+                                <label for="level-filter" class="text-sm font-medium text-gray-700">Poziom</label>
+                                <select id="level-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+                            </div>
+                            <div>
+                                <label for="date-from-filter" class="text-sm font-medium text-gray-700">Data od</label>
+                                <input type="date" id="date-from-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
+                            </div>
+                            <div>
+                                <label for="date-to-filter" class="text-sm font-medium text-gray-700">Data do</label>
+                                <input type="date" id="date-to-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
+                            </div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label for="model-filter" class="text-sm font-medium text-gray-700">Model</label>
-                            <select id="model-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
-                        </div>
-                        <div>
-                            <label for="level-filter" class="text-sm font-medium text-gray-700">Poziom</label>
-                            <select id="level-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
-                        </div>
-                        <div>
-                            <label for="date-from-filter" class="text-sm font-medium text-gray-700">Data od</label>
-                            <input type="date" id="date-from-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
-                        </div>
-                        <div>
-                            <label for="date-to-filter" class="text-sm font-medium text-gray-700">Data do</label>
-                            <input type="date" id="date-to-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Questions Container -->
-                <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                    <!-- Question cards will be injected here -->
-                </div>
+                    <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
+                    <div id="pagination-controls" class="flex justify-center items-center mt-8 space-x-2"></div>
+                </section>
+            </div>
+        </main>
+    </div>
 
-                <!-- Pagination -->
-                <div id="pagination-controls" class="flex justify-center items-center mt-8 space-x-2">
-                    <!-- Pagination buttons will be injected here -->
-                </div>
-            </section>
-        </div>
-    </main>
-</div>
-
-<script>
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const style = document.createElement('style');
+        style.textContent = `
+            .layout-btn.active, .graph-mode-btn.active { background-color: white; color: #1f2937; font-weight: 600; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+            .layout-btn, .graph-mode-btn { background-color: transparent; color: #4b5563; }
+        `;
+        document.head.appendChild(style);
+
         // DOM Elements
         const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('file-input');
@@ -220,13 +236,29 @@
         const errorText = document.getElementById('error-text');
         const searchInput = document.getElementById('search-input');
         const sortSelect = document.getElementById('sort-select');
+        const itemsPerPageSelect = document.getElementById('items-per-page-select');
         const modelFilter = document.getElementById('model-filter');
         const levelFilter = document.getElementById('level-filter');
         const dateFromFilter = document.getElementById('date-from-filter');
         const dateToFilter = document.getElementById('date-to-filter');
         const questionsContainer = document.getElementById('questions-container');
         const paginationControls = document.getElementById('pagination-controls');
+        const networkContainer = document.getElementById('network-graph');
         const headerSubtitle = document.getElementById('header-subtitle');
+        const renderGraphBtn = document.getElementById('render-graph-btn');
+        const graphControls = document.getElementById('graph-controls');
+        const chargeSlider = document.getElementById('charge-slider');
+        const chargeValue = document.getElementById('charge-value');
+        const linkDistSlider = document.getElementById('link-dist-slider');
+        const linkDistValue = document.getElementById('link-dist-value');
+        const gravitySlider = document.getElementById('gravity-slider');
+        const gravityValue = document.getElementById('gravity-value');
+        const layoutControls = document.getElementById('layout-controls');
+        const minNodeWeightSlider = document.getElementById('min-node-weight-slider');
+        const minNodeWeightValue = document.getElementById('min-node-weight-value');
+        const minLinkStrengthSlider = document.getElementById('min-link-strength-slider');
+        const minLinkStrengthValue = document.getElementById('min-link-strength-value');
+        const graphModeControls = document.getElementById('graph-mode-controls');
 
         // App State
         let db = null;
@@ -234,57 +266,51 @@
         let allQuestions = [];
         let filteredQuestions = [];
         let currentPage = 1;
-        const ITEMS_PER_PAGE = 9;
-        let wordCloudData = {}; // Store data for redraws
-
-        // Global error handler
-        window.onerror = function(message, source, lineno, colno, error) {
-            showError(`Krytyczny błąd skryptu: ${message}`);
-            console.error("Uncaught Error:", { message, source, lineno, colno, error });
-            return true;
+        let itemsPerPage = parseInt(itemsPerPageSelect.value || '9', 10);
+        let wordCloudData = {};
+        let networkDataSets = {
+            keywords: { nodes: [], links: [], maxNodeWeight: 0, maxLinkStrength: 0 },
+            subcategories: { nodes: [], links: [], maxNodeWeight: 0, maxLinkStrength: 0 }
         };
+        let currentGraphMode = 'keywords';
+        let networkSimulation = null;
 
-        // Initialize sql.js
+        function parseDateSafe(dateString) {
+            if (!dateString) return 0;
+            try {
+                let iso = String(dateString);
+                if (iso.indexOf(' ') !== -1 && iso.indexOf('T') === -1) iso = iso.replace(' ', 'T');
+                const date = new Date(iso);
+                return isNaN(date.getTime()) ? 0 : date.getTime();
+            } catch (err) { return 0; }
+        }
+
+        window.onerror = (message) => showError(`Krytyczny błąd skryptu: ${message}`);
+
         const sqlJsPromise = initSqlJs({
             locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
-        }).catch(e => {
-            showError("Nie można załadować biblioteki SQL. Sprawdź połączenie internetowe.");
-            console.error("SQL.js initialization failed:", e);
-            return null;
-        });
+        }).catch(e => showError("Nie można załadować biblioteki SQL. Sprawdź połączenie internetowe."));
 
-        // Event Listeners
         dropArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
 
-        const filterElements = [searchInput, sortSelect, modelFilter, levelFilter, dateFromFilter, dateToFilter];
+        const filterElements = [searchInput, sortSelect, modelFilter, levelFilter, dateFromFilter, dateToFilter, itemsPerPageSelect];
         filterElements.forEach(el => el.addEventListener('input', () => {
             currentPage = 1;
+            if (el.id === 'items-per-page-select') itemsPerPage = parseInt(el.value, 10) || 9;
             renderApp();
         }));
 
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => dropArea.addEventListener(eventName, preventDefaults, false));
-        ['dragenter', 'dragover'].forEach(eventName => dropArea.addEventListener(eventName, () => dropArea.classList.add('drag-area-highlight'), false));
-        ['dragleave', 'drop'].forEach(eventName => dropArea.addEventListener(eventName, () => dropArea.classList.remove('drag-area-highlight'), false));
-        dropArea.addEventListener('drop', (e) => {
-            preventDefaults(e);
-            handleFile(e.dataTransfer.files[0]);
-        }, false);
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropArea.addEventListener(ev, e => {e.preventDefault(); e.stopPropagation();}));
+        ['dragenter', 'dragover'].forEach(ev => dropArea.addEventListener(ev, () => dropArea.classList.add('drag-area-highlight')));
+        ['dragleave', 'drop'].forEach(ev => dropArea.addEventListener(ev, () => dropArea.classList.remove('drag-area-highlight')));
+        dropArea.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
 
         function showLoading(isLoading) {
             loadingIndicator.classList.toggle('hidden', !isLoading);
             dropAreaContent.classList.toggle('hidden', isLoading);
-            if(isLoading) {
-                contentArea.classList.add('hidden');
-                errorMessage.classList.add('hidden');
-            }
+            if (isLoading) { contentArea.classList.add('hidden'); errorMessage.classList.add('hidden'); }
         }
-
         function showError(message) {
             errorText.textContent = message;
             errorMessage.classList.remove('hidden');
@@ -296,67 +322,48 @@
             showLoading(true);
             try {
                 const SQL = await sqlJsPromise;
-                if (!SQL) {
-                    showError("Nie można zainicjować SQL.js.");
-                    return;
-                }
+                if (!SQL) { showError("Nie można zainicjować SQL.js."); return; }
                 db = new SQL.Database(uInt8Array);
                 processDatabase(sourceName);
             } catch (err) {
-                showError(`Błąd podczas przetwarzania bazy danych z ${sourceName}: ${err.message}`);
-                console.error(err);
+                showError(`Błąd podczas przetwarzania bazy danych: ${err.message}`);
+            } finally {
+                showLoading(false);
             }
         }
 
         function handleFile(file) {
-            if (!file || (!file.name.endsWith('.db') && !file.name.endsWith('.sqlite') && !file.name.endsWith('.sqlite3'))) {
+            if (!file || !/\.(db|sqlite|sqlite3)$/i.test(file.name)) {
                 showError("Nieprawidłowy format pliku. Proszę upuścić plik .db, .sqlite lub .sqlite3.");
                 return;
             }
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const uInt8Array = new Uint8Array(e.target.result);
-                handleFileContent(uInt8Array, file.name);
-            };
+            reader.onload = e => handleFileContent(new Uint8Array(e.target.result), file.name);
             reader.readAsArrayBuffer(file);
         }
 
         function processDatabase(sourceName) {
             try {
-                const tableCheckStmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='generated_questions'");
-                if (!tableCheckStmt.step()) {
-                    tableCheckStmt.free();
-                    showError(`Tabela 'generated_questions' nie została znaleziona w bazie danych: ${sourceName}.`);
+                if (!db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='generated_questions'")[0]) {
+                    showError(`Tabela 'generated_questions' nie została znaleziona w bazie danych.`);
                     return;
                 }
-                tableCheckStmt.free();
-
                 const stmt = db.prepare("SELECT * FROM generated_questions");
                 allQuestions = [];
-                while (stmt.step()) {
-                    allQuestions.push(stmt.getAsObject());
-                }
+                while (stmt.step()) allQuestions.push(stmt.getAsObject());
                 stmt.free();
-
                 if (allQuestions.length === 0) {
-                    showError(`Nie znaleziono żadnych pytań w tabeli 'generated_questions' w pliku: ${sourceName}.`);
+                    showError(`Nie znaleziono żadnych pytań w tabeli 'generated_questions'.`);
                     return;
                 }
-
                 populateFilters(allQuestions);
-
                 contentArea.classList.remove('hidden');
                 dropArea.classList.add('hidden');
                 headerSubtitle.textContent = `Wyświetlanie danych z: ${sourceName}`;
-
                 prepareStatistics(allQuestions);
                 renderApp();
-
             } catch (e) {
                 showError(`Błąd podczas odpytywania bazy danych: ${e.message}`);
-                console.error(e);
-            } finally {
-                showLoading(false);
             }
         }
 
@@ -365,234 +372,180 @@
                 const response = await fetch('data/questions.db');
                 if (response.ok) {
                     const arrayBuffer = await response.arrayBuffer();
-                    const uInt8Array = new Uint8Array(arrayBuffer);
-                    dropArea.classList.add('hidden');
-                    loadingIndicator.classList.remove('hidden');
-                    await handleFileContent(uInt8Array, 'data/questions.db');
-                } else {
-                    console.log('Default database data/questions.db not found. Waiting for user to drop a file.');
-                    dropArea.classList.remove('hidden');
+                    await handleFileContent(new Uint8Array(arrayBuffer), 'data/questions.db');
                 }
             } catch (error) {
-                console.log('Error trying to fetch default database. Waiting for user to drop a file.', error);
-                dropArea.classList.remove('hidden');
+                console.log('Default database not found. Waiting for user to drop a file.');
             }
         }
 
         function populateFilters(questions) {
-            const models = [...new Set(questions.map(q => q.model).filter(Boolean))];
-            const levels = [...new Set(questions.map(q => q.knowledge_level).filter(Boolean))];
+            const models = [...new Set(questions.map(q => q.model).filter(Boolean))].sort();
+            const levels = [...new Set(questions.map(q => q.knowledge_level).filter(Boolean))].sort();
+            modelFilter.innerHTML = '<option value="">Wszystkie modele</option>' + models.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+            levelFilter.innerHTML = '<option value="">Wszystkie poziomy</option>' + levels.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+        }
 
-            modelFilter.innerHTML = '<option value="">Wszystkie modele</option>';
-            models.forEach(model => {
-                modelFilter.innerHTML += `<option value="${model}">${model}</option>`;
-            });
-
-            levelFilter.innerHTML = '<option value="">Wszystkie poziomy</option>';
-            levels.forEach(level => {
-                levelFilter.innerHTML += `<option value="${level}">${level}</option>`;
-            });
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]);
         }
 
         function renderApp() {
-            try {
-                // Get filter values
-                const searchTerm = searchInput.value.toLowerCase();
-                const selectedModel = modelFilter.value;
-                const selectedLevel = levelFilter.value;
-                const dateFrom = dateFromFilter.value ? new Date(dateFromFilter.value).getTime() : 0;
-                const dateTo = dateToFilter.value ? new Date(dateToFilter.value).setHours(23, 59, 59, 999) : Infinity;
+            const searchTerm = (searchInput.value || '').toLowerCase();
+            const selectedModel = modelFilter.value;
+            const selectedLevel = levelFilter.value;
+            const dateFrom = dateFromFilter.value ? new Date(dateFromFilter.value).getTime() : 0;
+            const dateTo = dateToFilter.value ? new Date(dateToFilter.value).setHours(23, 59, 59, 999) : Infinity;
 
-                // Apply filters
-                filteredQuestions = allQuestions.filter(q => {
-                    // Search filter
-                    let keywordMatch = false;
-                    try {
-                        const keys = JSON.parse(q.key_entities_json || '[]');
-                        if (Array.isArray(keys)) {
-                            keywordMatch = keys.some(key => key.toLowerCase().includes(searchTerm));
-                        }
-                    } catch(e) {}
+            filteredQuestions = allQuestions.filter(q => {
+                const keys = JSON.parse(q.key_entities_json || '[]')
+                const keywordMatch = Array.isArray(keys) && keys.some(key => (key || '').toLowerCase().includes(searchTerm));
+                const searchMatch = !searchTerm || (q.question_text || '').toLowerCase().includes(searchTerm) || (q.category || '').toLowerCase().includes(searchTerm) || keywordMatch;
+                const modelMatch = !selectedModel || q.model === selectedModel;
+                const levelMatch = !selectedLevel || q.knowledge_level === selectedLevel;
+                const dateMatch = parseDateSafe(q.created_at) >= dateFrom && parseDateSafe(q.created_at) <= dateTo;
+                return searchMatch && modelMatch && levelMatch && dateMatch;
+            });
 
-                    const searchMatch = !searchTerm ||
-                        (q.question_text || '').toLowerCase().includes(searchTerm) ||
-                        (q.category || '').toLowerCase().includes(searchTerm) ||
-                        keywordMatch;
+            const [sortKey, sortOrder] = (sortSelect.value || 'created_at_desc').split('_');
+            filteredQuestions.sort((a, b) => {
+                const valA = sortKey === 'created_at' ? parseDateSafe(a[sortKey]) : String(a[sortKey] || '');
+                const valB = sortKey === 'created_at' ? parseDateSafe(b[sortKey]) : String(b[sortKey] || '');
+                if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                return 0;
+            });
 
-                    // Other filters
-                    const modelMatch = !selectedModel || q.model === selectedModel;
-                    const levelMatch = !selectedLevel || q.knowledge_level === selectedLevel;
-                    const questionDate = q.created_at ? new Date(q.created_at).getTime() : 0;
-                    const dateMatch = questionDate >= dateFrom && questionDate <= dateTo;
-
-                    return searchMatch && modelMatch && levelMatch && dateMatch;
-                });
-
-                // Apply sorting
-                const [sortKey, sortOrder] = sortSelect.value.split('_');
-                if (sortKey === 'created_at' && allQuestions[0] && 'created_at' in allQuestions[0]) {
-                    const isAsc = sortOrder === 'asc';
-                    filteredQuestions.sort((a, b) => {
-                        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-                        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-                        return isAsc ? dateA - dateB : dateB - dateA;
-                    });
-                } else {
-                    filteredQuestions.sort((a, b) => {
-                        const valA = a[sortKey] || '';
-                        const valB = b[sortKey] || '';
-                        let comparison = String(valA).localeCompare(String(valB));
-                        return sortOrder === 'desc' ? comparison * -1 : comparison;
-                    });
-                }
-
-                displayPaginatedQuestions();
-                renderPagination();
-            } catch (e) {
-                showError(`Błąd podczas renderowania aplikacji: ${e.message}`);
-                console.error(e);
-            }
+            displayPaginatedQuestions();
+            renderPagination();
         }
 
         function displayPaginatedQuestions() {
             questionsContainer.innerHTML = '';
-            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-            const endIndex = startIndex + ITEMS_PER_PAGE;
-            const paginatedItems = filteredQuestions.slice(startIndex, endIndex);
-
+            const paginatedItems = filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
             if (paginatedItems.length === 0) {
                 questionsContainer.innerHTML = `<p class="text-gray-500 col-span-full text-center">Brak pytań spełniających kryteria.</p>`;
                 return;
             }
-
             paginatedItems.forEach(q => {
                 const card = document.createElement('div');
                 card.className = 'bg-white p-6 rounded-xl shadow-md flex flex-col gap-4 cursor-pointer hover:shadow-lg transition-shadow';
-
-                let optionsHTML = 'Brak';
-                try {
-                    const options = JSON.parse(q.options_json || '[]');
-                    if (options && Array.isArray(options) && options.length > 0) {
-                        optionsHTML = `<ul class="list-disc list-inside">${options.map(opt => `<li>${opt}</li>`).join('')}</ul>`;
-                    }
-                } catch (e) { console.error("Error parsing options_json", e); }
-
-                let keysHTML = 'Brak';
-                try {
-                    const keys = JSON.parse(q.key_entities_json || '[]');
-                    if (keys && Array.isArray(keys) && keys.length > 0) {
-                        keysHTML = keys.map(key => `<span class="card-tag">${key}</span>`).join('');
-                    }
-                } catch (e) { console.error("Error parsing key_entities_json", e); }
-
+                const options = JSON.parse(q.options_json || '[]');
+                const keys = JSON.parse(q.key_entities_json || '[]');
+                const createdAt = parseDateSafe(q.created_at);
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start">
-                            <span class="text-sm font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded">${q.category || 'Brak kategorii'}</span>
-                            <span class="text-xs text-gray-500">${q.model || 'Brak modelu'}</span>
+                            <span class="text-sm font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded">${escapeHtml(q.category || 'Brak')}</span>
+                            <span class="text-xs text-gray-500">${escapeHtml(q.model || 'Brak')}</span>
                         </div>
-                        <h3 class="text-lg font-bold mt-2">${q.question_text || 'Brak pytania'}</h3>
+                        <h3 class="text-lg font-bold mt-2">${escapeHtml(q.question_text || 'Brak')}</h3>
                     </div>
                     <div class="question-details space-y-4">
-                        <div>
-                            <p class="font-semibold text-green-700">Odpowiedź: ${q.answer_text || 'Brak odpowiedzi'}</p>
-                        </div>
-                        <div class="text-sm text-gray-600">
-                            <p class="font-semibold">Wyjaśnienie:</p>
-                            <p>${q.explanation || 'Brak wyjaśnienia.'}</p>
-                        </div>
-                        <div class="text-sm">
-                            <p class="font-semibold">Opcje:</p>
-                            ${optionsHTML}
-                        </div>
-                         <div class="text-sm">
-                            <p class="font-semibold">Słowa kluczowe:</p>
-                            <div>${keysHTML}</div>
-                        </div>
+                        <p class="font-semibold text-green-700">Odpowiedź: ${escapeHtml(q.answer_text || 'Brak')}</p>
+                        <div class="text-sm text-gray-600"><p class="font-semibold">Wyjaśnienie:</p><p>${escapeHtml(q.explanation || 'Brak')}</p></div>
+                        <div class="text-sm"><p class="font-semibold">Opcje:</p>${Array.isArray(options) && options.length > 0 ? `<ul class="list-disc list-inside">${options.map(o => `<li>${escapeHtml(o)}</li>`).join('')}</ul>` : 'Brak'}</div>
+                        <div class="text-sm"><p class="font-semibold">Słowa kluczowe:</p><div>${Array.isArray(keys) && keys.length > 0 ? keys.map(k => `<span class="card-tag">${escapeHtml(k)}</span>`).join('') : 'Brak'}</div></div>
                     </div>
-                    <div class="text-xs text-gray-400 mt-auto pt-2 border-t">
-                        Subkategoria: ${q.subcategory || 'Brak'} | Poziom: ${q.knowledge_level || 'Brak'} | Utworzono: ${q.created_at ? new Date(q.created_at).toLocaleString('pl-PL') : 'Brak daty'}
-                    </div>
+                    <div class="text-xs text-gray-400 mt-auto pt-2 border-t">Subkategoria: ${escapeHtml(q.subcategory || 'Brak')} | Poziom: ${escapeHtml(q.knowledge_level || 'Brak')} | Utworzono: ${createdAt ? new Date(createdAt).toLocaleString('pl-PL') : 'Brak daty'}</div>
                 `;
-
-                card.addEventListener('click', () => {
-                    const details = card.querySelector('.question-details');
-                    details.classList.toggle('details-visible');
-                });
-
+                card.addEventListener('click', () => card.querySelector('.question-details').classList.toggle('details-visible'));
                 questionsContainer.appendChild(card);
             });
         }
 
         function renderPagination() {
             paginationControls.innerHTML = '';
-            const pageCount = Math.ceil(filteredQuestions.length / ITEMS_PER_PAGE);
+            const pageCount = Math.ceil(filteredQuestions.length / itemsPerPage);
             if (pageCount <= 1) return;
-
-            const prevButton = document.createElement('button');
-            prevButton.textContent = 'Poprzednia';
-            prevButton.className = 'px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed';
-            prevButton.disabled = currentPage === 1;
-            prevButton.onclick = () => {
-                currentPage--;
-                renderApp();
-                window.scrollTo(0, questionsContainer.offsetTop);
+            const createButton = (text, disabled, onClick) => {
+                const btn = document.createElement('button');
+                btn.textContent = text;
+                btn.className = 'px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed';
+                btn.disabled = disabled;
+                btn.onclick = onClick;
+                return btn;
             };
-
             const pageInfo = document.createElement('span');
             pageInfo.className = 'px-4 py-2 text-sm font-medium text-gray-700';
             pageInfo.textContent = `Strona ${currentPage} z ${pageCount}`;
-
-            const nextButton = document.createElement('button');
-            nextButton.textContent = 'Następna';
-            nextButton.className = 'px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed';
-            nextButton.disabled = currentPage === pageCount;
-            nextButton.onclick = () => {
-                currentPage++;
-                renderApp();
-                window.scrollTo(0, questionsContainer.offsetTop);
-            };
-
-            paginationControls.append(prevButton, pageInfo, nextButton);
+            paginationControls.append(
+                createButton('Poprzednia', currentPage === 1, () => { currentPage--; renderApp(); }),
+                pageInfo,
+                createButton('Następna', currentPage === pageCount, () => { currentPage++; renderApp(); })
+            );
         }
 
         function prepareStatistics(questions) {
-            if (charts.model) {
-                charts.model.destroy();
-            }
+            if (charts.model) charts.model.destroy();
+            const countBy = (data, key) => data.reduce((acc, item) => {
+                const value = item[key];
+                if (value) acc[value] = (acc[value] || 0) + 1;
+                return acc;
+            }, {});
 
-            // Numerical stats
             document.getElementById('total-questions-stat').textContent = questions.length;
             const categoryCounts = countBy(questions, 'category');
             document.getElementById('unique-categories-stat').textContent = Object.keys(categoryCounts).length;
             const subcategoryCounts = countBy(questions, 'subcategory');
             document.getElementById('unique-subcategories-stat').textContent = Object.keys(subcategoryCounts).length;
-
-            // Data for visualizations
             wordCloudData.category = Object.entries(categoryCounts);
             wordCloudData.subcategory = Object.entries(subcategoryCounts);
-
             const keyEntitiesCounts = questions.reduce((acc, q) => {
-                try {
-                    const keys = JSON.parse(q.key_entities_json || '[]');
-                    if (Array.isArray(keys)) {
-                        keys.forEach(key => {
-                            const trimmedKey = key.trim();
-                            if (trimmedKey) {
-                                acc[trimmedKey] = (acc[trimmedKey] || 0) + 1;
-                            }
-                        });
-                    }
-                } catch (e) {}
+                try { JSON.parse(q.key_entities_json || '[]').forEach(key => { if (key) acc[key] = (acc[key] || 0) + 1; }); } catch (e) {}
                 return acc;
             }, {});
             wordCloudData.keys = Object.entries(keyEntitiesCounts);
+            charts.model = createChart('model-chart', 'polarArea', countBy(questions, 'model'), 'Pytania wg Modelu');
 
-            const modelCounts = countBy(questions, 'model');
-            charts.model = createChart('model-chart', 'polarArea', modelCounts, 'Pytania wg Modelu');
+            // Prepare keyword data
+            const kwEdgeMap = {};
+            questions.forEach(q => {
+                const category = (q.category || '').trim();
+                if (!category) return;
+                try {
+                    JSON.parse(q.key_entities_json || '[]').forEach(k => {
+                        const kw = String(k || '').trim();
+                        if (kw) kwEdgeMap[`${category}||${kw}`] = (kwEdgeMap[`${category}||${kw}`] || 0) + 1;
+                    });
+                } catch(e) {}
+            });
+            networkDataSets.keywords = buildGraphFromEdgeMap(kwEdgeMap, 'keyword');
 
-            // Trigger redraw after a short delay to ensure containers are visible
+            // Prepare subcategory data
+            const subcatEdgeMap = {};
+            questions.forEach(q => {
+                const category = (q.category || '').trim();
+                const subcategory = (q.subcategory || '').trim();
+                if (category && subcategory) {
+                    subcatEdgeMap[`${category}||${subcategory}`] = (subcatEdgeMap[`${category}||${subcategory}`] || 0) + 1;
+                }
+            });
+            networkDataSets.subcategories = buildGraphFromEdgeMap(subcatEdgeMap, 'subcategory');
+
+            if (networkDataSets.keywords.nodes.length > 0 || networkDataSets.subcategories.nodes.length > 0) {
+                 renderGraphBtn.classList.remove('hidden');
+            }
+
             setTimeout(drawWordClouds, 100);
+        }
+
+        function buildGraphFromEdgeMap(edgeMap, node2Type) {
+            const links = Object.entries(edgeMap).map(([k, v]) => ({ source: k.split('||')[1], target: k.split('||')[0], value: v }));
+            const nodesMap = {};
+            links.forEach(l => {
+                if (!nodesMap[l.source]) nodesMap[l.source] = { id: l.source, type: node2Type, weight: 0 };
+                if (!nodesMap[l.target]) nodesMap[l.target] = { id: l.target, type: 'category', weight: 0 };
+                nodesMap[l.source].weight += l.value;
+                nodesMap[l.target].weight += l.value;
+            });
+            const nodes = Object.values(nodesMap);
+            return {
+                nodes: nodes,
+                links: links,
+                maxNodeWeight: d3.max(nodes, d => d.weight) || 0,
+                maxLinkStrength: d3.max(links, d => d.value) || 0,
+            };
         }
 
         function drawWordClouds() {
@@ -601,120 +554,180 @@
             createWordCloud('keys-wordcloud', wordCloudData.keys);
         }
 
-        function countBy(data, key) {
-            return data.reduce((acc, item) => {
-                const value = item[key];
-                if (value) {
-                    acc[value] = (acc[value] || 0) + 1;
-                }
-                return acc;
-            }, {});
-        }
-
         function createWordCloud(elementId, list) {
             const element = document.getElementById(elementId);
             if (!element) return;
-
             element.innerHTML = '';
-
-            if (list.length === 0) {
-                element.innerHTML = '<p class="text-center text-gray-500 h-full flex items-center justify-center">Brak danych do wyświetlenia.</p>';
+            if (!list || list.length === 0) {
+                element.innerHTML = '<p class="text-center text-gray-500 h-full flex items-center justify-center">Brak danych.</p>';
                 return;
-            };
-
+            }
             const observer = new ResizeObserver(entries => {
                 if (entries[0].contentRect.width > 0) {
-                    if (typeof d3 !== 'undefined' && typeof d3.layout.cloud !== 'undefined') {
-                        drawD3Cloud(element, list);
-                    } else {
-                        console.error("D3 or d3-cloud library is not loaded.");
-                        element.innerHTML = '<p class="text-center text-red-500 h-full flex items-center justify-center">Błąd ładowania biblioteki chmury słów.</p>';
-                    }
+                    drawD3Cloud(element, list);
                     observer.disconnect();
                 }
             });
-
             observer.observe(element);
         }
 
         function drawD3Cloud(element, list) {
-            const width = element.offsetWidth;
-            const height = element.offsetHeight;
-
-            const words = list.map(item => ({ text: item[0], size: item[1] }));
-
-            const maxSize = d3.max(words, d => d.size);
-            const fontSizeScale = d3.scaleSqrt()
-                .domain([0, maxSize])
-                .range([12, 55]);
-
-            const layout = d3.layout.cloud()
-                .size([width, height])
-                .words(words)
-                .padding(4)
-                .rotate(() => (~~(Math.random() * 2) * 90))
-                .font("Inter")
-                .fontSize(d => fontSizeScale(d.size))
-                .on("end", draw);
-
-            layout.start();
-
-            function draw(words) {
-                d3.select(element).append("svg")
-                    .attr("width", layout.size()[0])
-                    .attr("height", layout.size()[1])
-                    .append("g")
-                    .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
-                    .selectAll("text")
-                    .data(words)
-                    .enter().append("text")
-                    .style("font-size", d => d.size + "px")
-                    .style("font-family", "Inter")
-                    .style("fill", () => `hsl(${Math.random() * 360}, 70%, 50%)`)
-                    .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.2)")
-                    .attr("text-anchor", "middle")
-                    .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
-                    .text(d => d.text)
-                    .style("cursor", "pointer")
-                    .on("click", (event, d) => {
-                        searchInput.value = d.text;
-                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    });
-            }
+            const width = element.offsetWidth, height = element.offsetHeight;
+            const words = list.map(([text, size]) => ({ text, size }));
+            const fontSizeScale = d3.scaleSqrt().domain([0, d3.max(words, d => d.size) || 1]).range([12, 55]);
+            d3.layout.cloud().size([width, height]).words(words).padding(4)
+                .rotate(() => 0)
+                .font("Inter").fontSize(d => fontSizeScale(d.size))
+                .on("end", words => {
+                    const svg = d3.select(element).append("svg").attr("width", width).attr("height", height);
+                    const g = svg.append("g").attr("transform", `translate(${width / 2},${height / 2})`);
+                    g.selectAll("text").data(words).enter().append("text")
+                        .style("font-size", d => d.size + "px").style("font-family", "Inter")
+                        .style("fill", () => `hsl(${Math.random() * 360}, 70%, 50%)`)
+                        .attr("text-anchor", "middle").attr("transform", d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
+                        .text(d => d.text).style("cursor", "pointer")
+                        .on("click", (e, d) => { searchInput.value = d.text; searchInput.dispatchEvent(new Event('input')); });
+                }).start();
         }
 
         function createChart(canvasId, type, data, label) {
             const ctx = document.getElementById(canvasId).getContext('2d');
-            const backgroundColors = [
-                'rgba(54, 162, 235, 0.8)', 'rgba(255, 99, 132, 0.8)', 'rgba(255, 206, 86, 0.8)',
-                'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)',
-                'rgba(199, 199, 199, 0.8)', 'rgba(83, 102, 255, 0.8)', 'rgba(40, 159, 64, 0.8)'
-            ];
-            const borderColors = backgroundColors.map(color => color.replace('0.8', '1'));
-
+            const bgColors = ['rgba(54, 162, 235, 0.8)', 'rgba(255, 99, 132, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
             return new Chart(ctx, {
-                type: type,
-                data: {
-                    labels: Object.keys(data),
-                    datasets: [{
-                        label: label,
-                        data: Object.values(data),
-                        backgroundColor: backgroundColors,
-                        borderColor: borderColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: type === 'bar' ? 'top' : 'right' } }
-                }
+                type,
+                data: { labels: Object.keys(data), datasets: [{ label, data: Object.values(data), backgroundColor: bgColors, borderWidth: 1 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
             });
         }
 
-        // Start the app by trying to autoload the database
+        renderGraphBtn.addEventListener('click', () => {
+            const activeDataSet = networkDataSets[currentGraphMode];
+
+            minNodeWeightSlider.max = activeDataSet.maxNodeWeight || 50;
+            if (+minNodeWeightSlider.value > activeDataSet.maxNodeWeight) minNodeWeightSlider.value = 0;
+            minNodeWeightValue.textContent = minNodeWeightSlider.value;
+
+            minLinkStrengthSlider.max = activeDataSet.maxLinkStrength || 10;
+            if (+minLinkStrengthSlider.value > activeDataSet.maxLinkStrength) minLinkStrengthSlider.value = 0;
+            minLinkStrengthValue.textContent = minLinkStrengthSlider.value;
+
+            const minNodeWeight = +minNodeWeightSlider.value;
+            const minLinkStrength = +minLinkStrengthSlider.value;
+
+            const nodesAfterWeightFilter = new Set(activeDataSet.nodes.filter(n => n.weight >= minNodeWeight).map(n => n.id));
+            const filteredLinks = activeDataSet.links.filter(l => l.value >= minLinkStrength && nodesAfterWeightFilter.has(l.source.id || l.source) && nodesAfterWeightFilter.has(l.target.id || l.target));
+
+            const finalNodeIds = new Set();
+            filteredLinks.forEach(l => { finalNodeIds.add(l.source.id || l.source); finalNodeIds.add(l.target.id || l.target); });
+
+            const filteredNodes = activeDataSet.nodes.filter(n => finalNodeIds.has(n.id));
+
+            if (filteredNodes.length > 0) {
+                networkContainer.classList.remove('hidden');
+                graphControls.classList.remove('hidden');
+                createNetworkGraph('network-graph', filteredNodes, filteredLinks);
+                renderGraphBtn.textContent = 'Zastosuj Filtry i Przerenderuj';
+            } else {
+                networkContainer.innerHTML = '<p class="text-center text-gray-500 h-full flex items-center justify-center">Brak danych spełniających kryteria.</p>';
+                if (networkSimulation) networkSimulation.stop();
+                networkContainer.classList.remove('hidden');
+                graphControls.classList.remove('hidden');
+            }
+        });
+
+        graphModeControls.addEventListener('click', (e) => {
+            const button = e.target.closest('.graph-mode-btn');
+            if (button) {
+                const newMode = button.dataset.mode;
+                if (newMode !== currentGraphMode) {
+                    currentGraphMode = newMode;
+                    document.querySelectorAll('.graph-mode-btn').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    renderGraphBtn.click();
+                }
+            }
+        });
+
+        chargeSlider.addEventListener('input', () => { if (networkSimulation) { chargeValue.textContent = chargeSlider.value; networkSimulation.force('charge').strength(+chargeSlider.value).alpha(0.3).restart(); }});
+        linkDistSlider.addEventListener('input', () => { if (networkSimulation) { linkDistValue.textContent = linkDistSlider.value; networkSimulation.force('link').distance(+linkDistSlider.value).alpha(0.3).restart(); }});
+        gravitySlider.addEventListener('input', () => { if (networkSimulation) { gravityValue.textContent = gravitySlider.value; networkSimulation.force('x').strength(+gravitySlider.value); networkSimulation.force('y').strength(+gravitySlider.value).alpha(0.3).restart(); }});
+        minNodeWeightSlider.addEventListener('input', () => minNodeWeightValue.textContent = minNodeWeightSlider.value);
+        minLinkStrengthSlider.addEventListener('input', () => minLinkStrengthValue.textContent = minLinkStrengthSlider.value);
+
+        layoutControls.addEventListener('click', (e) => {
+            const button = e.target.closest('.layout-btn');
+            if (button && networkSimulation) {
+                document.querySelectorAll('.layout-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                const layout = button.dataset.layout;
+                const { width, height } = networkContainer.getBoundingClientRect();
+                networkSimulation.force('radial', null).force('x', null).force('y', null);
+                if (layout === 'group') networkSimulation.force('x', d3.forceX(d => d.type === 'category' ? width * 0.25 : width * 0.75).strength(0.15));
+                else if (layout === 'radial') networkSimulation.force('radial', d3.forceRadial(Math.min(width, height) / 2.5, width / 2, height / 2).strength(0.6));
+                else {
+                    networkSimulation.force('x', d3.forceX(width / 2).strength(+gravitySlider.value));
+                    networkSimulation.force('y', d3.forceY(height / 2).strength(+gravitySlider.value));
+                }
+                networkSimulation.alpha(1).restart();
+            }
+        });
+
+        function createNetworkGraph(containerId, nodes, links) {
+            container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (networkSimulation) networkSimulation.stop();
+
+            const width = container.offsetWidth, height = container.offsetHeight;
+            const svg = d3.select(container).append('svg').attr('width', width).attr('height', height).attr('viewBox', [0, 0, width, height]);
+            const zoomGroup = svg.append('g');
+            svg.call(d3.zoom().scaleExtent([0.1, 4]).on('zoom', e => zoomGroup.attr('transform', e.transform)));
+
+            const isKeywordMode = currentGraphMode === 'keywords';
+            const color = d => d.type === 'category' ? '#2563eb' : (isKeywordMode ? '#f97316' : '#10b981'); // Blue, Orange, Green
+
+            const linkWidthScale = d3.scaleSqrt().domain([0, d3.max(links, d => d.value) || 1]).range([1, 6]);
+            const nodeRadiusScale = d3.scaleSqrt().domain([0, d3.max(nodes, d => d.weight) || 1]).range([6, 20]);
+
+            const link = zoomGroup.append('g').attr('stroke', '#999').attr('stroke-opacity', 0.6).selectAll('line').data(links).join('line').attr('stroke-width', d => linkWidthScale(d.value));
+            const node = zoomGroup.append('g').selectAll('g').data(nodes).join('g').call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
+            node.append('circle').attr('r', d => nodeRadiusScale(d.weight)).attr('fill', color).attr('stroke', '#fff').attr('stroke-width', 1.5).style('cursor', 'pointer')
+                .on('click', (e, d) => { searchInput.value = d.id; searchInput.dispatchEvent(new Event('input')); }).append('title').text(d => `${d.id} (${d.type}, waga: ${d.weight})`);
+            node.append('text').attr('x', d => nodeRadiusScale(d.weight) + 6).attr('y', 4).style('font-size', '12px').style('font-family', 'Inter').text(d => d.id);
+
+            networkSimulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(+linkDistSlider.value).strength(0.6))
+                .force('charge', d3.forceManyBody().strength(+chargeSlider.value))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('x', d3.forceX(width / 2).strength(+gravitySlider.value))
+                .force('y', d3.forceY(height / 2).strength(+gravitySlider.value))
+                .force('collide', d3.forceCollide().radius(d => nodeRadiusScale(d.weight) + 8))
+                .on('tick', () => {
+                    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                    node.attr('transform', d => `translate(${d.x},${d.y})`);
+                });
+
+            new ResizeObserver(entries => {
+                const { width, height } = entries[0].contentRect;
+                svg.attr('viewBox', [0, 0, width, height]);
+                networkSimulation.force('center', d3.forceCenter(width / 2, height / 2));
+                networkSimulation.force('x').x(width / 2);
+                networkSimulation.force('y').y(height / 2);
+            }).observe(container);
+
+            function dragstarted(event, d) { if (!event.active) networkSimulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+            function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+            function dragended(event, d) { if (!event.active) networkSimulation.alphaTarget(0); d.fx = null; d.fy = null; }
+
+            const legend = svg.append('g').attr('transform', `translate(10,10)`);
+            legend.selectAll('*').remove();
+            legend.append('circle').attr('r', 6).attr('fill', '#2563eb');
+            legend.append('text').attr('x', 14).attr('y', 4).style('font-size', '12px').text('Kategoria');
+            legend.append('circle').attr('r', 6).attr('fill', color({type: isKeywordMode ? 'keyword' : 'subcategory'})).attr('transform', 'translate(0,20)');
+            legend.append('text').attr('x', 14).attr('y', 24).style('font-size', '12px').text(isKeywordMode ? 'Słowo kluczowe' : 'Subkategoria');
+        }
+
         tryAutoLoadDatabase();
     });
-</script>
+    </script>
 </body>
 </html>
