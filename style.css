@@ -229,7 +229,6 @@ textarea.category-input {
 #mutation-buttons button span,
 #mutation-buttons button p {
     color: #eaeaea;
-    mix-blend-mode: difference;
 }
 
 #standard-popup-content, #mutation-content {
