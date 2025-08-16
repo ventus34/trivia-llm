@@ -228,11 +228,8 @@ textarea.category-input {
 
 #mutation-buttons button span,
 #mutation-buttons button p {
-    text-shadow:
-        -1px -1px 0 rgb(0 0 0 / 0.6),
-         1px -1px 0 rgb(0 0 0 / 0.6),
-        -1px  1px 0 rgb(0 0 0 / 0.6),
-         1px  1px 0 rgb(0 0 0 / 0.6);
+    color: darkgray;
+    mix-blend-mode: difference;
 }
 
 #standard-popup-content, #mutation-content {
