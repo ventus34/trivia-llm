@@ -228,7 +228,7 @@ textarea.category-input {
 
 #mutation-buttons button span,
 #mutation-buttons button p {
-    color: darkgray;
+    color: #eaeaea;
     mix-blend-mode: difference;
 }
 
