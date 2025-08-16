@@ -4,21 +4,15 @@
  * which in turn communicates with the Google Gemini API.
  */
 
-import {initializeApp, gameState, translations, UI} from './game_core.js';
-import {callApi} from './utils.js';
+import { initializeApp } from './main.js';
+import { gameState } from './state.js';
+import { UI } from './dom.js';
+import { updateModelSelection } from './ui.js';
+import { callApi } from './utils.js';
 
 // Construct the API path dynamically from the deployment config.
 const basePath = window.APP_CONFIG?.API_BASE_PATH || '/trivia';
 const apiPath = `${basePath}/api/`.replace('//', '/');
-
-function updateModelSelection(selectedValue) {
-    if (UI.modelSelect && UI.modelSelect.value !== selectedValue) {
-        UI.modelSelect.value = selectedValue;
-    }
-    if (UI.gameMenuModelSelect && UI.gameMenuModelSelect.value !== selectedValue) {
-        UI.gameMenuModelSelect.value = selectedValue;
-    }
-}
 
 const backendApiAdapter = {
     isConfigured() {
