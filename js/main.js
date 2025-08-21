@@ -9,7 +9,7 @@ import { UI } from './dom.js';
 import {
     setLanguage, updateDescriptions, updatePlayerNameInputs,
     updateModelSelection, closePopupAndContinue, hideHistoryModal,
-    showHistoryModal, setupGameMenu
+    showHistoryModal, setupGameMenu, populateModelSelectors
 } from './ui.js';
 import {
     loadGameState, restartGame, downloadGameState,
@@ -25,8 +25,10 @@ import {
  * Initializes the entire application, sets up event listeners, and injects the API adapter.
  * @param {object} apiAdapter - An object with methods for communicating with the backend.
  */
-export function initializeApp(apiAdapter) {
+export async function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
+
+    await populateModelSelectors();
 
     const urlParams = new URLSearchParams(window.location.search);
     const shouldLoadGame = urlParams.get('loadGame') === 'true';

@@ -596,3 +596,40 @@ export function setupGameMenu() {
         });
     }
 }
+
+/**
+ * Fetches the available models from the backend and populates the select elements.
+ */
+export async function populateModelSelectors() {
+    try {
+        const response = await fetch('/api/models');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const models = await response.json();
+
+        const selects = [UI.modelSelect, UI.gameMenuModelSelect];
+        selects.forEach(select => {
+            if (select) {
+                select.innerHTML = ''; // Clear existing options
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    if (model.selected) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+        });
+
+        // Trigger change event to update any dependent UI elements
+        UI.modelSelect.dispatchEvent(new Event('change'));
+
+    } catch (error) {
+        console.error("Could not fetch or populate models:", error);
+        // Fallback or error message
+        showNotification({ title: "Error", body: "Could not load language models." }, 'error');
+    }
+}
