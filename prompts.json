@@ -27,8 +27,8 @@
       "en": "Basic. The question should be about commonly known facts."
     },
     "intermediate": {
-      "pl": "Średniozaawansowany. Trudniejsze niż wiedza ogólna, ale nie specjalistyczne.",
-      "en": "Intermediate. More difficult than common knowledge, but not specialized."
+      "pl": "Średni. Trudniejsze pytania o znane fakty",
+      "en": "Intermediate. More difficult about commonly known facts"
     },
     "expert": {
       "pl": "Ekspercki. Dotyczące mniej znanych faktów, dla znawców tematu.",
@@ -54,8 +54,7 @@
         "- Kategoria: \"{category}\"",
         "- Poziom trudności: {knowledge_prompt}",
         "- Tryb gry: {game_mode_prompt}",
-        "- Motyw przewodni: {theme_context}",
-        "- Słowa-inspiracje (użyj jako luźnego skojarzenia): {inspirational_words}"
+        "- Motyw przewodni: {theme_context}"
       ],
       "rules": [
         "**JĘZYK WYJŚCIOWY:** Cała zawartość finalnego obiektu JSON (pytanie, odpowiedź, opcje, wyjaśnienie) MUSI być w języku polskim.",
@@ -64,7 +63,7 @@
         "**ZAKAZ POWTÓRZEŃ (NAZWY WŁASNE):** Pytanie nie może zawierać ani dotyczyć następujących, ostatnio użytych nazw własnych: {entity_history_prompt}.",
         "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
         "**WYODRĘBNIJ NAZWY WŁASNE:** Zidentyfikuj kluczowe nazwy własne w treści pytania, odpowiedzi i wyjaśnienia, a następnie umieść je w tablicy 'key_entities'.",
-        "**JAKOŚĆ OPCJI (dla MCQ):** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
+        "**JAKOŚĆ OPCJI:** Błędne opcje muszą być wiarygodne i bazować na częstych pomyłkach. Jedna opcja MUSI być poprawna.",
         "**OBSŁUGA SUBIEKTYWNOŚCI**: Jeśli kategoria jest z natury subiektywna (np. sztuka, filozofia), sformułuj pytanie w oparciu o udokumentowane poglądy konkretnego nurtu, szkoły myślenia, krytyka lub w kontekście historycznym, aby zachować jego weryfikowalność (np. 'Według surrealistów, co było głównym źródłem twórczości?' zamiast 'Jaki jest najlepszy obraz surrealistyczny?').",
         "**JAKOŚĆ PYTANIA**: Pytanie musi wymagać czegoś więcej niż prostej definicji lub znajomości jednej daty. Powinno sprawdzać zrozumienie kontekstu, przyczyny, skutku lub powiązań między faktami.",
         "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź."
@@ -79,8 +78,7 @@
         "- Category: \"{category}\"",
         "- Difficulty Level: {knowledge_prompt}",
         "- Game Mode: {game_mode_prompt}",
-        "- Main Theme: {theme_context}",
-        "- Inspirational Words (use as a loose association): {inspirational_words}"
+        "- Main Theme: {theme_context}"
       ],
       "rules": [
         "**OUTPUT LANGUAGE:** The entire content of the final JSON object (question, answer, options, explanation) MUST be in English.",
@@ -89,7 +87,7 @@
         "**NO REPETITION (PROPER NOUNS):** The question must not contain or be about the following, recently used proper nouns: {entity_history_prompt}.",
         "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
         "**EXTRACT PROPER NOUNS:** Identify key proper nouns in the question, answer, and explanation, then place them in the 'key_entities' array.",
-        "**OPTION QUALITY (for MCQ):** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
+        "**OPTION QUALITY:** Incorrect options must be plausible and based on common misconceptions. One option MUST be correct.",
         "**QUESTION QUALITY**: The question must require more than a simple definition or knowledge of a single date. It should test understanding of context, cause, effect, or the relationships between facts.",
         "**HANDLING SUBJECTIVITY**: If the category is inherently subjective (e.g., art, philosophy), formulate the question around the documented views of a specific movement, school of thought, or critic, or within a historical context, to maintain its verifiability (e.g., 'According to the Surrealists, what was the primary source of creativity?' instead of 'What is the best Surrealist painting?').",
         "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer."

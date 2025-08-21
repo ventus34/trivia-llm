@@ -118,10 +118,6 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     game_mode_prompt = PROMPTS["game_mode_prompts"][params.get("gameMode")][lang]
     theme_context = f"The question must relate to the theme: {params.get('theme')}." if params.get("includeCategoryTheme") and params.get("theme") else "No additional theme."
 
-    inspirational_words_pool = PROMPTS["inspirational_words"][lang]
-    random.shuffle(inspirational_words_pool)
-    inspirational_words = ", ".join(inspirational_words_pool[:2])
-
     subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "No history."
     entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "No history."
 
@@ -130,8 +126,7 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
             category=category,
             knowledge_prompt=knowledge_prompt,
             game_mode_prompt=game_mode_prompt,
-            theme_context=theme_context,
-            inspirational_words=inspirational_words
+            theme_context=theme_context
         ) for line in prompt_struct["context_lines"]
     ]
     rules = [
