@@ -25,7 +25,7 @@ generative_api_limiter = AsyncLimiter(10, 60)
 # --- Global Configuration & State ---
 try:
     DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
-    MODEL_TEMPERATURE = float(os.getenv("MODEL_TEMPERATURE", "0.6"))
+    MODEL_TEMPERATURE = float(os.getenv("MODEL_TEMPERATURE", "1.1"))
     api_key = os.getenv("OPENAI_API_KEY")
     api_base_url = os.getenv("OPENAI_API_BASE")
 
@@ -33,7 +33,7 @@ try:
         raise ValueError("OPENAI_API_KEY and OPENAI_API_BASE must be set in the .env file.")
 
     client = AsyncOpenAI(api_key=api_key, base_url=api_base_url)
-    print("OpenAI client configured successfully for OpenWebUI.")
+    print("OpenAI client configured successfully.")
 
     with open('models.json', 'r', encoding='utf-8') as f:
         AVAILABLE_MODELS_CONFIG = json.load(f)
