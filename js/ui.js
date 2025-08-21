@@ -602,7 +602,7 @@ export function setupGameMenu() {
  */
 export async function populateModelSelectors() {
     try {
-        const response = await fetch('/api/models');
+        const response = await fetch('/trivia/api/models');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
