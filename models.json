@@ -1,12 +1,91 @@
-[
-  {
-    "id": "gemma-3-27b-it",
-    "name": "Gemma 3 27B",
-    "selected": true
-  },
-  {
-    "id": "gemini-2.5-flash-lite",
-    "name": "Gemini 2.5 Flash-Lite",
-    "fallback": true
-  }
-]
+{
+  "question_models": [
+    {
+      "id": "deepseek/deepseek-chat-v3.1",
+      "name": "DeepSeek V3.1"
+    },
+    {
+      "id": "gemma-3-27b-it",
+      "name": "Gemma 3 27B (Recommended)"
+    },
+    {
+      "id": "gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash (Recommended)"
+    },
+    {
+      "id": "gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash-Lite",
+      "fallback": true
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o mini (Recommended)"
+    },
+        {
+      "id": "openai/gpt-4.1-mini",
+      "name": "GPT-4.1 Mini"
+    },
+    {
+      "id": "openai/gpt-5-nano",
+      "name": "GPT-5 Nano (Slow)"
+    },
+    {
+      "id": "openai/gpt-5-mini",
+      "name": "GPT-5 Mini (Slow)"
+    },
+    {
+      "id": "meta-llama/llama-4-maverick",
+      "name": "Llama 4 Maverick"
+    },
+    {
+      "id": "mistralai/mistral-nemo:free",
+      "name": "Mistral Nemo (English only)"
+    },
+    {
+      "id": "mistralai/mistral-small-3.2-24b-instruct:free",
+      "name": "Mistral Small 3.2 24B (English only)"
+    },
+    {
+      "id": "trivia-random",
+      "name": "Random+ (Recommended)",
+      "selected": true
+    }
+  ],
+  "explanation_models": [
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o mini"
+    }
+  ],
+  "category_models": [
+    {
+      "id": "openai/gpt-5-nano",
+      "name": "GPT-5 Nano"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o mini"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash"
+    },
+    {
+      "id": "gemma-3-27b-it",
+      "name": "Gemma 3 27B"
+    },
+    {
+      "id": "meta-llama/llama-4-maverick",
+      "name": "Llama 4 Maverick"
+    }
+  ],
+  "fallback_model": "gemini-2.5-flash-lite"
+}

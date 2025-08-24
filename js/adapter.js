@@ -124,9 +124,9 @@ const backendApiAdapter = {
 
         gameState.promptHistory.push({
             prompt: JSON.stringify(payload, null, 2),
-            response: typeof data?.explanation === 'string' ? data.explanation : JSON.stringify(data, null, 2)
+            response: JSON.stringify(data, null, 2)
         });
-        return data.explanation;
+        return data;
     },
 
     async getCategoryMutationChoices(oldCategory, existingCategories = []) {

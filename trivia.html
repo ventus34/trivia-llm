@@ -219,8 +219,12 @@
                 <p id="player-answer-text" class="mt-2 p-2 bg-gray-100 rounded-md"></p>
             </div>
             <div id="incorrect-explanation-container" class="hidden">
-                <p class="text-sm font-medium text-red-500" data-lang-key="your_answer_explanation">Uzasadnienie błędu:</p>
+                <p class="text-sm font-medium text-red-500" data-lang-key="your_answer_explanation">Porównanie odpowiedzi:</p>
                 <p id="incorrect-explanation-text" class="mt-2 p-2 bg-red-100 rounded-md"></p>
+                <div id="llm-evaluation-container" class="mt-4 hidden">
+                    <p class="text-sm font-medium text-blue-500" data-lang-key="llm_evaluation">Ocena sędziego AI:</p>
+                    <p id="llm-evaluation-text" class="mt-2 p-2 bg-indigo-100 rounded-md"></p>
+                </div>
                 <div id="incorrect-explanation-loader" class="hidden text-center p-2"><span class="text-sm text-gray-500" data-lang-key="analyzing_text">Analizuję...</span></div>
             </div>
             <div id="correct-answer-container">

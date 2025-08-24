@@ -620,6 +620,13 @@ html.oled #model-choice-modal {
     background-color: rgba(2, 0, 0, 0.75); 
 }
 
+html.dark #llm-evaluation-text,
+html.oled #llm-evaluation-text {
+    background-color: #312e81; /* indigo-900 */
+    color: #e0e7ff; /* indigo-200 */
+    border: 1px solid #4338ca; /* indigo-700 */
+}
+
 /* ============================================= */
 /* 7. RESPONSIVE DESIGN                          */
 /* ============================================= */

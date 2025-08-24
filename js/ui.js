@@ -389,6 +389,10 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
     UI.explanationContainer.classList.add('hidden');
     UI.incorrectExplanationContainer.classList.add('hidden');
     UI.incorrectExplanationText.textContent = '';
+    if (UI.llmEvaluationContainer) {
+        UI.llmEvaluationContainer.classList.add('hidden');
+        UI.llmEvaluationText.textContent = '';
+    }
 
     UI.explanationText.textContent = gameState.currentQuestionData.explanation;
     UI.verificationButtons.classList.remove('hidden');
@@ -602,7 +606,7 @@ export function setupGameMenu() {
  */
 export async function populateModelSelectors() {
     try {
-        const response = await fetch('/trivia/api/models');
+        const response = await fetch('/trivia/api/models/questions');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

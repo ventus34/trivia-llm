@@ -60,6 +60,8 @@ export const UI = {
     incorrectExplanationContainer: document.getElementById('incorrect-explanation-container'),
     incorrectExplanationText: document.getElementById('incorrect-explanation-text'),
     incorrectExplanationLoader: document.getElementById('incorrect-explanation-loader'),
+    llmEvaluationContainer: document.getElementById('llm-evaluation-container'),
+    llmEvaluationText: document.getElementById('llm-evaluation-text'),
     verificationButtons: document.getElementById('verification-buttons'),
     postVerificationButtons: document.getElementById('post-verification-buttons'),
     acceptAnswerBtn: document.getElementById('accept-answer-btn'),
