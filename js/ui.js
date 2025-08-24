@@ -389,16 +389,21 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
     UI.explanationContainer.classList.add('hidden');
     UI.incorrectExplanationContainer.classList.add('hidden');
     UI.verifyAnswerBtn.classList.add('hidden');
-    UI.incorrectExplanationText.textContent = '';
+    UI.incorrectExplanationText.innerHTML = '';
     if (UI.llmEvaluationContainer) {
         UI.llmEvaluationContainer.classList.add('hidden');
-        UI.llmEvaluationText.textContent = '';
+        UI.llmEvaluationText.innerHTML = '';
     }
 
-    UI.explanationText.textContent = '';
+    UI.explanationText.innerHTML = '';
     UI.verificationButtons.classList.remove('hidden');
     UI.postVerificationButtons.classList.add('hidden');
     UI.answerPopupTitle.textContent = translations.answer_evaluation[gameState.currentLanguage];
+
+    // Always show the pre-generated explanation
+    UI.explanationContainer.classList.remove('hidden');
+    UI.explanationText.innerHTML = (gameState.currentQuestionData.explanation || "").replace(/\n/g, '<br>');
+
 
     showAnswerPopup();
 }

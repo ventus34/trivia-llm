@@ -407,7 +407,7 @@ export async function handleManualVerification(isCorrect) {
 
     // Always show the explanation container now
     UI.explanationContainer.classList.remove('hidden');
-    UI.explanationText.textContent = gameState.currentQuestionData.explanation;
+    UI.explanationText.innerHTML = (gameState.currentQuestionData.explanation || "").replace(/\n/g, '<br>');
 
     if(!isCorrect){
         UI.incorrectExplanationContainer.classList.remove('hidden');
@@ -423,7 +423,7 @@ export async function verifyIncorrectAnswer() {
     try {
         const responseData = await gameState.api.getIncorrectAnswerExplanation();
 
-        UI.incorrectExplanationText.textContent = responseData.explanation || translations.incorrect_answer_analysis_error[gameState.currentLanguage];
+        UI.incorrectExplanationText.innerHTML = (responseData.explanation || translations.incorrect_answer_analysis_error[gameState.currentLanguage]).replace(/\n/g, '<br>');
 
         if (responseData.verdict_for && UI.llmEvaluationContainer) {
             const certainty = responseData.verdict_certainty || 0;
@@ -431,12 +431,12 @@ export async function verifyIncorrectAnswer() {
             const evalText = translations.evaluation_certainty_text[lang]
                 .replace('{verdict_for}', responseData.verdict_for)
                 .replace('{certainty}', certainty);
-            UI.llmEvaluationText.textContent = evalText;
+            UI.llmEvaluationText.innerHTML = evalText.replace(/\n/g, '<br>');
             UI.llmEvaluationContainer.classList.remove('hidden');
         }
     } catch (error) {
         console.error("Incorrect answer explanation error:", error);
-        UI.incorrectExplanationText.textContent = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
+        UI.incorrectExplanationText.innerHTML = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
     } finally {
         UI.incorrectExplanationLoader.classList.add('hidden');
     }
