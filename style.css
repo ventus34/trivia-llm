@@ -314,8 +314,6 @@ textarea.category-input {
 .emoji-panel {
     display: none;
     position: absolute;
-    bottom: 100%;
-    left: 50%;
     transform: translateX(-50%);
     background-color: white;
     border: 1px solid #d1d5db;
@@ -325,8 +323,11 @@ textarea.category-input {
     z-index: 20;
     grid-template-columns: repeat(6, 1fr);
     gap: 0.25rem;
-    width: 240px;
+    width: 300px;
+    max-height: 400px;
+    overflow-: auto;
 }
+
 .emoji-panel.active {
     display: grid;
 }

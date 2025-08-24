@@ -71,7 +71,7 @@
         "**ZASADA PRZEJRZYSTOŚCI**: Pytanie musi być sformułowane jasno, zwięźle i bezpośrednio. Unikaj złożonych zdań oraz języka, którego celem jest zmylenie gracza. Celem jest testowanie wiedzy, a nie umiejętności czytania ze zrozumieniem.",
         "**ZASADA GLOBALNEJ PERSPEKTYWY**: Dąż do perspektywy globalnej. O ile kategoria nie jest jawnie regionalna (np. 'Historia Polski'), pytanie i odpowiedzi powinny być zrozumiałe dla międzynarodowego odbiorcy. Unikaj ciekawostek znanych tylko w jednym kraju."
       ],
-      "output_format": "\n# OSTATECZNY WYNIK:\nZwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa Własna 1\", \"Nazwa Własna 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation\": \"Szczegółowe wyjaśnienie poprawnej odpowiedzi...\\n\\nKrótkie opisy pozostałych opcji...\\n\\nJednozdaniowe podsumowanie.\"\n}}"
+      "output_format": "\n# OSTATECZNY WYNIK:\nZwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa Własna 1\", \"Nazwa Własna 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation\": \"Szczegółowe wyjaśnienie poprawnej odpowiedzi.---\\n\\Krótkie opisy pozostałych, błędnych opcji i dlaczego są niepoprawne ---\\n\\nJednozdaniowe podsumowanie potwierdzające poprawność właściwej odpowiedzi.\"\n}}"
     },
     "en": {
       "persona": "Embody the role of an experienced quiz show master and encyclopedist. Your task is to create ONE high-quality, objective quiz question with a comprehensive explanation.",
@@ -98,7 +98,7 @@
         "**RULE OF CLARITY**: The question must be phrased clearly, concisely, and directly. Avoid complex sentence structures or language designed to trick the player. The goal is to test knowledge, not reading comprehension skills.",
         "**RULE OF GLOBAL PERSPECTIVE**: Strive for a global perspective. Unless the category is explicitly regional (e.g., 'History of Poland'), the question and its potential answers should be relevant to an international audience. Avoid culturally specific trivia that would be unknown outside a particular country or region."
       ],
-      "output_format": "\n# FINAL OUTPUT:\nReturn the response ONLY as a single, clean JSON object with the structure:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Proper Noun 1\", \"Proper Noun 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation\": \"Detailed explanation of the correct answer...\\n\\nBrief descriptions of the other options...\\n\\nA one-sentence summary.\"\n}}"
+      "output_format": "\n# FINAL OUTPUT:\nReturn the response ONLY as a single, clean JSON object with the structure:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Proper Noun 1\", \"Proper Noun 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation\": \"Detailed explanation of the correct answer. ---\\n\\nBrief descriptions of the other, incorrect options and why they are wrong. ---\\n\\nA one-sentence summary confirming the correctness of the right answer.\"\n}}"
     }
   },
   "generate_categories": {
