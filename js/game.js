@@ -425,12 +425,12 @@ export async function verifyIncorrectAnswer() {
 
         UI.incorrectExplanationText.textContent = responseData.explanation || translations.incorrect_answer_analysis_error[gameState.currentLanguage];
 
-        if (responseData.evaluation && UI.llmEvaluationContainer) {
-            const probability = responseData.player_error_probability || 0;
+        if (responseData.verdict_for && UI.llmEvaluationContainer) {
+            const certainty = responseData.verdict_certainty || 0;
             const lang = gameState.currentLanguage;
-            const evalText = translations.evaluation_text[lang]
-                .replace('{evaluation}', responseData.evaluation)
-                .replace('{probability}', probability);
+            const evalText = translations.evaluation_certainty_text[lang]
+                .replace('{verdict_for}', responseData.verdict_for)
+                .replace('{certainty}', certainty);
             UI.llmEvaluationText.textContent = evalText;
             UI.llmEvaluationContainer.classList.remove('hidden');
         }

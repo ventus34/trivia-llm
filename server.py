@@ -296,6 +296,14 @@ async def _preload_task(game_id: str, model: str, request_data: PreloadRequest):
             data = await call_generative_model(prompt, model, temperature=1.2)
 
             if data and isinstance(data, dict) and data.get("question"):
+                # Combine explanation parts into a single string
+                explanation = "\n\n".join([
+                    data.get("explanation_correct", ""),
+                    data.get("explanation_distractors", ""),
+                    data.get("explanation_summary", "")
+                ])
+                data["explanation"] = explanation.strip()
+
                 game_sessions[game_id]["preloaded_questions"][category] = data
                 database.add_question(data, params)
         except Exception as e:
@@ -366,6 +374,14 @@ async def generate_question(req: QuestionRequest):
                     is_valid = True
 
                 if is_valid:
+                    # Combine explanation parts into a single string
+                    explanation = "\n\n".join([
+                        data.get("explanation_correct", ""),
+                        data.get("explanation_distractors", ""),
+                        data.get("explanation_summary", "")
+                    ])
+                    data["explanation"] = explanation.strip()
+
                     database.add_question(data, req.model_dump())
                     return JSONResponse(content=data)
                 else:
@@ -381,11 +397,9 @@ async def generate_question(req: QuestionRequest):
             last_error = e
             print(f"Exception on attempt {attempt + 1}/{MAX_RETRIES}: {e}")
 
-        # Wait before the next attempt if this wasn't the last one
         if attempt < MAX_RETRIES - 1:
             await asyncio.sleep(1)
 
-    # If all retries failed, raise the final error
     print(
         f"Failed to generate a valid question for category '{req.category}' after {MAX_RETRIES} attempts. Final error: {last_error}")
     raise HTTPException(status_code=500, detail=f"Failed to generate a valid question. Error: {last_error}")
@@ -452,8 +466,8 @@ async def get_incorrect_explanation(req: ExplanationRequest):
                 print("5a. Response is a raw string. Wrapping it in a JSON object.")
             response_data = {
                 "explanation": response_data,
-                "evaluation": "Could not automatically evaluate the answer.",
-                "player_error_probability": 50
+                "verdict_for": "game",
+                "verdict_certainty": 50
             }
 
         if isinstance(response_data, dict):
