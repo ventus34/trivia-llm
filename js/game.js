@@ -71,11 +71,6 @@ export function initializeGame() {
         });
     }
 
-    // if (gameState.api.preloadQuestions) {
-    //     console.log("Triggering question preload...");
-    //     gameState.api.preloadQuestions();
-    // }
-
     createBoardLayout();
     renderBoard();
     renderCategoryLegend();
@@ -410,30 +405,39 @@ export async function handleManualVerification(isCorrect) {
     UI.verificationButtons.classList.add('hidden');
     UI.postVerificationButtons.classList.remove('hidden');
 
+    // Always show the explanation container now
     UI.explanationContainer.classList.remove('hidden');
-    if (!isCorrect) {
+    UI.explanationText.textContent = gameState.currentQuestionData.explanation;
+
+    if(!isCorrect){
         UI.incorrectExplanationContainer.classList.remove('hidden');
-        UI.incorrectExplanationLoader.classList.remove('hidden');
-        if (UI.llmEvaluationContainer) UI.llmEvaluationContainer.classList.add('hidden');
-        try {
-            const responseData = await gameState.api.getIncorrectAnswerExplanation();
+        UI.verifyAnswerBtn.classList.remove('hidden');
+    }
+}
 
-            UI.incorrectExplanationText.textContent = responseData.explanation || translations.incorrect_answer_analysis_error[gameState.currentLanguage];
+export async function verifyIncorrectAnswer() {
+    UI.verifyAnswerBtn.classList.add('hidden');
+    UI.incorrectExplanationLoader.classList.remove('hidden');
 
-            if (responseData.evaluation && UI.llmEvaluationContainer) {
-                const probability = responseData.player_error_probability || 0;
-                const lang = gameState.currentLanguage;
-                const evalText = translations.evaluation_text[lang]
-                    .replace('{evaluation}', responseData.evaluation)
-                    .replace('{probability}', probability);
-                UI.llmEvaluationText.textContent = evalText;
-                UI.llmEvaluationContainer.classList.remove('hidden');
-            }
-        } catch (error) {
-            console.error("Incorrect answer explanation error:", error);
-            UI.incorrectExplanationText.textContent = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
-        } finally {
-            UI.incorrectExplanationLoader.classList.add('hidden');
+    if (UI.llmEvaluationContainer) UI.llmEvaluationContainer.classList.add('hidden');
+    try {
+        const responseData = await gameState.api.getIncorrectAnswerExplanation();
+
+        UI.incorrectExplanationText.textContent = responseData.explanation || translations.incorrect_answer_analysis_error[gameState.currentLanguage];
+
+        if (responseData.evaluation && UI.llmEvaluationContainer) {
+            const probability = responseData.player_error_probability || 0;
+            const lang = gameState.currentLanguage;
+            const evalText = translations.evaluation_text[lang]
+                .replace('{evaluation}', responseData.evaluation)
+                .replace('{probability}', probability);
+            UI.llmEvaluationText.textContent = evalText;
+            UI.llmEvaluationContainer.classList.remove('hidden');
         }
+    } catch (error) {
+        console.error("Incorrect answer explanation error:", error);
+        UI.incorrectExplanationText.textContent = translations.incorrect_answer_analysis_error[gameState.currentLanguage];
+    } finally {
+        UI.incorrectExplanationLoader.classList.add('hidden');
     }
 }

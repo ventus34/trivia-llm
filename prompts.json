@@ -47,8 +47,8 @@
   },
   "generate_question": {
     "pl": {
-      "persona": "Wciel się w rolę doświadczonego mistrza teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego.",
-      "chain_of_thought": "# PROCES MYŚLOWY (Chain of Thought):\nZanim podasz ostateczną odpowiedź w formacie JSON, przeprowadź wewnętrzny proces myślowy. Krok po kroku:\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw, poziom trudności i słowa-inspiracje.\n2.  **Burza Mózgów:** Wymyśl 3-5 wstępnych pomysłów na pytania, które pasują do kontekstu.\n3.  **Selekcja i Udoskonalenie:** Porównaj swoje pomysły z listą tematów do unikania. Wybierz ten pomysł, który jest **najbardziej odległy tematycznie** od tej listy, **ale jednocześnie ściśle trzyma się głównej kategorii**. Udoskonal pytanie.\n4.  **Weryfikacja i Korekta:** Przejrzyj wybrane pytanie, odpowiedź i opcje. Sprawdź je KROK PO KROKU pod kątem WSZYSTKICH reguł (zwłaszcza reguły 'ZAKAZ POWTÓRZEŃ' i krytycznej zasady, że odpowiedź nie może być w pytaniu). Jeśli jakakolwiek reguła jest złamana, **POPRAW** treść, aby była w pełni zgodna.",
+      "persona": "Wciel się w rolę doświadczonego mistrza teleturnieju i encyklopedysty. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego wraz z kompleksowym wyjaśnieniem.",
+      "chain_of_thought": "# PROCES MYŚLOWY (Chain of Thought):\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw i poziom trudności.\n2.  **Generowanie Pytania:** Stwórz pytanie, poprawną odpowiedź i wiarygodne błędne opcje.\n3.  **Tworzenie Wyjaśnienia:**\n    a.  W pierwszym akapicie szczegółowo opisz poprawną odpowiedź w kontekście pytania.\n    b.  W drugim akapicie krótko wyjaśnij każdą z błędnych opcji.\n    c.  W trzecim, jednozdaniowym akapicie, podsumuj, dlaczego to właśnie poprawna odpowiedź jest tą właściwą.\n4.  **Weryfikacja i Formatowanie:** Sprawdź kompletność i poprawność wszystkich pól, a następnie sformatuj jako jeden obiekt JSON.",
       "context_header": "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
       "context_lines": [
         "- Kategoria: \"{category}\"",
@@ -71,11 +71,11 @@
         "**ZASADA PRZEJRZYSTOŚCI**: Pytanie musi być sformułowane jasno, zwięźle i bezpośrednio. Unikaj złożonych zdań oraz języka, którego celem jest zmylenie gracza. Celem jest testowanie wiedzy, a nie umiejętności czytania ze zrozumieniem.",
         "**ZASADA GLOBALNEJ PERSPEKTYWY**: Dąż do perspektywy globalnej. O ile kategoria nie jest jawnie regionalna (np. 'Historia Polski'), pytanie i odpowiedzi powinny być zrozumiałe dla międzynarodowego odbiorcy. Unikaj ciekawostek znanych tylko w jednym kraju."
       ],
-      "output_format": "\n# OSTATECZNY WYNIK:\nZwróć odpowiedź jako jeden, czysty obiekt JSON o strukturze:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa Własna 1\", \"Nazwa Własna 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
+      "output_format": "\n# OSTATECZNY WYNIK:\nZwróć odpowiedź WYŁĄCZNIE jako jeden, czysty obiekt JSON o strukturze:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa Własna 1\", \"Nazwa Własna 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation\": \"Szczegółowe wyjaśnienie poprawnej odpowiedzi...\\n\\nKrótkie opisy pozostałych opcji...\\n\\nJednozdaniowe podsumowanie.\"\n}}"
     },
     "en": {
-      "persona": "Embody the role of an experienced quiz show master. Your task is to create ONE high-quality, objective quiz question.",
-      "chain_of_thought": "# CHAIN OF THOUGHT PROCESS:\nBefore providing the final JSON output, conduct an internal thought process. Step by step:\n1.  **Analyze Context:** Consider the given category, theme, difficulty level, and inspirational words.\n2.  **Brainstorm:** Come up with 3-5 initial ideas for questions that fit the context.\n3.  **Select & Refine:** Compare your ideas against the list of topics to avoid. Choose the idea that is **most thematically distant** from that list, **while still strictly adhering to the main category**. Refine the question.\n4.  **Verification and Correction:** Review the selected question, answer, and options. Check them STEP-BY-STEP against ALL the rules. If any rule is violated, **CORRECT** the content to be fully compliant.",
+      "persona": "Embody the role of an experienced quiz show master and encyclopedist. Your task is to create ONE high-quality, objective quiz question with a comprehensive explanation.",
+      "chain_of_thought": "# CHAIN OF THOUGHT PROCESS:\n1.  **Analyze Context:** Consider the given category, theme, and difficulty level.\n2.  **Generate Question:** Create a question, a correct answer, and plausible incorrect options.\n3.  **Create Explanation:**\n    a.  In the first paragraph, describe the correct answer in detail within the context of the question.\n    b.  In the second paragraph, briefly explain each of the incorrect options.\n    c.  In the third, one-sentence paragraph, summarize why the correct answer is the right one.\n4.  **Verify and Format:** Check all fields for completeness and correctness, then format as a single JSON object.",
       "context_header": "\n# CONTEXT AND RULES TO APPLY:",
       "context_lines": [
         "- Category: \"{category}\"",
@@ -98,7 +98,7 @@
         "**RULE OF CLARITY**: The question must be phrased clearly, concisely, and directly. Avoid complex sentence structures or language designed to trick the player. The goal is to test knowledge, not reading comprehension skills.",
         "**RULE OF GLOBAL PERSPECTIVE**: Strive for a global perspective. Unless the category is explicitly regional (e.g., 'History of Poland'), the question and its potential answers should be relevant to an international audience. Avoid culturally specific trivia that would be unknown outside a particular country or region."
       ],
-      "output_format": "\n# FINAL OUTPUT:\nReturn the response as a single, clean JSON object with the structure:\n{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"explanation\": \"...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Proper Noun 1\", \"Proper Noun 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"]\n}"
+      "output_format": "\n# FINAL OUTPUT:\nReturn the response ONLY as a single, clean JSON object with the structure:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Proper Noun 1\", \"Proper Noun 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation\": \"Detailed explanation of the correct answer...\\n\\nBrief descriptions of the other options...\\n\\nA one-sentence summary.\"\n}}"
     }
   },
   "generate_categories": {

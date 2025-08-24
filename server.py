@@ -20,7 +20,7 @@ load_dotenv()
 app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 
 # --- Throttler Initialization ---
-generative_api_limiter = AsyncLimiter(25, 60)
+generative_api_limiter = AsyncLimiter(20, 60)
 
 # --- Global Configuration & State ---
 try:
@@ -336,7 +336,7 @@ async def generate_question(req: QuestionRequest):
 
     if event := game_sessions.get(req.gameId, {}).get("preload_event"):
         try:
-            await asyncio.wait_for(event.wait(), timeout=30.0)
+            await asyncio.wait_for(event.wait(), timeout=15.0)
             if question := cache.pop(req.category, None):
                 if DEBUG_MODE:
                     print(f"Serving question for '{req.category}' from preload cache after waiting.")

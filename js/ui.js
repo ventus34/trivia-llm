@@ -388,13 +388,14 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
 
     UI.explanationContainer.classList.add('hidden');
     UI.incorrectExplanationContainer.classList.add('hidden');
+    UI.verifyAnswerBtn.classList.add('hidden');
     UI.incorrectExplanationText.textContent = '';
     if (UI.llmEvaluationContainer) {
         UI.llmEvaluationContainer.classList.add('hidden');
         UI.llmEvaluationText.textContent = '';
     }
 
-    UI.explanationText.textContent = gameState.currentQuestionData.explanation;
+    UI.explanationText.textContent = '';
     UI.verificationButtons.classList.remove('hidden');
     UI.postVerificationButtons.classList.add('hidden');
     UI.answerPopupTitle.textContent = translations.answer_evaluation[gameState.currentLanguage];

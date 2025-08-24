@@ -17,7 +17,8 @@ import {
 } from './persistence.js';
 import {
     initializeGame, generateCategories, askQuestion,
-    rollDice, handleOpenAnswer, handleManualVerification
+    rollDice, handleOpenAnswer, handleManualVerification,
+    verifyIncorrectAnswer
 } from './game.js';
 
 
@@ -89,6 +90,7 @@ export async function initializeApp(apiAdapter) {
     UI.answerInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleOpenAnswer(); });
     UI.acceptAnswerBtn.addEventListener('click', () => handleManualVerification(true));
     UI.rejectAnswerBtn.addEventListener('click', () => handleManualVerification(false));
+    UI.verifyAnswerBtn.addEventListener('click', verifyIncorrectAnswer);
     UI.closePopupBtn.addEventListener('click', closePopupAndContinue);
     UI.closeHistoryBtn.addEventListener('click', hideHistoryModal);
     UI.restartGameBtn.addEventListener('click', restartGame);
