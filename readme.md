@@ -29,22 +29,19 @@ The application consists of two main components:
 
 ```mermaid
 graph TD
-    subgraph Browser
-        A[Frontend UI - trivia.html] -- AJAX Calls --> B[Backend API Adapter - adapter.js];
-        B -- HTTP Requests --> C[FastAPI Server];
+    Player -- Interacts with --> FrontendUI;
+
+    subgraph "User's Browser"
+        FrontendUI["Frontend UI (trivia.html)"] --> Adapter["Backend API Adapter (adapter.js)"];
+        Adapter -- "HTTP Requests" --> FastAPI;
     end
 
     subgraph "Docker Container"
-        C -- "Generates prompts from prompts.json" --> D[LLM API];
-        D -- "Generates content (questions, etc.)" --> C;
-        C -- "Caches/retrieves questions" --> E[SQLite Database];
+        FastAPI["FastAPI Server"] -- "Constructs prompt & calls API" --> LLM_API["LLM API"];
+        LLM_API -- "Returns generated content" --> FastAPI;
+        FastAPI -- "Caches/retrieves questions" --> DB["SQLite Database"];
     end
-
-    A ~~~ Z[Player];
-    Z -- Interacts with --> A;
-
-    style Browser fill:#E6F3FF,stroke:#B3D9FF,stroke-width:2px
-    style "Docker Container" fill:#FFF2CC,stroke:#FFD966,stroke-width:2px
+    
 ```
 
 -----
