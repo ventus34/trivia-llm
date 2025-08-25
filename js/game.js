@@ -428,8 +428,11 @@ export async function verifyIncorrectAnswer() {
         if (responseData.verdict_for && UI.llmEvaluationContainer) {
             const certainty = responseData.verdict_certainty || 0;
             const lang = gameState.currentLanguage;
+            const verdictKey = `verdict_${responseData.verdict_for}`;
+            const translatedVerdict = translations[verdictKey] ? translations[verdictKey][lang] : responseData.verdict_for;
+
             const evalText = translations.evaluation_certainty_text[lang]
-                .replace('{verdict_for}', responseData.verdict_for)
+                .replace('{verdict_for}', translatedVerdict)
                 .replace('{certainty}', certainty);
             UI.llmEvaluationText.innerHTML = evalText.replace(/\n/g, '<br>');
             UI.llmEvaluationContainer.classList.remove('hidden');

@@ -75,6 +75,8 @@ export const translations = {
     your_answer_explanation: { pl: "Porównanie odpowiedzi:", en: "Answer Comparison:" },
     llm_evaluation: { pl: "Werdykt", en: "Verdict" },
     evaluation_certainty_text: { pl: "Werdykt dla: {verdict_for} (pewność: {certainty}%)", en: "Verdict for: {verdict_for} (certainty: {certainty}%)" },
+    verdict_player: { pl: "Gracz", en: "Player" },
+    verdict_game: { pl: "Gra", en: "Game" },
     verify_answer_btn: { pl: "Weryfikuj", en: "Verify" },
     incorrect_answer_analysis_error: { pl: "Nie udało się przeanalizować odpowiedzi.", en: "Failed to analyze the answer." },
     accept_answer: { pl: "Poprawna", en: "Correct" },
