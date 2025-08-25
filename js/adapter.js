@@ -1,7 +1,7 @@
 /**
  * @file adapter.js
  * This module serves as the adapter for the application's Python backend,
- * which in turn communicates with the Google Gemini API.
+ * which in turn communicates with the OpenAI compatible api.
  */
 
 import { initializeApp } from './main.js';
@@ -11,7 +11,7 @@ import { updateModelSelection } from './ui.js';
 import { callApi } from './utils.js';
 
 // Construct the API path dynamically from the deployment config.
-const basePath = window.APP_CONFIG?.API_BASE_PATH || '/';
+const basePath = '/';
 const apiPath = `${basePath}/api/`.replace('//', '/');
 
 const backendApiAdapter = {
