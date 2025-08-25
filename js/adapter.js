@@ -11,7 +11,7 @@ import { updateModelSelection } from './ui.js';
 import { callApi } from './utils.js';
 
 // Construct the API path dynamically from the deployment config.
-const basePath = window.APP_CONFIG?.API_BASE_PATH || '/trivia';
+const basePath = window.APP_CONFIG?.API_BASE_PATH || '/';
 const apiPath = `${basePath}/api/`.replace('//', '/');
 
 const backendApiAdapter = {

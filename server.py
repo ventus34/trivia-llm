@@ -344,7 +344,7 @@ async def generate_question(req: QuestionRequest):
 
     if event := game_sessions.get(req.gameId, {}).get("preload_event"):
         try:
-            await asyncio.wait_for(event.wait(), timeout=15.0)
+            await asyncio.wait_for(event.wait(), timeout=30.0)
             if question := cache.pop(req.category, None):
                 if DEBUG_MODE:
                     print(f"Serving question for '{req.category}' from preload cache after waiting.")
