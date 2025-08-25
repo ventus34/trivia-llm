@@ -494,5 +494,13 @@ async def startup_event():
 async def root():
     return FileResponse('trivia.html')
 
+@app.get("/manifest.json", include_in_schema=False)
+async def manifest():
+    return FileResponse('manifest.json')
+
+@app.get("/service-worker.js", include_in_schema=False)
+async def service_worker():
+    return FileResponse('service-worker.js', media_type='application/javascript')
+
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
