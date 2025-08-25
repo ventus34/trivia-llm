@@ -14,8 +14,8 @@ const urlsToCache = [
   '/js/theme.js',
   '/js/ui.js',
   '/js/utils.js',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+  new Request('https://cdn.tailwindcss.com', { mode: 'no-cors' }),
+  new Request('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap', { mode: 'no-cors' })
 ];
 
 self.addEventListener('install', event => {
