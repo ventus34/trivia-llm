@@ -468,6 +468,7 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
                 # Filter out empty parts before joining
                 explanation_parts = [part for part in [explanation_correct, explanation_distractors, explanation_summary] if part]
                 data["explanation"] = "\n\n".join(explanation_parts)
+                params['model'] = model_to_use
 
                 game_sessions[game_id]["preloaded_questions"][category].append(data)
                 database.add_question(data, params)
