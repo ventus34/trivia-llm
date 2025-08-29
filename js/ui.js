@@ -617,29 +617,43 @@ export async function populateModelSelectors() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const models = await response.json();
+        gameState.availableModels = models;
 
         const selects = [UI.modelSelect, UI.gameMenuModelSelect];
         selects.forEach(select => {
             if (select) {
-                select.innerHTML = ''; // Clear existing options
+                select.innerHTML = '';
+
+                const randomPlOption = document.createElement('option');
+                randomPlOption.value = 'random-pl';
+                randomPlOption.textContent = 'Losowy model (PL)';
+                select.appendChild(randomPlOption);
+
+                const randomEnOption = document.createElement('option');
+                randomEnOption.value = 'random-en';
+                randomEnOption.textContent = 'Random model (ENG)';
+                select.appendChild(randomEnOption);
+
+                const separator = document.createElement('option');
+                separator.disabled = true;
+                separator.textContent = '──────────';
+                select.appendChild(separator);
+
                 models.forEach(model => {
                     const option = document.createElement('option');
                     option.value = model.id;
                     option.textContent = model.name;
-                    if (model.selected) {
-                        option.selected = true;
-                    }
                     select.appendChild(option);
                 });
+
+                select.value = gameState.currentLanguage === 'pl' ? 'random-pl' : 'random-en';
             }
         });
 
-        // Trigger change event to update any dependent UI elements
         UI.modelSelect.dispatchEvent(new Event('change'));
 
     } catch (error) {
         console.error("Could not fetch or populate models:", error);
-        // Fallback or error message
         showNotification({ title: "Error", body: "Could not load language models." }, 'error');
     }
 }

@@ -32,10 +32,30 @@ const backendApiAdapter = {
         }
     },
 
+    _resolveModelSelection() {
+        const selectedValue = UI.modelSelect.value;
+
+        if (selectedValue === 'random-pl' || selectedValue === 'random-en') {
+            const lang = selectedValue === 'random-pl' ? 'pl' : 'en';
+            const compatibleModels = gameState.availableModels.filter(model =>
+                model.languages && model.languages.includes(lang)
+            );
+
+            if (compatibleModels.length > 0) {
+                const randomIndex = Math.floor(Math.random() * compatibleModels.length);
+                const randomModelId = compatibleModels[randomIndex].id;
+                console.log(`Random model selected for ${lang}: ${randomModelId}`);
+                return randomModelId;
+            }
+        }
+
+        return selectedValue;
+    },
+
     // A helper function to build the payload with the selected model and gameId
     _buildPayload(data) {
         return {
-            model: UI.modelSelect.value,
+            model: this._resolveModelSelection(),
             gameId: gameState.gameId,
             ...data
         };
@@ -45,7 +65,9 @@ const backendApiAdapter = {
     async preloadQuestions() {
         if (!gameState.gameId) return; // Don't do anything if the game hasn't started
 
-        const payload = this._buildPayload({
+        const payload = {
+            model: UI.modelSelect.value,
+            gameId: gameState.gameId,
             categories: gameState.categories,
             gameMode: gameState.gameMode,
             knowledgeLevel: gameState.knowledgeLevel,
@@ -58,7 +80,7 @@ const backendApiAdapter = {
             entityHistory: Object.fromEntries(
                 Object.entries(gameState.categoryTopicHistory).map(([k, v]) => [k, v.entities])
             )
-        });
+        };
 
         try {
             // Fire-and-forget request, we don't need to wait for the response
@@ -67,7 +89,7 @@ const backendApiAdapter = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            console.log('Preload request sent.');
+            console.log('Preload request sent with model selection:', payload.model);
         } catch (error) {
             console.error('Failed to send preload request:', error);
         }
