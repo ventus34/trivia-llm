@@ -370,6 +370,8 @@ async def generate_question(req: QuestionRequest):
                 if req.gameMode == "mcq":
                     if answer and options and answer in options:
                         is_valid = True
+                    else:
+                        is_valid = False
                 else:  # short_answer mode
                     is_valid = True
 
