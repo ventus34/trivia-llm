@@ -74,12 +74,6 @@ const backendApiAdapter = {
             language: gameState.currentLanguage,
             theme: gameState.theme,
             includeCategoryTheme: gameState.includeCategoryTheme,
-            subcategoryHistory: Object.fromEntries(
-                Object.entries(gameState.categoryTopicHistory).map(([k, v]) => [k, v.subcategories])
-            ),
-            entityHistory: Object.fromEntries(
-                Object.entries(gameState.categoryTopicHistory).map(([k, v]) => [k, v.entities])
-            )
         };
 
         try {
@@ -111,16 +105,13 @@ const backendApiAdapter = {
     },
 
     async generateQuestion(category) {
-        let history = gameState.categoryTopicHistory[category] || {subcategories: [], entities: []};
         const payload = this._buildPayload({
             category,
             gameMode: gameState.gameMode,
             knowledgeLevel: gameState.knowledgeLevel,
             language: gameState.currentLanguage,
             theme: gameState.theme,
-            includeCategoryTheme: gameState.includeCategoryTheme,
-            subcategoryHistory: history.subcategories || [],
-            entityHistory: history.entities || [],
+            includeCategoryTheme: gameState.includeCategoryTheme
         });
         const response = await callApi(apiPath + 'generate-question', payload);
         if (!response || typeof response.question !== 'string') {

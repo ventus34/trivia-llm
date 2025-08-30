@@ -2,10 +2,8 @@ import os
 import re
 import json
 import random
-import sqlite3
 import asyncio
 import time
-import threading
 from collections import deque
 from datetime import datetime
 
@@ -27,16 +25,9 @@ app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 # --- Throttler Initialization ---
 generative_api_limiter = AsyncLimiter(20, 60)
 
-# --- Locks for thread-safe file writing and stats ---
-HISTORY_LOCK = threading.Lock()
-ERROR_LOCK = threading.Lock()
-STATS_LOCK = threading.Lock()
-
-
 # --- Global Configuration & State ---
 try:
     DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
-    STATS_FILENAME = "stats.json"
     api_key = os.getenv("OPENAI_API_KEY")
     api_base_url = os.getenv("OPENAI_API_BASE")
 
@@ -80,16 +71,21 @@ try:
 
 except Exception as e:
     print(f"CRITICAL ERROR during server initialization: {e}")
-    # Log critical startup error
-    with ERROR_LOCK:
-        with open("error.log", "a", encoding="utf-8") as f:
-            f.write(f"[{datetime.utcnow().isoformat()}] CRITICAL STARTUP ERROR: {e}\n")
+    # Fallback for startup errors, as the database logger might not be available
+    with open("error.log", "a", encoding="utf-8") as f:
+        f.write(f"[{datetime.utcnow().isoformat()}] CRITICAL STARTUP ERROR: {e}\n")
     exit(1)
 
 # --- In-memory State ---
-game_sessions = {}
-prompt_history = deque(maxlen=50) # Store last 50 prompts and responses
-MODEL_STATS = {} # For model performance tracking
+# This dictionary holds the history for question generation to avoid repetition.
+# It is shared across all game sessions.
+CATEGORY_GENERATION_HISTORY = {} # Format: { "category_name": {"subcategories": deque, "entities": deque} }
+MAX_SUBCATEGORY_HISTORY = 10
+MAX_ENTITY_HISTORY = 20
+
+# Background task state tracking
+PRELOAD_TASK_STATUS = {} # Format: { "gameId": {"is_running": bool, "event": asyncio.Event} }
+
 MAX_QUESTIONS_PER_CATEGORY_IN_CACHE = 2
 
 
@@ -109,8 +105,6 @@ class QuestionRequest(BaseModelWithModel):
     language: str
     theme: Optional[str] = None
     includeCategoryTheme: bool
-    subcategoryHistory: List[str] = Field(default_factory=list)
-    entityHistory: List[str] = Field(default_factory=list)
 
 class ExplanationRequest(BaseModelWithModel):
     language: str
@@ -132,151 +126,56 @@ class PreloadRequest(BaseModelWithModel):
     language: str
     theme: Optional[str] = None
     includeCategoryTheme: bool
-    subcategoryHistory: Dict[str, List[str]]
-    entityHistory: Dict[str, List[str]]
 
 
 # --- Helper Logic ---
+def update_generation_history(category: str, subcategory: str, key_entities: List[str]):
+    """Updates the shared, in-memory history for a given category."""
+    if category not in CATEGORY_GENERATION_HISTORY:
+        CATEGORY_GENERATION_HISTORY[category] = {
+            "subcategories": deque(maxlen=MAX_SUBCATEGORY_HISTORY),
+            "entities": deque(maxlen=MAX_ENTITY_HISTORY)
+        }
 
-def append_to_json_log(file_path: str, data: dict, lock: threading.Lock):
-    """Appends a dictionary entry to a JSON file containing a list."""
-    with lock:
-        try:
-            # Try to read existing data
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    file_data = json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
-                file_data = [] # If file is missing or empty, start with an empty list
+    if subcategory:
+        CATEGORY_GENERATION_HISTORY[category]["subcategories"].append(subcategory)
 
-            # Ensure it's a list and append
-            if not isinstance(file_data, list):
-                file_data = [] # Overwrite if content is not a list
-            file_data.append(data)
-
-            # Write the whole list back
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(file_data, f, indent=2, ensure_ascii=False)
-
-        except Exception as e:
-            print(f"CRITICAL: Failed to write to log file {file_path}. Error: {e}")
-
-def save_history():
-    """Saves the current state of the prompt_history deque to history.json, overwriting the file."""
-    with HISTORY_LOCK:
-        try:
-            with open("history.json", "w", encoding="utf-8") as f:
-                json.dump(list(prompt_history), f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            print(f"ERROR: Could not write to history.json: {e}")
-
-def log_error(error_details: dict):
-    error_details["timestamp"] = datetime.utcnow().isoformat()
-    append_to_json_log("error.json", error_details, ERROR_LOCK)
-
-# --- Helper Logic ---
-
-def load_model_stats():
-    """Loads model statistics from the JSON file on server startup."""
-    global MODEL_STATS
-    try:
-        with open(STATS_FILENAME, "r", encoding="utf-8") as f:
-            MODEL_STATS = json.load(f)
-            print("Model stats loaded successfully from file.")
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("Model stats file not found or invalid. Starting with empty stats.")
-        MODEL_STATS = {}
-
-def update_model_stats(model_name: str, success: bool, response_time: float):
-    """Updates model statistics in memory and saves them to a file."""
-    with STATS_LOCK:
-        # Update in-memory stats
-        if model_name not in MODEL_STATS:
-            MODEL_STATS[model_name] = {
-                "generated_questions": 0,
-                "errors": 0,
-                "total_response_time": 0.0,
-                "average_response_time": 0.0,
-            }
-
-        stats = MODEL_STATS[model_name]
-        if success:
-            stats["generated_questions"] += 1
-            stats["total_response_time"] += response_time
-            stats["average_response_time"] = stats["total_response_time"] / stats["generated_questions"]
-        else:
-            stats["errors"] += 1
-
-        # Save updated stats to file
-        try:
-            with open(STATS_FILENAME, "w", encoding="utf-8") as f:
-                json.dump(MODEL_STATS, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            print(f"ERROR: Could not write to model_stats.json: {e}")
-
+    if key_entities:
+        for entity in key_entities:
+            CATEGORY_GENERATION_HISTORY[category]["entities"].append(entity)
 
 def is_question_valid(data: Any, game_mode: str) -> (bool, str):
     """
     Performs comprehensive validation of the generated question JSON,
     including content quality and data consistency checks.
-
-    Args:
-        data: The parsed JSON data from the language model.
-        game_mode: The game mode ('mcq' or 'short_answer').
-
-    Returns:
-        A tuple (bool, str) indicating if the data is valid and a message.
     """
-    # 1. Is it a non-empty dictionary?
     if not data or not isinstance(data, dict):
         return False, "Response is not a valid, non-empty dictionary."
-
-    # 2. Does it contain a non-empty, reasonably-sized question?
     question = data.get("question")
     if not question or not isinstance(question, str) or not question.strip():
         return False, "Response is missing a valid 'question' string."
     if not (10 < len(question) < 300):
         return False, f"Question length ({len(question)}) is outside the optimal range (10-300 chars)."
-
-    # 3. Does it contain the core explanation fields?
     if not data.get("explanation_correct") or not data.get("explanation_summary"):
         return False, "Response is missing one or more required explanation fields."
-
-    # 4. Does it contain expected metadata?
     if not data.get("subcategory") or not data.get("key_entities"):
         return False, "Response is missing 'subcategory' or 'key_entities' metadata."
 
-    # 5. Specific checks for Multiple Choice Questions (MCQ)
     if game_mode == "mcq":
         options = data.get("options")
         answer = data.get("answer")
-
-        # 5a. Are options a list of exactly 4 items?
-        if not options or not isinstance(options, list):
-            return False, "MCQ mode: Missing or invalid 'options' field (must be a list)."
-        if len(options) != 4:
-            return False, f"MCQ mode: Expected 4 options, but found {len(options)}."
-
-        # 5b. Are all options valid, non-empty strings?
-        for opt in options:
-            if not isinstance(opt, str) or not opt.strip():
-                return False, f"MCQ mode: An option is invalid (not a string or empty): '{opt}'."
-
-        # 5c. Are there any duplicate options?
+        if not options or not isinstance(options, list) or len(options) != 4:
+            return False, f"MCQ mode: Expected 4 options in a list, but found {len(options) if isinstance(options, list) else 'none'}."
+        if any(not isinstance(opt, str) or not opt.strip() for opt in options):
+            return False, "MCQ mode: One or more options are invalid (not a string or empty)."
         if len(set(options)) != len(options):
-            return False, "MCQ mode: Duplicate options found in the list."
-
-        # 5d. Is the answer a valid, non-empty string?
+            return False, "MCQ mode: Duplicate options found."
         if not answer or not isinstance(answer, str) or not answer.strip():
             return False, "MCQ mode: Missing or invalid 'answer' string."
-
-        # 5e. Is the answer one of the options?
         if answer not in options:
             return False, "MCQ mode: The provided 'answer' is not in the 'options' list."
 
-    # All checks passed
     return True, "Validation successful."
-
 
 def validate_model(model: str):
     if model not in ALLOWED_MODELS:
@@ -286,14 +185,10 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     lang = params.get("language")
     prompt_struct = PROMPTS["generate_question"][lang]
 
-    if isinstance(params.get("subcategoryHistory"), dict):
-        subcategory_history = params.get("subcategoryHistory", {}).get(category, [])
-        entity_history = params.get("entityHistory", {}).get(category, [])
-    else:
-        subcategory_history = params.get("subcategoryHistory", [])
-        entity_history = params.get("entityHistory", [])
+    history = CATEGORY_GENERATION_HISTORY.get(category, {})
+    subcategory_history = list(history.get("subcategories", []))
+    entity_history = list(history.get("entities", []))
 
-    # Shuffle history to add randomness to the prompt context
     random.shuffle(subcategory_history)
     random.shuffle(entity_history)
 
@@ -316,23 +211,19 @@ def extract_json_from_response(text: str) -> Any:
     try:
         json_match_md = re.search(r'```json\s*({[\s\S]*?})\s*```', text, re.DOTALL)
         if json_match_md:
-            json_str = json_match_md.group(1)
-            return json.loads(json_str)
+            return json.loads(json_match_md.group(1))
 
         json_match_raw = re.search(r'{[\s\S]*}', text, re.DOTALL)
         if json_match_raw:
             full_match = json_match_raw.group(0)
             open_braces, end_index = 0, -1
             for i, char in enumerate(full_match):
-                if char == '{':
-                    open_braces += 1
-                elif char == '}':
-                    open_braces -= 1
+                if char == '{': open_braces += 1
+                elif char == '}': open_braces -= 1
                 if open_braces == 0:
                     end_index = i + 1
                     break
-            json_str = full_match[:end_index] if end_index != -1 else full_match
-            return json.loads(json_str)
+            return json.loads(full_match[:end_index] if end_index != -1 else full_match)
 
         raise ValueError("No valid JSON object found in response.")
     except (json.JSONDecodeError, ValueError) as e:
@@ -342,171 +233,114 @@ def extract_json_from_response(text: str) -> Any:
 
 async def call_generative_model(prompt: str, model_name: str, temperature: float):
     validate_model(model_name)
-    MAX_RETRIES = 1
     last_exception = None
     start_time = time.time()
+    current_model = model_name
 
     try:
-        for attempt in range(MAX_RETRIES):
-            current_model = model_name
+        for _ in range(2): # One initial try + one fallback
             try:
                 async with generative_api_limiter:
                     messages = [{"role": "user", "content": prompt}]
                     request_params = {"model": current_model, "messages": messages, "temperature": temperature, "response_format": {"type": "json_object"}}
                     response = await client.chat.completions.create(**request_params)
                     response_text = response.choices[0].message.content
-
                     response_time = time.time() - start_time
-                    update_model_stats(model_name=current_model, success=True, response_time=response_time)
+                    database.update_model_stats_db(model_name=current_model, success=True, response_time=response_time)
 
-                    # Append to in-memory deque and save the entire deque to file
                     history_entry = {
                         "timestamp": datetime.utcnow().isoformat(),
-                        "model": current_model,
-                        "prompt": prompt,
-                        "raw_response": response_text
+                        "model": current_model, "prompt": prompt, "raw_response": response_text
                     }
-                    prompt_history.append(history_entry)
-                    save_history()
-
+                    database.add_prompt_history_db(history_entry)
                     return extract_json_from_response(response_text)
 
             except Exception as e:
                 last_exception = e
-                print(f"ERROR: Attempt {attempt + 1} with model '{current_model}' failed: {e}")
-
+                print(f"ERROR: Attempt with model '{current_model}' failed: {e}")
                 if FALLBACK_MODEL and current_model != FALLBACK_MODEL:
                     print(f"INFO: Attempting fallback to model: {FALLBACK_MODEL}")
                     current_model = FALLBACK_MODEL
-                    try:
-                        async with generative_api_limiter:
-                            messages = [{"role": "user", "content": prompt}]
-                            request_params = {
-                                "model": current_model,
-                                "messages": messages,
-                                "temperature": temperature,
-                                "response_format": {"type": "json_object"},
-                                "max_tokens": 1024,
-                            }
-                            response = await client.chat.completions.create(**request_params, timeout=30.0)
-                            response_text = response.choices[0].message.content
-
-                            response_time = time.time() - start_time
-                            update_model_stats(model_name=current_model, success=True, response_time=response_time)
-
-                            # Append to in-memory deque and save the entire deque to file
-                            history_entry = {"timestamp": datetime.utcnow().isoformat(), "model": current_model, "prompt": prompt, "raw_response": response_text}
-                            prompt_history.append(history_entry)
-                            save_history()
-
-                            return extract_json_from_response(response_text)
-                    except Exception as fallback_e:
-                        last_exception = fallback_e
-                        print(f"ERROR: Fallback attempt also failed: {fallback_e}")
-
-            if attempt < MAX_RETRIES - 1:
-                await asyncio.sleep(1)
+                    continue
+                else:
+                    break
 
         raise last_exception if last_exception else Exception("Unknown error in call_generative_model")
 
     except Exception as final_error:
         response_time = time.time() - start_time
-        update_model_stats(model_name=model_name, success=False, response_time=response_time)
-        log_error({"endpoint": "call_generative_model", "model": model_name, "error": str(final_error)})
+        database.update_model_stats_db(model_name=current_model, success=False, response_time=response_time)
+        database.log_error_db("call_generative_model", {"model": current_model, "error": str(final_error)})
         raise final_error
-
 
 def format_explanation_part(part: Any) -> str:
     """Safely formats a part of an explanation, handling strings, lists, and dicts."""
-    if isinstance(part, str):
-        return part
-    if isinstance(part, list):
-        # Join list items, filtering out any non-string elements just in case
-        return "\n".join(str(item) for item in part if item)
-    if isinstance(part, dict):
-        # Format dict items into a readable string
-        return "\n".join(f"- {key}: {value}" for key, value in part.items())
-    return "" # Return empty string for any other type
-
+    if isinstance(part, str): return part
+    if isinstance(part, list): return "\n".join(str(item) for item in part if item)
+    if isinstance(part, dict): return "\n".join(f"- {key}: {value}" for key, value in part.items())
+    return ""
 
 # --- Background Task for Preloading ---
 async def _preload_task(game_id: str, model_selection: str, request_data: PreloadRequest):
-    if game_id not in game_sessions:
-        game_sessions[game_id] = {"preloaded_questions": {}, "is_preloading": False}
-
-    game_sessions[game_id]["is_preloading"] = True
+    if game_id not in PRELOAD_TASK_STATUS: return
+    PRELOAD_TASK_STATUS[game_id]["is_running"] = True
 
     def get_model_for_generation():
-        if model_selection == "random-pl" and MODELS_BY_LANGUAGE["pl"]:
-            return random.choice(MODELS_BY_LANGUAGE["pl"])
-        if model_selection == "random-en" and MODELS_BY_LANGUAGE["en"]:
-            return random.choice(MODELS_BY_LANGUAGE["en"])
+        if model_selection == "random-pl" and MODELS_BY_LANGUAGE["pl"]: return random.choice(MODELS_BY_LANGUAGE["pl"])
+        if model_selection == "random-en" and MODELS_BY_LANGUAGE["en"]: return random.choice(MODELS_BY_LANGUAGE["en"])
         return model_selection
 
     async def generate_one_for_category(category: str):
         model_to_use = get_model_for_generation()
         print(f"[{game_id}] Preloading for '{category}' using model '{model_to_use}'...")
-
         try:
-            if category not in game_sessions[game_id]["preloaded_questions"]:
-                game_sessions[game_id]["preloaded_questions"][category] = []
-
             params = request_data.model_dump()
-            params['category'] = category
             prompt = build_question_prompt(params, category)
+            data = await asyncio.wait_for(call_generative_model(prompt, model_to_use, temperature=1.2), timeout=30.0)
 
-            data = await asyncio.wait_for(
-                call_generative_model(prompt, model_to_use, temperature=1.2),
-                timeout=30.0
-            )
+            is_valid, error_msg = is_question_valid(data, params.get("gameMode"))
+            if is_valid:
+                explanation_parts = [format_explanation_part(data.get(key)) for key in ["explanation_correct", "explanation_distractors", "explanation_summary"]]
+                data["explanation"] = "\n\n".join(filter(None, explanation_parts))
 
-            if data and isinstance(data, dict) and data.get("question"):
-                explanation_correct = format_explanation_part(data.get("explanation_correct"))
-                explanation_distractors = format_explanation_part(data.get("explanation_distractors"))
-                explanation_summary = format_explanation_part(data.get("explanation_summary"))
+                inputs_for_db = {**params, 'model': model_to_use, 'category': category}
+                database.add_question(data, inputs_for_db)
+                database.cache_question(category, data)
+                update_generation_history(category, data.get("subcategory"), data.get("key_entities"))
+            else:
+                print(f"WARNING: Preloaded question for '{category}' was invalid. Reason: {error_msg}")
+                database.log_error_db(
+                    "preload_task_validation",
+                    {"category": category, "error": error_msg, "invalid_response": data}
+                )
 
-                # Filter out empty parts before joining
-                explanation_parts = [part for part in [explanation_correct, explanation_distractors, explanation_summary] if part]
-                data["explanation"] = "\n\n".join(explanation_parts)
-                params['model'] = model_to_use
-
-                game_sessions[game_id]["preloaded_questions"][category].append(data)
-                database.add_question(data, params)
         except Exception as e:
             detailed_error = repr(e)
-            error_message = f"ERROR: Preloading one question for '{category}' failed. Reason: {detailed_error}"
-            print(error_message)
-            log_error({"task": "_preload_task", "category": category, "error": detailed_error})
+            print(f"ERROR: Preloading one question for '{category}' failed. Reason: {detailed_error}")
+            database.log_error_db("preload_task_exception", {"category": category, "error": detailed_error})
 
-    # Main loop: continue as long as any category is not fully cached
     while True:
-        # Identify categories that still need questions
-        categories_to_process = [
-            cat for cat in request_data.categories
-            if len(game_sessions[game_id].get("preloaded_questions", {}).get(cat, [])) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE
-        ]
-
-        # If all categories are fully cached, exit the loop
-        if not categories_to_process:
-            break
-
-        # Prioritize categories with the fewest questions in the cache
-        categories_to_process.sort(
-            key=lambda cat: len(game_sessions[game_id].get("preloaded_questions", {}).get(cat, []))
-        )
-
-        # Generate one question for each under-cached category in parallel for this "round"
+        categories_to_process = [cat for cat in request_data.categories if database.get_cache_count_for_category(cat) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE]
+        if not categories_to_process: break
+        categories_to_process.sort(key=lambda cat: database.get_cache_count_for_category(cat))
         await asyncio.gather(*(generate_one_for_category(cat) for cat in categories_to_process))
 
-    game_sessions[game_id]["is_preloading"] = False
-    if game_id in game_sessions and game_sessions[game_id].get("preload_event"):
-        game_sessions[game_id]["preload_event"].set()
+    PRELOAD_TASK_STATUS[game_id]["is_running"] = False
+    PRELOAD_TASK_STATUS[game_id]["event"].set()
+
 
 # --- API Endpoints ---
-@app.get("/api/stats")
-async def get_stats():
-    with STATS_LOCK:
-        return JSONResponse(content=MODEL_STATS)
+@app.get("/api/db/stats")
+async def get_db_stats():
+    return JSONResponse(content=database.get_all_stats())
+
+@app.get("/api/db/prompts")
+async def get_db_prompts():
+    return JSONResponse(content=database.get_prompt_history())
+
+@app.get("/api/db/errors")
+async def get_db_errors():
+    return JSONResponse(content=database.get_error_logs())
 
 @app.get("/api/models/questions")
 async def get_question_models():
@@ -514,31 +348,26 @@ async def get_question_models():
 
 @app.post("/api/preload-questions", status_code=202)
 async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTasks):
-    if req.gameId not in game_sessions:
-        game_sessions[req.gameId] = {"preloaded_questions": {}, "is_preloading": False}
-    game_sessions[req.gameId]["preload_event"] = asyncio.Event()
-    if not game_sessions[req.gameId].get("is_preloading"):
+    if req.gameId not in PRELOAD_TASK_STATUS or not PRELOAD_TASK_STATUS[req.gameId]["is_running"]:
+        PRELOAD_TASK_STATUS[req.gameId] = {"is_running": False, "event": asyncio.Event()}
         background_tasks.add_task(_preload_task, req.gameId, req.model, req)
-    return {"message": "Preloading started."}
+        return {"message": "Preloading started."}
+    return {"message": "Preloading is already in progress."}
 
 @app.post("/api/generate-question")
 async def generate_question(req: QuestionRequest):
-    # Caching logic first (remains unchanged)
-    cache = game_sessions.get(req.gameId, {}).get("preloaded_questions", {})
-    if cache.get(req.category):
-        question = cache[req.category].pop(0)
-        if question:  # Ensure question is not None from a failed preload
-            if DEBUG_MODE: print(f"Serving question for '{req.category}' from preload cache.")
-            return JSONResponse(content=question)
+    cached_question = database.get_and_remove_cached_question(req.category)
+    if cached_question:
+        if DEBUG_MODE: print(f"Serving question for '{req.category}' from DB cache.")
+        return JSONResponse(content=cached_question)
 
-    if event := game_sessions.get(req.gameId, {}).get("preload_event"):
+    if status := PRELOAD_TASK_STATUS.get(req.gameId):
         try:
-            await asyncio.wait_for(event.wait(), timeout=30.0)
-            if cache.get(req.category):
-                question = cache[req.category].pop(0)
-                if question:
-                    if DEBUG_MODE: print(f"Serving question for '{req.category}' from cache after waiting.")
-                    return JSONResponse(content=question)
+            await asyncio.wait_for(status["event"].wait(), timeout=30.0)
+            cached_question = database.get_and_remove_cached_question(req.category)
+            if cached_question:
+                if DEBUG_MODE: print(f"Serving question for '{req.category}' from cache after waiting.")
+                return JSONResponse(content=cached_question)
         except asyncio.TimeoutError:
             if DEBUG_MODE: print(f"[{req.gameId}] Preload wait timed out for '{req.category}'. Generating on the fly.")
 
@@ -546,50 +375,35 @@ async def generate_question(req: QuestionRequest):
     last_error = None
     for attempt in range(MAX_RETRIES):
         try:
-            if DEBUG_MODE:
-                print(f"--- Generation attempt {attempt + 1}/{MAX_RETRIES} for category '{req.category}' ---")
+            if DEBUG_MODE: print(f"--- On-the-fly generation attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}' ---")
 
             prompt = build_question_prompt(req.model_dump(), req.category)
             data = await call_generative_model(prompt, req.model, temperature=1.2)
-
             is_valid, error_message = is_question_valid(data, req.gameMode)
 
             if is_valid:
-                # Combine explanation parts into a single string
-                explanation_correct = format_explanation_part(data.get("explanation_correct"))
-                explanation_distractors = format_explanation_part(data.get("explanation_distractors"))
-                explanation_summary = format_explanation_part(data.get("explanation_summary"))
-
-                explanation_parts = [part for part in [explanation_correct, explanation_distractors, explanation_summary] if part]
-                data["explanation"] = "\n\n".join(explanation_parts)
-
+                explanation_parts = [format_explanation_part(data.get(key)) for key in ["explanation_correct", "explanation_distractors", "explanation_summary"]]
+                data["explanation"] = "\n\n".join(filter(None, explanation_parts))
                 database.add_question(data, req.model_dump())
+                update_generation_history(req.category, data.get("subcategory"), data.get("key_entities"))
                 return JSONResponse(content=data)
             else:
                 last_error = ValueError(error_message)
-                if DEBUG_MODE:
-                    print(f"Validation failed: {error_message}. Raw data: {data}")
-            # --- END OF VALIDATION BLOCK ---
+                if DEBUG_MODE: print(f"Validation failed: {error_message}. Raw data: {data}")
 
         except Exception as e:
             last_error = e
             print(f"Exception on attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}': {e}")
+            if attempt < MAX_RETRIES - 1: await asyncio.sleep(1)
 
-        if attempt < MAX_RETRIES - 1:
-            await asyncio.sleep(1)
-
-    # Fallback response on failure (remains unchanged)
     error_message = f"Failed to generate a valid question for category '{req.category}' after {MAX_RETRIES} attempts. Final error: {last_error}"
     print(error_message)
-    log_error({"endpoint": "generate_question", "request": req.model_dump(), "error": str(last_error)})
+    database.log_error_db("generate_question", {"request": req.model_dump(), "error": str(last_error)})
 
     fallback_response = {
-        "question": f"Wystąpił błąd podczas generowania pytania. Spróbuj ponownie. ({str(last_error)})",
-        "options": [],
-        "answer": "",
-        "explanation": "Błąd serwera.",
-        "subcategory": "Błąd",
-        "entity": "Błąd"
+        "question": f"Wystąpił błąd podczas generowania pytania. ({str(last_error)})",
+        "options": [], "answer": "", "explanation": "Błąd serwera.",
+        "subcategory": "Błąd", "key_entities": []
     }
     return JSONResponse(content=fallback_response, status_code=500)
 
@@ -606,7 +420,7 @@ async def generate_categories(req: GenerateCategoriesRequest):
         except Exception as e:
             print(f"Attempt {attempt + 1} failed for generate-categories: {e}")
             if attempt == MAX_RETRIES:
-                log_error({"endpoint": "generate_categories", "request": req.model_dump(), "error": str(e)})
+                database.log_error_db("generate_categories", {"request": req.model_dump(), "error": str(e)})
                 raise HTTPException(status_code=500, detail=f"Failed to generate categories: {e}")
             await asyncio.sleep(1)
 
@@ -618,7 +432,7 @@ async def get_category_mutation(req: MutationRequest):
         response_data = await call_generative_model(prompt, model_to_use, temperature=1.5)
         return JSONResponse(content=response_data)
     except Exception as e:
-        log_error({"endpoint": "mutate-category", "request": req.model_dump(), "error": str(e)})
+        database.log_error_db("mutate_category", {"request": req.model_dump(), "error": str(e)})
         raise HTTPException(status_code=500, detail=f"Failed to mutate category: {e}")
 
 @app.post("/api/explain-incorrect")
@@ -629,33 +443,28 @@ async def get_incorrect_explanation(req: ExplanationRequest):
         response_data = await call_generative_model(prompt, model_to_use, temperature=0.2)
 
         if isinstance(response_data, str):
-            response_data = {"explanation": response_data, "verdict_for": "game", "verdict_certainty": 50}
+            response_data = {"explanation": response_data}
 
         if isinstance(response_data, dict):
             return JSONResponse(content=response_data)
         else:
             raise ValueError("Response from model could not be processed into a valid format.")
-
     except Exception as e:
-        log_error({"endpoint": "explain-incorrect", "request": req.model_dump(), "error": str(e)})
+        database.log_error_db("explain_incorrect", {"request": req.model_dump(), "error": str(e)})
         raise HTTPException(status_code=500, detail=f"Failed to get explanation: {e}")
 
 # --- App Lifecycle and Static Files ---
 @app.on_event("startup")
 async def startup_event():
     database.init_db()
-    load_model_stats()
 
 @app.get("/", include_in_schema=False)
-async def root():
-    return FileResponse('trivia.html')
+async def root(): return FileResponse('trivia.html')
 
 @app.get("/manifest.json", include_in_schema=False)
-async def manifest():
-    return FileResponse('manifest.json')
+async def manifest(): return FileResponse('manifest.json')
 
 @app.get("/service-worker.js", include_in_schema=False)
-async def service_worker():
-    return FileResponse('service-worker.js', media_type='application/javascript')
+async def service_worker(): return FileResponse('service-worker.js', media_type='application/javascript')
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")
