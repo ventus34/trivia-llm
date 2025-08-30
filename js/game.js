@@ -78,6 +78,11 @@ export function initializeGame() {
     UI.diceResultDiv.classList.add('hint-pulsate');
     UI.setupScreen.classList.add('hidden');
     UI.gameScreen.classList.remove('hidden');
+
+    if (gameState.api.preloadQuestions) {
+        console.log("Question preload on game start..");
+        gameState.api.preloadQuestions();
+    }
 }
 
 
@@ -128,6 +133,10 @@ export async function handleSuggestAlternatives(targetTextarea) {
                 targetTextarea.value = choice.name;
                 autoResizeTextarea(targetTextarea);
                 UI.suggestionModal.classList.remove('visible');
+                if (gameState.api.preloadQuestions) {
+                    console.log("Question preload on game start..");
+                    gameState.api.preloadQuestions();
+                }
             };
             UI.suggestionButtons.appendChild(button);
         });
