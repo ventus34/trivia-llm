@@ -23,201 +23,238 @@
         .card-tag { display: inline-block; background-color: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; margin-right: 6px; margin-bottom: 6px; }
         .question-details { transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
         .details-visible { max-height: 1000px; opacity: 1; }
+
+        .table-container {
+            overflow-x: auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #e5e7eb; /* gray-200 */
+            padding: 0.75rem 1rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .data-table th {
+            background-color: #f9fafb; /* gray-50 */
+        }
+        .data-table td pre {
+            background-color: #f3f4f6; /* gray-100 */
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">Interaktywna Przeglądarka Bazy Pytań</h1>
-            <p id="header-subtitle" class="text-lg text-gray-600 mt-2">Przeciągnij i upuść plik bazy danych SQLite, aby zwizualizować dane.</p>
-        </header>
-        <main>
-            <div id="drop-area" class="border-4 border-dashed border-gray-300 rounded-xl p-8 text-center bg-white shadow-md transition-all duration-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50">
-                <div id="drop-area-content">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <p class="mt-2 text-xl font-semibold text-gray-700">Upuść plik <span class="text-blue-600">.db</span> tutaj</p>
-                    <p class="text-sm text-gray-500">lub kliknij, aby wybrać plik</p>
-                    <input type="file" id="file-input" class="hidden" accept=".db,.sqlite,.sqlite3"/>
+<div class="container mx-auto p-4 md:p-8">
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-900">Interaktywna Przeglądarka Bazy Pytań</h1>
+        <p id="header-subtitle" class="text-lg text-gray-600 mt-2">Przeciągnij i upuść plik bazy danych SQLite, aby zwizualizować dane.</p>
+    </header>
+    <main>
+        <div id="drop-area" class="border-4 border-dashed border-gray-300 rounded-xl p-8 text-center bg-white shadow-md transition-all duration-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50">
+            <div id="drop-area-content">
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <p class="mt-2 text-xl font-semibold text-gray-700">Upuść plik <span class="text-blue-600">.db</span> tutaj</p>
+                <p class="text-sm text-gray-500">lub kliknij, aby wybrać plik</p>
+                <input type="file" id="file-input" class="hidden" accept=".db,.sqlite,.sqlite3"/>
+            </div>
+            <div id="loading-indicator" class="hidden">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-4 text-lg font-medium text-gray-700">Przetwarzanie bazy danych...</p>
+            </div>
+        </div>
+        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4" role="alert">
+            <strong class="font-bold">Błąd!</strong>
+            <span class="block sm:inline" id="error-text"></span>
+        </div>
+        <div id="content-area" class="hidden mt-8">
+            <section id="stats-section">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Statystyki Bazy Danych</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                        <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Wszystkich Pytań</p>
+                            <p id="total-questions-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                        <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Unikalne Kategorie</p>
+                            <p id="unique-categories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                        <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 8v5a2 2 0 002 2h6" /></svg></div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Unikalne Subkategorie</p>
+                            <p id="unique-subcategories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        </div>
+                    </div>
                 </div>
-                <div id="loading-indicator" class="hidden">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p class="mt-4 text-lg font-medium text-gray-700">Przetwarzanie bazy danych...</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Kategorie</h3>
+                        <div id="category-wordcloud" class="wordcloud-container"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Subkategorie</h3>
+                        <div id="subcategory-wordcloud" class="wordcloud-container"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Słowa Kluczowe</h3>
+                        <div id="keys-wordcloud" class="wordcloud-container"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Pytania wg Modelu</h3>
+                        <div class="chart-container"><canvas id="model-chart"></canvas></div>
+                    </div>
                 </div>
-            </div>
-
-            <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4" role="alert">
-                <strong class="font-bold">Błąd!</strong>
-                <span class="block sm:inline" id="error-text"></span>
-            </div>
-
-            <div id="content-area" class="hidden mt-8">
-                <section id="stats-section">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Statystyki Bazy Danych</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
-                            <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
-                            <div>
-                                <p class="text-gray-500 text-sm">Wszystkich Pytań</p>
-                                <p id="total-questions-stat" class="text-2xl font-bold text-gray-900">0</p>
+                <div class="mb-8">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-700 mb-2 sm:mb-0">Graf powiązań</h3>
+                        <button id="render-graph-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition self-start sm:self-center hidden">Wyświetl Graf</button>
+                    </div>
+                    <div id="graph-controls" class="hidden bg-gray-50 p-4 rounded-lg mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 border">
+                        <div class="lg:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700">Tryb Grafu (Relacja)</label>
+                            <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="graph-mode-controls">
+                                <button data-mode="keywords" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Kategoria ↔ Słowo kluczowe</button>
+                                <button data-mode="subcategories" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Kategoria ↔ Subkategoria</button>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
-                            <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
-                            <div>
-                                <p class="text-gray-500 text-sm">Unikalne Kategorie</p>
-                                <p id="unique-categories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        <div>
+                            <label for="charge-slider" class="block text-sm font-medium text-gray-700">Siła odpychania</label>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <input type="range" id="charge-slider" min="-1000" max="0" value="-300" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="charge-value" class="text-sm font-mono w-12 text-center">-300</span>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
-                            <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 8v5a2 2 0 002 2h6" /></svg></div>
-                            <div>
-                                <p class="text-gray-500 text-sm">Unikalne Subkategorie</p>
-                                <p id="unique-subcategories-stat" class="text-2xl font-bold text-gray-900">0</p>
+                        <div>
+                            <label for="link-dist-slider" class="block text-sm font-medium text-gray-700">Długość powiązań</label>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <input type="range" id="link-dist-slider" min="10" max="300" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="link-dist-value" class="text-sm font-mono w-12 text-center">100</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="gravity-slider" class="block text-sm font-medium text-gray-700">Grawitacja (do centrum)</label>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <input type="range" id="gravity-slider" min="0" max="1" step="0.05" value="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="gravity-value" class="text-sm font-mono w-12 text-center">0.1</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Uporządkuj Graf</label>
+                            <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="layout-controls">
+                                <button data-layout="default" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Domyślny</button>
+                                <button data-layout="group" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Grupuj</button>
+                                <button data-layout="radial" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Radialny</button>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <label for="min-node-weight-slider" class="block text-sm font-medium text-gray-700">Min. waga węzła (ilość powiązań)</label>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <input type="range" id="min-node-weight-slider" min="0" max="50" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="min-node-weight-value" class="text-sm font-mono w-12 text-center">0</span>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <label for="min-link-strength-slider" class="block text-sm font-medium text-gray-700">Min. siła powiązania (współwystąpienia)</label>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <input type="range" id="min-link-strength-slider" min="0" max="10" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span id="min-link-strength-value" class="text-sm font-mono w-12 text-center">0</span>
                             </div>
                         </div>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Kategorie</h3>
-                            <div id="category-wordcloud" class="wordcloud-container"></div>
+                    <div id="network-graph" class="hidden network-container p-4"></div>
+                </div>
+            </section>
+            <section id="questions-section" class="mt-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Przeglądaj Pytania</h2>
+                <div class="bg-white p-4 rounded-xl shadow-md space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="relative flex-grow md:col-span-1">
+                            <input type="text" id="search-input" placeholder="Wyszukaj..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Subkategorie</h3>
-                            <div id="subcategory-wordcloud" class="wordcloud-container"></div>
+                        <div>
+                            <select id="sort-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="created_at_desc">Sortuj: Najnowsze</option>
+                                <option value="created_at_asc">Sortuj: Najstarsze</option>
+                                <option value="category_asc">Sortuj: Kategoria (A-Z)</option>
+                                <option value="category_desc">Sortuj: Kategoria (Z-A)</option>
+                            </select>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Słowa Kluczowe</h3>
-                            <div id="keys-wordcloud" class="wordcloud-container"></div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4 text-gray-700">Pytania wg Modelu</h3>
-                            <div class="chart-container"><canvas id="model-chart"></canvas></div>
-                        </div>
-                    </div>
-
-                    <div class="mb-8">
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-                            <h3 class="text-xl font-semibold text-gray-700 mb-2 sm:mb-0">Graf powiązań</h3>
-                            <button id="render-graph-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition self-start sm:self-center hidden">Wyświetl Graf</button>
-                        </div>
-
-                        <div id="graph-controls" class="hidden bg-gray-50 p-4 rounded-lg mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 border">
-
-                            <div class="lg:col-span-4">
-                                <label class="block text-sm font-medium text-gray-700">Tryb Grafu (Relacja)</label>
-                                <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="graph-mode-controls">
-                                    <button data-mode="keywords" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Kategoria ↔ Słowo kluczowe</button>
-                                    <button data-mode="subcategories" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Kategoria ↔ Subkategoria</button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label for="charge-slider" class="block text-sm font-medium text-gray-700">Siła odpychania</label>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <input type="range" id="charge-slider" min="-1000" max="0" value="-300" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                    <span id="charge-value" class="text-sm font-mono w-12 text-center">-300</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label for="link-dist-slider" class="block text-sm font-medium text-gray-700">Długość powiązań</label>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <input type="range" id="link-dist-slider" min="10" max="300" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                    <span id="link-dist-value" class="text-sm font-mono w-12 text-center">100</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label for="gravity-slider" class="block text-sm font-medium text-gray-700">Grawitacja (do centrum)</label>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <input type="range" id="gravity-slider" min="0" max="1" step="0.05" value="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                    <span id="gravity-value" class="text-sm font-mono w-12 text-center">0.1</span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Uporządkuj Graf</label>
-                                <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="layout-controls">
-                                    <button data-layout="default" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Domyślny</button>
-                                    <button data-layout="group" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Grupuj</button>
-                                    <button data-layout="radial" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Radialny</button>
-                                </div>
-                            </div>
-
-                            <div class="lg:col-span-2">
-                                <label for="min-node-weight-slider" class="block text-sm font-medium text-gray-700">Min. waga węzła (ilość powiązań)</label>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <input type="range" id="min-node-weight-slider" min="0" max="50" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                    <span id="min-node-weight-value" class="text-sm font-mono w-12 text-center">0</span>
-                                </div>
-                            </div>
-                            <div class="lg:col-span-2">
-                                <label for="min-link-strength-slider" class="block text-sm font-medium text-gray-700">Min. siła powiązania (współwystąpienia)</label>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <input type="range" id="min-link-strength-slider" min="0" max="10" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                    <span id="min-link-strength-value" class="text-sm font-mono w-12 text-center">0</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="network-graph" class="hidden network-container p-4"></div>
-                    </div>
-                </section>
-
-                <section id="questions-section" class="mt-12">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Przeglądaj Pytania</h2>
-                    <div class="bg-white p-4 rounded-xl shadow-md space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="relative flex-grow md:col-span-1">
-                                <input type="text" id="search-input" placeholder="Wyszukaj..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            </div>
-                            <div>
-                                <select id="sort-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="created_at_desc">Sortuj: Najnowsze</option>
-                                    <option value="created_at_asc">Sortuj: Najstarsze</option>
-                                    <option value="category_asc">Sortuj: Kategoria (A-Z)</option>
-                                    <option value="category_desc">Sortuj: Kategoria (Z-A)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <select id="items-per-page-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="9">9 wyników na stronie</option>
-                                    <option value="18">18 wyników na stronie</option>
-                                    <option value="36">36 wyników na stronie</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label for="model-filter" class="text-sm font-medium text-gray-700">Model</label>
-                                <select id="model-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
-                            </div>
-                            <div>
-                                <label for="level-filter" class="text-sm font-medium text-gray-700">Poziom</label>
-                                <select id="level-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
-                            </div>
-                            <div>
-                                <label for="date-from-filter" class="text-sm font-medium text-gray-700">Data od</label>
-                                <input type="date" id="date-from-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
-                            </div>
-                            <div>
-                                <label for="date-to-filter" class="text-sm font-medium text-gray-700">Data do</label>
-                                <input type="date" id="date-to-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
-                            </div>
+                        <div>
+                            <select id="items-per-page-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="9">9 wyników na stronie</option>
+                                <option value="18">18 wyników na stronie</option>
+                                <option value="36">36 wyników na stronie</option>
+                            </select>
                         </div>
                     </div>
-
-                    <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
-                    <div id="pagination-controls" class="flex justify-center items-center mt-8 space-x-2"></div>
-                </section>
-            </div>
-        </main>
-    </div>
-
-    <script>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label for="model-filter" class="text-sm font-medium text-gray-700">Model</label>
+                            <select id="model-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+                        </div>
+                        <div>
+                            <label for="level-filter" class="text-sm font-medium text-gray-700">Poziom</label>
+                            <select id="level-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+                        </div>
+                        <div>
+                            <label for="date-from-filter" class="text-sm font-medium text-gray-700">Data od</label>
+                            <input type="date" id="date-from-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
+                        </div>
+                        <div>
+                            <label for="date-to-filter" class="text-sm font-medium text-gray-700">Data do</label>
+                            <input type="date" id="date-to-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
+                        </div>
+                    </div>
+                </div>
+                <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
+                <div id="pagination-controls" class="flex justify-center items-center mt-8 space-x-2"></div>
+            </section>
+        </div>
+        <!-- === DODANE NOWE BLOKI HTML === -->
+        <div id="additional-content-area" class="hidden mt-8">
+            <section id="model-stats-section" class="mt-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Statystyki Wydajności Modeli</h2>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="chart-container" style="height: 50vh;"><canvas id="model-stats-chart"></canvas></div>
+                    <h3 class="text-xl font-semibold mt-8 mb-4 text-gray-700">Szczegółowe dane</h3>
+                    <div id="model-stats-table-container" class="table-container"></div>
+                </div>
+            </section>
+            <section id="prompt-history-section" class="mt-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Historia Promptów</h2>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div id="prompt-history-table-container" class="table-container"></div>
+                </div>
+            </section>
+            <section id="error-logs-section" class="mt-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Logi Błędów</h2>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div id="error-logs-table-container" class="table-container"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+<script>
     document.addEventListener('DOMContentLoaded', () => {
         const style = document.createElement('style');
         style.textContent = `
@@ -225,7 +262,6 @@
             .layout-btn, .graph-mode-btn { background-color: transparent; color: #4b5563; }
         `;
         document.head.appendChild(style);
-
         // DOM Elements
         const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('file-input');
@@ -259,7 +295,7 @@
         const minLinkStrengthSlider = document.getElementById('min-link-strength-slider');
         const minLinkStrengthValue = document.getElementById('min-link-strength-value');
         const graphModeControls = document.getElementById('graph-mode-controls');
-
+        const additionalContentArea = document.getElementById('additional-content-area');
         // App State
         let db = null;
         let charts = {};
@@ -274,7 +310,6 @@
         };
         let currentGraphMode = 'keywords';
         let networkSimulation = null;
-
         function parseDateSafe(dateString) {
             if (!dateString) return 0;
             try {
@@ -284,28 +319,22 @@
                 return isNaN(date.getTime()) ? 0 : date.getTime();
             } catch (err) { return 0; }
         }
-
         window.onerror = (message) => showError(`Krytyczny błąd skryptu: ${message}`);
-
         const sqlJsPromise = initSqlJs({
             locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}`
         }).catch(e => showError("Nie można załadować biblioteki SQL. Sprawdź połączenie internetowe."));
-
         dropArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-
         const filterElements = [searchInput, sortSelect, modelFilter, levelFilter, dateFromFilter, dateToFilter, itemsPerPageSelect];
         filterElements.forEach(el => el.addEventListener('input', () => {
             currentPage = 1;
             if (el.id === 'items-per-page-select') itemsPerPage = parseInt(el.value, 10) || 9;
             renderApp();
         }));
-
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropArea.addEventListener(ev, e => {e.preventDefault(); e.stopPropagation();}));
         ['dragenter', 'dragover'].forEach(ev => dropArea.addEventListener(ev, () => dropArea.classList.add('drag-area-highlight')));
         ['dragleave', 'drop'].forEach(ev => dropArea.addEventListener(ev, () => dropArea.classList.remove('drag-area-highlight')));
         dropArea.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
-
         function showLoading(isLoading) {
             loadingIndicator.classList.toggle('hidden', !isLoading);
             dropAreaContent.classList.toggle('hidden', isLoading);
@@ -317,7 +346,6 @@
             showLoading(false);
             dropArea.classList.remove('hidden');
         }
-
         async function handleFileContent(uInt8Array, sourceName) {
             showLoading(true);
             try {
@@ -331,7 +359,6 @@
                 showLoading(false);
             }
         }
-
         function handleFile(file) {
             if (!file || !/\.(db|sqlite|sqlite3)$/i.test(file.name)) {
                 showError("Nieprawidłowy format pliku. Proszę upuścić plik .db, .sqlite lub .sqlite3.");
@@ -341,7 +368,6 @@
             reader.onload = e => handleFileContent(new Uint8Array(e.target.result), file.name);
             reader.readAsArrayBuffer(file);
         }
-
         function processDatabase(sourceName) {
             try {
                 if (!db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='generated_questions'")[0]) {
@@ -362,11 +388,15 @@
                 headerSubtitle.textContent = `Wyświetlanie danych z: ${sourceName}`;
                 prepareStatistics(allQuestions);
                 renderApp();
+                // --- DODANE WYWOŁANIA NOWYCH FUNKCJI ---
+                additionalContentArea.classList.remove('hidden');
+                renderModelStats();
+                renderPromptHistory();
+                renderErrorLogs();
             } catch (e) {
                 showError(`Błąd podczas odpytywania bazy danych: ${e.message}`);
             }
         }
-
         async function tryAutoLoadDatabase() {
             try {
                 const response = await fetch('data/questions.db');
@@ -378,25 +408,22 @@
                 console.log('Default database not found. Waiting for user to drop a file.');
             }
         }
-
         function populateFilters(questions) {
             const models = [...new Set(questions.map(q => q.model).filter(Boolean))].sort();
             const levels = [...new Set(questions.map(q => q.knowledge_level).filter(Boolean))].sort();
             modelFilter.innerHTML = '<option value="">Wszystkie modele</option>' + models.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
             levelFilter.innerHTML = '<option value="">Wszystkie poziomy</option>' + levels.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
         }
-
         function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
             return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]);
         }
-
         function renderApp() {
             const searchTerm = (searchInput.value || '').toLowerCase();
             const selectedModel = modelFilter.value;
             const selectedLevel = levelFilter.value;
             const dateFrom = dateFromFilter.value ? new Date(dateFromFilter.value).getTime() : 0;
             const dateTo = dateToFilter.value ? new Date(dateToFilter.value).setHours(23, 59, 59, 999) : Infinity;
-
             filteredQuestions = allQuestions.filter(q => {
                 const keys = JSON.parse(q.key_entities_json || '[]')
                 const keywordMatch = Array.isArray(keys) && keys.some(key => (key || '').toLowerCase().includes(searchTerm));
@@ -406,20 +433,23 @@
                 const dateMatch = parseDateSafe(q.created_at) >= dateFrom && parseDateSafe(q.created_at) <= dateTo;
                 return searchMatch && modelMatch && levelMatch && dateMatch;
             });
-
             const [sortKey, sortOrder] = (sortSelect.value || 'created_at_desc').split('_');
             filteredQuestions.sort((a, b) => {
-                const valA = sortKey === 'created_at' ? parseDateSafe(a[sortKey]) : String(a[sortKey] || '');
-                const valB = sortKey === 'created_at' ? parseDateSafe(b[sortKey]) : String(b[sortKey] || '');
-                if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-                if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-                return 0;
+                if (sortKey === 'created_at') {
+                    const dateA = parseDateSafe(a.created_at);
+                    const dateB = parseDateSafe(b.created_at);
+                    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+                } else {
+                    const valA = String(a[sortKey] || '').toLowerCase();
+                    const valB = String(b[sortKey] || '').toLowerCase();
+                    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+                    return 0;
+                }
             });
-
             displayPaginatedQuestions();
             renderPagination();
         }
-
         function displayPaginatedQuestions() {
             questionsContainer.innerHTML = '';
             const paginatedItems = filteredQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -453,7 +483,6 @@
                 questionsContainer.appendChild(card);
             });
         }
-
         function renderPagination() {
             paginationControls.innerHTML = '';
             const pageCount = Math.ceil(filteredQuestions.length / itemsPerPage);
@@ -475,7 +504,6 @@
                 createButton('Następna', currentPage === pageCount, () => { currentPage++; renderApp(); })
             );
         }
-
         function prepareStatistics(questions) {
             if (charts.model) charts.model.destroy();
             const countBy = (data, key) => data.reduce((acc, item) => {
@@ -483,7 +511,6 @@
                 if (value) acc[value] = (acc[value] || 0) + 1;
                 return acc;
             }, {});
-
             document.getElementById('total-questions-stat').textContent = questions.length;
             const categoryCounts = countBy(questions, 'category');
             document.getElementById('unique-categories-stat').textContent = Object.keys(categoryCounts).length;
@@ -497,7 +524,6 @@
             }, {});
             wordCloudData.keys = Object.entries(keyEntitiesCounts);
             charts.model = createChart('model-chart', 'polarArea', countBy(questions, 'model'), 'Pytania wg Modelu');
-
             // Prepare keyword data
             const kwEdgeMap = {};
             questions.forEach(q => {
@@ -511,7 +537,6 @@
                 } catch(e) {}
             });
             networkDataSets.keywords = buildGraphFromEdgeMap(kwEdgeMap, 'keyword');
-
             // Prepare subcategory data
             const subcatEdgeMap = {};
             questions.forEach(q => {
@@ -522,14 +547,11 @@
                 }
             });
             networkDataSets.subcategories = buildGraphFromEdgeMap(subcatEdgeMap, 'subcategory');
-
             if (networkDataSets.keywords.nodes.length > 0 || networkDataSets.subcategories.nodes.length > 0) {
-                 renderGraphBtn.classList.remove('hidden');
+                renderGraphBtn.classList.remove('hidden');
             }
-
             setTimeout(drawWordClouds, 100);
         }
-
         function buildGraphFromEdgeMap(edgeMap, node2Type) {
             const links = Object.entries(edgeMap).map(([k, v]) => ({ source: k.split('||')[1], target: k.split('||')[0], value: v }));
             const nodesMap = {};
@@ -547,13 +569,11 @@
                 maxLinkStrength: d3.max(links, d => d.value) || 0,
             };
         }
-
         function drawWordClouds() {
             createWordCloud('category-wordcloud', wordCloudData.category);
             createWordCloud('subcategory-wordcloud', wordCloudData.subcategory);
             createWordCloud('keys-wordcloud', wordCloudData.keys);
         }
-
         function createWordCloud(elementId, list) {
             const element = document.getElementById(elementId);
             if (!element) return;
@@ -570,7 +590,6 @@
             });
             observer.observe(element);
         }
-
         function drawD3Cloud(element, list) {
             const width = element.offsetWidth, height = element.offsetHeight;
             const words = list.map(([text, size]) => ({ text, size }));
@@ -589,7 +608,6 @@
                         .on("click", (e, d) => { searchInput.value = d.text; searchInput.dispatchEvent(new Event('input')); });
                 }).start();
         }
-
         function createChart(canvasId, type, data, label) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             const bgColors = ['rgba(54, 162, 235, 0.8)', 'rgba(255, 99, 132, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'];
@@ -599,29 +617,21 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
             });
         }
-
         renderGraphBtn.addEventListener('click', () => {
             const activeDataSet = networkDataSets[currentGraphMode];
-
             minNodeWeightSlider.max = activeDataSet.maxNodeWeight || 50;
             if (+minNodeWeightSlider.value > activeDataSet.maxNodeWeight) minNodeWeightSlider.value = 0;
             minNodeWeightValue.textContent = minNodeWeightSlider.value;
-
             minLinkStrengthSlider.max = activeDataSet.maxLinkStrength || 10;
             if (+minLinkStrengthSlider.value > activeDataSet.maxLinkStrength) minLinkStrengthSlider.value = 0;
             minLinkStrengthValue.textContent = minLinkStrengthSlider.value;
-
             const minNodeWeight = +minNodeWeightSlider.value;
             const minLinkStrength = +minLinkStrengthSlider.value;
-
             const nodesAfterWeightFilter = new Set(activeDataSet.nodes.filter(n => n.weight >= minNodeWeight).map(n => n.id));
             const filteredLinks = activeDataSet.links.filter(l => l.value >= minLinkStrength && nodesAfterWeightFilter.has(l.source.id || l.source) && nodesAfterWeightFilter.has(l.target.id || l.target));
-
             const finalNodeIds = new Set();
             filteredLinks.forEach(l => { finalNodeIds.add(l.source.id || l.source); finalNodeIds.add(l.target.id || l.target); });
-
             const filteredNodes = activeDataSet.nodes.filter(n => finalNodeIds.has(n.id));
-
             if (filteredNodes.length > 0) {
                 networkContainer.classList.remove('hidden');
                 graphControls.classList.remove('hidden');
@@ -634,7 +644,6 @@
                 graphControls.classList.remove('hidden');
             }
         });
-
         graphModeControls.addEventListener('click', (e) => {
             const button = e.target.closest('.graph-mode-btn');
             if (button) {
@@ -647,13 +656,11 @@
                 }
             }
         });
-
         chargeSlider.addEventListener('input', () => { if (networkSimulation) { chargeValue.textContent = chargeSlider.value; networkSimulation.force('charge').strength(+chargeSlider.value).alpha(0.3).restart(); }});
         linkDistSlider.addEventListener('input', () => { if (networkSimulation) { linkDistValue.textContent = linkDistSlider.value; networkSimulation.force('link').distance(+linkDistSlider.value).alpha(0.3).restart(); }});
         gravitySlider.addEventListener('input', () => { if (networkSimulation) { gravityValue.textContent = gravitySlider.value; networkSimulation.force('x').strength(+gravitySlider.value); networkSimulation.force('y').strength(+gravitySlider.value).alpha(0.3).restart(); }});
         minNodeWeightSlider.addEventListener('input', () => minNodeWeightValue.textContent = minNodeWeightSlider.value);
         minLinkStrengthSlider.addEventListener('input', () => minLinkStrengthValue.textContent = minLinkStrengthSlider.value);
-
         layoutControls.addEventListener('click', (e) => {
             const button = e.target.closest('.layout-btn');
             if (button && networkSimulation) {
@@ -671,29 +678,23 @@
                 networkSimulation.alpha(1).restart();
             }
         });
-
         function createNetworkGraph(containerId, nodes, links) {
             container = document.getElementById(containerId);
             container.innerHTML = '';
             if (networkSimulation) networkSimulation.stop();
-
             const width = container.offsetWidth, height = container.offsetHeight;
             const svg = d3.select(container).append('svg').attr('width', width).attr('height', height).attr('viewBox', [0, 0, width, height]);
             const zoomGroup = svg.append('g');
             svg.call(d3.zoom().scaleExtent([0.1, 4]).on('zoom', e => zoomGroup.attr('transform', e.transform)));
-
             const isKeywordMode = currentGraphMode === 'keywords';
             const color = d => d.type === 'category' ? '#2563eb' : (isKeywordMode ? '#f97316' : '#10b981'); // Blue, Orange, Green
-
             const linkWidthScale = d3.scaleSqrt().domain([0, d3.max(links, d => d.value) || 1]).range([1, 6]);
             const nodeRadiusScale = d3.scaleSqrt().domain([0, d3.max(nodes, d => d.weight) || 1]).range([6, 20]);
-
             const link = zoomGroup.append('g').attr('stroke', '#999').attr('stroke-opacity', 0.6).selectAll('line').data(links).join('line').attr('stroke-width', d => linkWidthScale(d.value));
             const node = zoomGroup.append('g').selectAll('g').data(nodes).join('g').call(d3.drag().on('start', dragstarted).on('drag', dragged).on('end', dragended));
             node.append('circle').attr('r', d => nodeRadiusScale(d.weight)).attr('fill', color).attr('stroke', '#fff').attr('stroke-width', 1.5).style('cursor', 'pointer')
                 .on('click', (e, d) => { searchInput.value = d.id; searchInput.dispatchEvent(new Event('input')); }).append('title').text(d => `${d.id} (${d.type}, waga: ${d.weight})`);
             node.append('text').attr('x', d => nodeRadiusScale(d.weight) + 6).attr('y', 4).style('font-size', '12px').style('font-family', 'Inter').text(d => d.id);
-
             networkSimulation = d3.forceSimulation(nodes)
                 .force('link', d3.forceLink(links).id(d => d.id).distance(+linkDistSlider.value).strength(0.6))
                 .force('charge', d3.forceManyBody().strength(+chargeSlider.value))
@@ -705,7 +706,6 @@
                     link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y);
                     node.attr('transform', d => `translate(${d.x},${d.y})`);
                 });
-
             new ResizeObserver(entries => {
                 const { width, height } = entries[0].contentRect;
                 svg.attr('viewBox', [0, 0, width, height]);
@@ -713,11 +713,9 @@
                 networkSimulation.force('x').x(width / 2);
                 networkSimulation.force('y').y(height / 2);
             }).observe(container);
-
             function dragstarted(event, d) { if (!event.active) networkSimulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
             function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
             function dragended(event, d) { if (!event.active) networkSimulation.alphaTarget(0); d.fx = null; d.fy = null; }
-
             const legend = svg.append('g').attr('transform', `translate(10,10)`);
             legend.selectAll('*').remove();
             legend.append('circle').attr('r', 6).attr('fill', '#2563eb');
@@ -726,8 +724,113 @@
             legend.append('text').attr('x', 14).attr('y', 24).style('font-size', '12px').text(isKeywordMode ? 'Słowo kluczowe' : 'Subkategoria');
         }
 
+        function queryDatabase(tableName, columns = "*", orderBy = "") {
+            try {
+                if (!db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`)[0]) {
+                    console.warn(`Tabela '${tableName}' nie została znaleziona.`);
+                    return [];
+                }
+                const stmt = db.prepare(`SELECT ${columns} FROM ${tableName} ${orderBy ? `ORDER BY ${orderBy}`: ''}`);
+                const results = [];
+                while (stmt.step()) {
+                    results.push(stmt.getAsObject());
+                }
+                stmt.free();
+                return results;
+            } catch (e) {
+                showError(`Błąd podczas odpytywania tabeli ${tableName}: ${e.message}`);
+                return [];
+            }
+        }
+        function renderModelStats() {
+            const data = queryDatabase('model_stats', '*', 'model_name');
+            const container = document.getElementById('model-stats-table-container');
+            const canvas = document.getElementById('model-stats-chart');
+            if (data.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center">Brak danych o statystykach modeli.</p>`;
+                canvas.style.display = 'none';
+                return;
+            }
+            canvas.style.display = 'block';
+
+            let tableHtml = `<table class="data-table"><thead><tr>
+                <th>Model</th><th>Wygenerowane Pytania</th><th>Błędy</th>
+                <th>Całkowity Czas Odp. (s)</th><th>Średni Czas Odp. (s)</th>
+            </tr></thead><tbody>`;
+            data.forEach(row => {
+                const avgTime = row.generated_questions > 0 ? (row.total_response_time / row.generated_questions).toFixed(3) : '0.000';
+                tableHtml += `<tr>
+                    <td>${escapeHtml(row.model_name)}</td>
+                    <td>${row.generated_questions}</td>
+                    <td>${row.errors}</td>
+                    <td>${row.total_response_time.toFixed(3)}</td>
+                    <td>${avgTime}</td>
+                </tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+
+            if (charts.modelStats) charts.modelStats.destroy();
+            charts.modelStats = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: data.map(r => r.model_name),
+                    datasets: [
+                        { label: 'Wygenerowane Pytania', data: data.map(r => r.generated_questions), backgroundColor: 'rgba(59, 130, 246, 0.7)', stack: 'stack 0' },
+                        { label: 'Błędy', data: data.map(r => r.errors), backgroundColor: 'rgba(239, 68, 68, 0.7)', stack: 'stack 0' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'top' } } }
+            });
+        }
+        function renderPromptHistory() {
+            const data = queryDatabase('prompt_history', 'id, timestamp, model, prompt, raw_response', 'id DESC');
+            const container = document.getElementById('prompt-history-table-container');
+            if (data.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center">Brak danych w historii promptów.</p>`;
+                return;
+            }
+            let tableHtml = `<table class="data-table"><thead><tr>
+                <th>ID</th><th>Czas</th><th>Model</th><th>Prompt</th><th>Odpowiedź</th>
+            </tr></thead><tbody>`;
+            data.forEach(row => {
+                tableHtml += `<tr>
+                    <td>${row.id}</td>
+                    <td>${new Date(row.timestamp).toLocaleString('pl-PL')}</td>
+                    <td>${escapeHtml(row.model)}</td>
+                    <td><pre>${escapeHtml(row.prompt)}</pre></td>
+                    <td><pre>${escapeHtml(row.raw_response)}</pre></td>
+                </tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+        }
+        function renderErrorLogs() {
+            const data = queryDatabase('error_logs', 'id, timestamp, endpoint, error_details_json', 'id DESC');
+            const container = document.getElementById('error-logs-table-container');
+            if (data.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center">Brak logów błędów.</p>`;
+                return;
+            }
+            let tableHtml = `<table class="data-table"><thead><tr>
+                <th>ID</th><th>Czas</th><th>Endpoint</th><th>Szczegóły</th>
+            </tr></thead><tbody>`;
+            data.forEach(row => {
+                let details = row.error_details_json;
+                try { details = JSON.stringify(JSON.parse(details), null, 2); } catch(e) {}
+                tableHtml += `<tr>
+                    <td>${row.id}</td>
+                    <td>${new Date(row.timestamp).toLocaleString('pl-PL')}</td>
+                    <td>${escapeHtml(row.endpoint)}</td>
+                    <td><pre>${escapeHtml(details)}</pre></td>
+                </tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+        }
+
         tryAutoLoadDatabase();
     });
-    </script>
+</script>
 </body>
 </html>
