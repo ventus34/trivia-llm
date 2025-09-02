@@ -6,12 +6,12 @@ import asyncio
 import time
 from collections import deque
 from datetime import datetime
+from typing import List, Any, Dict, Optional
 
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
-from typing import List, Any, Dict, Optional
+from pydantic import BaseModel
 from dotenv import load_dotenv
 from aiolimiter import AsyncLimiter
 from openai import AsyncOpenAI
@@ -22,10 +22,23 @@ import database
 load_dotenv()
 app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 
-# --- Throttler Initialization ---
-generative_api_limiter = AsyncLimiter(20, 60)
+# Runtime-configurable limits (override via env)
+GENERATIVE_RATE_LIMIT_COUNT = int(os.getenv("GENERATIVE_RATE_LIMIT_COUNT", "20"))
+GENERATIVE_RATE_LIMIT_PERIOD = int(os.getenv("GENERATIVE_RATE_LIMIT_PERIOD", "60"))
+GENERATIVE_INFLIGHT_LIMIT = int(os.getenv("GENERATIVE_INFLIGHT_LIMIT", "3"))
 
-# --- Global Configuration & State ---
+MAX_CONCURRENT_PRELOAD_TASKS = int(os.getenv("MAX_CONCURRENT_PRELOAD_TASKS", "3"))
+MAX_PRELOAD_CATEGORIES = int(os.getenv("MAX_PRELOAD_CATEGORIES", "20"))
+MIN_PRELOAD_INTERVAL = int(os.getenv("MIN_PRELOAD_INTERVAL_SECONDS", "10"))
+
+GEN_CALL_MAX_ATTEMPTS = int(os.getenv("GEN_CALL_MAX_ATTEMPTS", "4"))
+
+# placeholders to be initialized on startup
+generative_api_limiter: Optional[AsyncLimiter] = None
+GENERATIVE_CONCURRENCY_SEMAPHORE: Optional[asyncio.Semaphore] = None
+PRELOAD_CONCURRENCY_SEMAPHORE: Optional[asyncio.Semaphore] = None
+PRELOAD_STATUS_LOCK: Optional[asyncio.Lock] = None
+
 try:
     DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
     api_key = os.getenv("OPENAI_API_KEY")
@@ -43,13 +56,13 @@ try:
         CATEGORY_MODELS = MODELS_CONFIG.get("category_models", [])
         FALLBACK_MODEL = MODELS_CONFIG.get("fallback_model")
 
-        MODELS_BY_LANGUAGE = {"pl": [], "en": []}
-        for model in QUESTION_MODELS:
-            if "languages" in model:
-                if "pl" in model["languages"]:
-                    MODELS_BY_LANGUAGE["pl"].append(model["id"])
-                if "en" in model["languages"]:
-                    MODELS_BY_LANGUAGE["en"].append(model["id"])
+    MODELS_BY_LANGUAGE = {"pl": [], "en": []}
+    for model in QUESTION_MODELS:
+        if "languages" in model:
+            if "pl" in model["languages"]:
+                MODELS_BY_LANGUAGE["pl"].append(model["id"])
+            if "en" in model["languages"]:
+                MODELS_BY_LANGUAGE["en"].append(model["id"])
 
     print(f"Models available for PL: {len(MODELS_BY_LANGUAGE['pl'])}")
     print(f"Models available for EN: {len(MODELS_BY_LANGUAGE['en'])}")
@@ -69,21 +82,19 @@ try:
 
 except Exception as e:
     print(f"CRITICAL ERROR during server initialization: {e}")
-    # Fallback for startup errors, as the database logger might not be available
     with open("error.log", "a", encoding="utf-8") as f:
         f.write(f"[{datetime.utcnow().isoformat()}] CRITICAL STARTUP ERROR: {e}\n")
     exit(1)
 
 # --- In-memory State ---
-# This dictionary holds the history for question generation to avoid repetition.
-# It is shared across all game sessions.
 CATEGORY_GENERATION_HISTORY = {}  # Format: { "category_name": {"subcategories": deque, "entities": deque} }
 MAX_SUBCATEGORY_HISTORY = 10
 MAX_ENTITY_HISTORY = 20
 MAX_CATEGORIES_TRACKED = 100
 
 # Background task state tracking
-PRELOAD_TASK_STATUS = {}  # Format: { "gameId": {"is_running": bool, "event": asyncio.Event} }
+# Format: { "gameId": {"state": "scheduled|running|done", "event": asyncio.Event(), "last_scheduled": ts, "req_signature": str, ...} }
+PRELOAD_TASK_STATUS: Dict[str, Dict[str, Any]] = {}
 
 MAX_QUESTIONS_PER_CATEGORY_IN_CACHE = 2
 
@@ -127,11 +138,9 @@ class PreloadRequest(BaseModelWithModel):
 
 # --- Helper Logic ---
 def update_generation_history(category: str, subcategory: str, key_entities: List[str]):
-    """Updates the shared, in-memory history for a given category with per-category and global limits."""
     if category not in CATEGORY_GENERATION_HISTORY:
-        # Enforce global limit: Remove oldest category if exceeding
         if len(CATEGORY_GENERATION_HISTORY) >= MAX_CATEGORIES_TRACKED:
-            oldest = next(iter(CATEGORY_GENERATION_HISTORY))  # Python 3.7+ preserves order
+            oldest = next(iter(CATEGORY_GENERATION_HISTORY))
             del CATEGORY_GENERATION_HISTORY[oldest]
             print(f"Removed oldest category '{oldest}' to enforce limit of {MAX_CATEGORIES_TRACKED}.")
 
@@ -139,7 +148,6 @@ def update_generation_history(category: str, subcategory: str, key_entities: Lis
             "subcategories": deque(maxlen=MAX_SUBCATEGORY_HISTORY),
             "entities": deque(maxlen=MAX_ENTITY_HISTORY)
         }
-
     if subcategory:
         CATEGORY_GENERATION_HISTORY[category]["subcategories"].append(subcategory)
     if key_entities:
@@ -147,17 +155,13 @@ def update_generation_history(category: str, subcategory: str, key_entities: Lis
             CATEGORY_GENERATION_HISTORY[category]["entities"].append(entity)
 
 def is_question_valid(data: Any, game_mode: str) -> (bool, str):
-    """
-    Performs comprehensive validation of the generated question JSON,
-    including content quality and data consistency checks.
-    """
     if not data or not isinstance(data, dict):
         return False, "Response is not a valid, non-empty dictionary."
     question = data.get("question")
     if not question or not isinstance(question, str) or not question.strip():
         return False, "Response is missing a valid 'question' string."
-    if not (10 < len(question) < 300):
-        return False, f"Question length ({len(question)}) is outside the optimal range (10-300 chars)."
+    if not (10 < len(question) < 500):
+        return False, f"Question length ({len(question)}) is outside the optimal range (10-500 chars)."
     if not data.get("explanation_correct") or not data.get("explanation_summary"):
         return False, "Response is missing one or more required explanation fields."
     if not data.get("subcategory") or not data.get("key_entities"):
@@ -207,26 +211,19 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
 
     return prompt
 
-# Optimized: Idiot-proof JSON extraction with better error handling
 def extract_json_from_response(text: str) -> Any:
-    """
-    Safely extracts JSON from a string response, prioritizing direct parsing and fallbacks for malformed input.
-    """
     if not text or not isinstance(text, str):
         return {"error": "Input text is empty or invalid."}
 
-    # Clean the text (remove markdown, extra chars for robustness)
     cleaned_text = text.strip()
-    cleaned_text = re.sub(r'```(?:json)?', '', cleaned_text)  # Remove markdown blocks
-    cleaned_text = cleaned_text.lstrip('`').rstrip('`')  # Edge case for trailing quotes
+    cleaned_text = re.sub(r'```(?:json)?', '', cleaned_text)
+    cleaned_text = cleaned_text.lstrip('`').rstrip('`')
 
-    # Try direct JSON parsing first (fast path)
     try:
         return json.loads(cleaned_text)
     except (json.JSONDecodeError, ValueError):
-        pass  # Proceed to fallbacks
+        pass
 
-    # Regex fallback for potential JSON blocks
     json_match_md = re.search(r'{[\s\S]*?}', cleaned_text, re.DOTALL)
     if json_match_md:
         json_str = json_match_md.group().strip()
@@ -235,7 +232,6 @@ def extract_json_from_response(text: str) -> Any:
         except (json.JSONDecodeError, ValueError):
             pass
 
-    # Manual brace counting as last resort
     first_brace_index = cleaned_text.find('{')
     if first_brace_index != -1:
         candidate = cleaned_text[first_brace_index:]
@@ -252,27 +248,58 @@ def extract_json_from_response(text: str) -> Any:
                 except (json.JSONDecodeError, ValueError):
                     break
 
-    # Fallback for all failures: Return error dict
     print(f"ERROR: JSON parsing failed after all attempts. Raw snippet: {text[:200]}...")
     return {"error": "Unable to parse JSON from response. Check model output format."}
 
+# Rate-limit / retry aware call to generative model
 async def call_generative_model(prompt: str, model_name: str, temperature: float, return_raw=False):
-    """Updated: Optionally return raw response along with parsed data for error debugging."""
+    """
+    Robust wrapper with:
+    - global concurrency semaphore (to limit simultaneous external calls)
+    - time-based AsyncLimiter (to shape requests per minute)
+    - exponential backoff on detected rate limits (429)
+    - fallback-to-other-model logic (but not used for rate limit retries)
+    """
     validate_model(model_name)
     last_exception = None
     start_time = time.time()
     current_model = model_name
     raw_response = None
-    try:
-        for _ in range(2):  # One initial try + one fallback
-            try:
-                async with generative_api_limiter:
+
+    max_attempts = max(1, GEN_CALL_MAX_ATTEMPTS)
+
+    for attempt in range(1, max_attempts + 1):
+        # check semaphores (initialized during startup)
+        try:
+            concurrency_sem = GENERATIVE_CONCURRENCY_SEMAPHORE
+            if concurrency_sem is None:
+                # fallback to a no-op async context if not initialized (shouldn't happen after startup)
+                class _NoOp:
+                    async def __aenter__(self): pass
+                    async def __aexit__(self, exc_type, exc, tb): pass
+                concurrency_ctx = _NoOp()
+            else:
+                concurrency_ctx = concurrency_sem
+
+            limiter = generative_api_limiter
+            if limiter is None:
+                # fallback no-op limiter
+                class _NoOp:
+                    async def __aenter__(self): pass
+                    async def __aexit__(self, exc_type, exc, tb): pass
+                limiter_ctx = _NoOp()
+            else:
+                limiter_ctx = limiter
+
+            async with concurrency_ctx:
+                async with limiter_ctx:
                     messages = [{"role": "user", "content": prompt}]
                     request_params = {"model": current_model, "messages": messages, "temperature": temperature, "response_format": {"type": "json_object"}}
                     response = await client.chat.completions.create(**request_params)
                     response_text = response.choices[0].message.content
                     raw_response = response_text
-                    if DEBUG_MODE: print(f"Raw response: " + raw_response)
+                    if DEBUG_MODE:
+                        print(f"Raw response: {raw_response}")
                     response_time = time.time() - start_time
                     database.update_model_stats_db(model_name=current_model, success=True, response_time=response_time)
                     history_entry = {
@@ -284,45 +311,83 @@ async def call_generative_model(prompt: str, model_name: str, temperature: float
                     if return_raw:
                         return parsed_data, response_text
                     return parsed_data
-            except Exception as e:
-                last_exception = e
-                print(f"ERROR: Attempt with model '{current_model}' failed: {e}")
-                if FALLBACK_MODEL and current_model != FALLBACK_MODEL:
-                    print(f"INFO: Attempting fallback to model: {FALLBACK_MODEL}")
-                    current_model = FALLBACK_MODEL
-                    continue
-                else:
-                    break
-        raise last_exception if last_exception else Exception("Unknown error in call_generative_model")
-    except Exception as final_error:
-        response_time = time.time() - start_time
+        except Exception as e:
+            last_exception = e
+            err_text = str(e).lower()
+            is_rate_limit = False
+            try:
+                # heuristics to detect 429 or rate-limit
+                if '429' in err_text or 'rate limit' in err_text or 'ratelimit' in err_text or 'too many requests' in err_text:
+                    is_rate_limit = True
+                elif hasattr(e, 'status_code') and int(getattr(e, 'status_code', 0)) == 429:
+                    is_rate_limit = True
+                elif hasattr(e, 'status') and int(getattr(e, 'status', 0)) == 429:
+                    is_rate_limit = True
+            except Exception:
+                is_rate_limit = False
+
+            # Rate-limit specific handling: exponential backoff + jitter, do NOT immediately switch model
+            if is_rate_limit:
+                backoff = min(60, (2 ** attempt)) + random.random()
+                print(f"Rate-limited by API. Backing off {backoff:.1f}s (attempt {attempt}/{max_attempts}).")
+                await asyncio.sleep(backoff)
+                # continue trying the same model after backoff
+                continue
+
+            print(f"ERROR: Attempt with model '{current_model}' failed: {e}")
+            # If not rate limit, consider fallback model once
+            if FALLBACK_MODEL and current_model != FALLBACK_MODEL:
+                print(f"INFO: Attempting fallback to model: {FALLBACK_MODEL}")
+                current_model = FALLBACK_MODEL
+                # proceed to next iteration to try fallback
+                continue
+            else:
+                # small delay before next attempt to avoid hot-looping
+                await asyncio.sleep(min(5, 0.5 * attempt))
+                continue
+
+    # All attempts exhausted
+    response_time = time.time() - start_time
+    try:
         database.update_model_stats_db(model_name=current_model, success=False, response_time=response_time)
-        database.log_error_db("call_generative_model", {"model": current_model, "error": str(final_error), "raw_response_snippet": raw_response[:200] if raw_response else "None"})
-        raise final_error
+    except Exception:
+        pass
+    database.log_error_db("call_generative_model", {"model": current_model, "error": str(last_exception), "raw_response_snippet": raw_response[:200] if raw_response else "None"})
+    raise last_exception if last_exception else Exception("Unknown error in call_generative_model")
 
 def format_explanation_part(part: Any) -> str:
-    """Safely formats a part of an explanation, handling strings, lists, and dicts."""
     if isinstance(part, str): return part
     if isinstance(part, list): return "\n".join(str(item) for item in part if item)
     if isinstance(part, dict): return "\n".join(f"- {key}: {value}" for key, value in part.items())
     return ""
 
-# Updated: Background task with 200ms delay and enhanced error logging
+# Background preload task with concurrency limits and safe status handling
 async def _preload_task(game_id: str, model_selection: str, request_data: PreloadRequest):
-    if game_id not in PRELOAD_TASK_STATUS: return
-    PRELOAD_TASK_STATUS[game_id]["is_running"] = True
+    # Mark as running and acquire global preload concurrency semaphore
+    status = PRELOAD_TASK_STATUS.get(game_id)
+    if not status:
+        # if status was removed meanwhile, create a fallback to ensure the event exists
+        PRELOAD_TASK_STATUS[game_id] = {"state": "running", "event": asyncio.Event(), "last_scheduled": datetime.utcnow().timestamp()}
 
+    PRELOAD_TASK_STATUS[game_id]["state"] = "running"
+    PRELOAD_TASK_STATUS[game_id]["started_at"] = datetime.utcnow().isoformat()
+
+    # local helper to pick model
     def get_model_for_generation():
-        if model_selection == "random-pl" and MODELS_BY_LANGUAGE["pl"]: return random.choice(MODELS_BY_LANGUAGE["pl"])
-        if model_selection == "random-en" and MODELS_BY_LANGUAGE["en"]: return random.choice(MODELS_BY_LANGUAGE["en"])
+        if model_selection == "random-pl" and MODELS_BY_LANGUAGE["pl"]:
+            return random.choice(MODELS_BY_LANGUAGE["pl"])
+        if model_selection == "random-en" and MODELS_BY_LANGUAGE["en"]:
+            return random.choice(MODELS_BY_LANGUAGE["en"])
         return model_selection
 
     async def generate_one_for_category(category: str):
         model_to_use = get_model_for_generation()
-        print(f"[{game_id}] Preloading for '{category}' using model '{model_to_use}'...")
+        if DEBUG_MODE:
+            print(f"[{game_id}] Preloading for '{category}' using model '{model_to_use}'...")
         try:
             params = request_data.model_dump()
             prompt = build_question_prompt(params, category)
+            # call with timeout to avoid long blocking
             data, raw_response = await asyncio.wait_for(call_generative_model(prompt, model_to_use, temperature=1.2, return_raw=True), timeout=30.0)
             is_valid, error_msg = is_question_valid(data, params.get("gameMode"))
             if is_valid:
@@ -335,23 +400,46 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
             else:
                 print(f"WARNING: Preloaded question for '{category}' was invalid. Reason: {error_msg}. Raw response snippet: '{raw_response[:300]}...'")
                 database.log_error_db("preload_task_validation", {"category": category, "error": error_msg, "raw_response_snippet": raw_response[:300]})
+        except asyncio.TimeoutError:
+            print(f"ERROR: Preload timed out for category '{category}'")
+            database.log_error_db("preload_task_timeout", {"category": category})
         except Exception as e:
             detailed_error = repr(e)
-            print(f"ERROR: Preloading one question for '{category}' failed. Reason: {detailed_error}. Raw response might be unavailable.")
+            print(f"ERROR: Preloading one question for '{category}' failed. Reason: {detailed_error}.")
             database.log_error_db("preload_task_exception", {"category": category, "error": detailed_error})
 
-    while True:
-        categories_to_process = [cat for cat in request_data.categories if database.get_cache_count_for_category(cat) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE]
-        if not categories_to_process: break
-        categories_to_process.sort(key=lambda cat: database.get_cache_count_for_category(cat))
+    try:
+        # Acquire global preload concurrency semaphore
+        sem = PRELOAD_CONCURRENCY_SEMAPHORE
+        if sem is None:
+            class _NoOp:
+                async def __aenter__(self): pass
+                async def __aexit__(self, exc_type, exc, tb): pass
+            sem_ctx = _NoOp()
+        else:
+            sem_ctx = sem
 
-        # Rate limit: 200ms delay between tasks
-        for cat in categories_to_process:
-            await generate_one_for_category(cat)
-            await asyncio.sleep(0.2)  # 200ms delay
+        async with sem_ctx:
+            while True:
+                # compute categories that still need caching
+                categories_to_process = [cat for cat in request_data.categories if database.get_cache_count_for_category(cat) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE]
+                if not categories_to_process:
+                    break
+                categories_to_process.sort(key=lambda cat: database.get_cache_count_for_category(cat))
 
-    PRELOAD_TASK_STATUS[game_id]["is_running"] = False
-    PRELOAD_TASK_STATUS[game_id]["event"].set()
+                for cat in categories_to_process:
+                    await generate_one_for_category(cat)
+                    # modest delay between requests to avoid burst (additional to call_generative_model limiter)
+                    await asyncio.sleep(0.2)
+
+    finally:
+        # mark finished and notify waiters
+        PRELOAD_TASK_STATUS[game_id]["state"] = "done"
+        PRELOAD_TASK_STATUS[game_id]["finished_at"] = datetime.utcnow().isoformat()
+        try:
+            PRELOAD_TASK_STATUS[game_id]["event"].set()
+        except Exception:
+            pass
 
 # --- API Endpoints ---
 @app.get("/api/db/stats")
@@ -372,11 +460,42 @@ async def get_question_models():
 
 @app.post("/api/preload-questions", status_code=202)
 async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTasks):
-    if req.gameId not in PRELOAD_TASK_STATUS or not PRELOAD_TASK_STATUS[req.gameId]["is_running"]:
-        PRELOAD_TASK_STATUS[req.gameId] = {"is_running": False, "event": asyncio.Event()}
+    # Basic validation
+    if not req.gameId:
+        raise HTTPException(status_code=400, detail="gameId is required")
+    if not req.categories:
+        raise HTTPException(status_code=400, detail="categories list is required")
+    if len(req.categories) > MAX_PRELOAD_CATEGORIES:
+        raise HTTPException(status_code=400, detail=f"Too many categories requested. Max allowed: {MAX_PRELOAD_CATEGORIES}")
+
+    # signature for deduplication
+    req_signature = json.dumps(req.model_dump(), sort_keys=True)
+
+    # Use a lock to avoid race conditions when scheduling multiple preload tasks concurrently
+    async with PRELOAD_STATUS_LOCK:
+        status = PRELOAD_TASK_STATUS.get(req.gameId)
+        now_ts = datetime.utcnow().timestamp()
+        if status:
+            # If same payload already scheduled or running => dedupe
+            if status.get("req_signature") == req_signature and status.get("state") in ("scheduled", "running"):
+                return JSONResponse(content={"message": "Preloading is already in progress."}, status_code=202)
+
+            # If last schedule attempt was too recent, throttle
+            last = status.get("last_scheduled", 0)
+            if now_ts - last < MIN_PRELOAD_INTERVAL:
+                raise HTTPException(status_code=429, detail="Too many preload requests. Try again later.")
+
+        # reserve the slot / mark as scheduled so other concurrent requests won't spawn duplicates
+        PRELOAD_TASK_STATUS[req.gameId] = {
+            "state": "scheduled",
+            "event": asyncio.Event(),
+            "last_scheduled": now_ts,
+            "req_signature": req_signature
+        }
+
+        # schedule background task
         background_tasks.add_task(_preload_task, req.gameId, req.model, req)
-        return {"message": "Preloading started."}
-    return {"message": "Preloading is already in progress."}
+        return JSONResponse(content={"message": "Preloading started."}, status_code=202)
 
 @app.post("/api/generate-question")
 async def generate_question(req: QuestionRequest):
@@ -385,6 +504,7 @@ async def generate_question(req: QuestionRequest):
         if DEBUG_MODE: print(f"Serving question for '{req.category}' from DB cache.")
         return JSONResponse(content=cached_question)
 
+    # If a preload is scheduled/running for this gameId, wait a short time for it to finish
     if status := PRELOAD_TASK_STATUS.get(req.gameId):
         try:
             await asyncio.wait_for(status["event"].wait(), timeout=30.0)
@@ -424,7 +544,8 @@ async def generate_question(req: QuestionRequest):
             raw_response_last = raw_response_last or "No raw response captured."
             print(f"Exception on attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}': {e}. Raw response snippet: '{raw_response_last[:300]}...'")
             database.log_error_db("generate_question_exception", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response_last[:300]})
-            if attempt < MAX_RETRIES - 1: await asyncio.sleep(1)
+            if attempt < MAX_RETRIES - 1:
+                await asyncio.sleep(1)
 
     error_message = f"Failed to generate a valid question for category '{req.category}' after {MAX_RETRIES} attempts. Final error: {last_error}"
     print(f"{error_message}. Last raw response snippet: '{raw_response_last[:300]}...'")
@@ -443,13 +564,13 @@ async def generate_categories(req: GenerateCategoriesRequest):
             if response_data and isinstance(response_data, dict):
                 return JSONResponse(content=response_data)
             else:
-                if response_data.get("error"):
+                if isinstance(response_data, dict) and response_data.get("error"):
                     print(f"Attempt {attempt + 1} failed: {response_data['error']}. Raw snippet: '{raw_response[:300]}...'")
-                    database.log_error_db("generate_categories_error", {"request": req.model_dump(), "error": response_data['error'], "raw_response_snippet": raw_response[:300]})
+                    database.log_error_db("generate_categories_error", {"request": req.__dict__, "error": response_data['error'], "raw_response_snippet": raw_response[:300]})
         except Exception as e:
             raw_response = raw_response if 'raw_response' in locals() else "No response captured."
             print(f"Attempt {attempt + 1} failed for generate-categories: {e}. Raw snippet: '{raw_response[:300]}...'")
-            database.log_error_db("generate_categories_exception", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response[:300]})
+            database.log_error_db("generate_categories_exception", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
             if attempt == MAX_RETRIES:
                 raise HTTPException(status_code=500, detail=f"Failed to generate categories: {e}")
             await asyncio.sleep(1)
@@ -464,7 +585,7 @@ async def get_category_mutation(req: MutationRequest):
     except Exception as e:
         raw_response = raw_response if 'raw_response' in locals() else "No response captured."
         print(f"ERROR in mutate-category: {e}. Raw snippet: '{raw_response[:300]}...'")
-        database.log_error_db("mutate_category", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response[:300]})
+        database.log_error_db("mutate_category", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
         raise HTTPException(status_code=500, detail=f"Failed to mutate category: {e}")
 
 @app.post("/api/explain-incorrect")
@@ -483,13 +604,22 @@ async def get_incorrect_explanation(req: ExplanationRequest):
     except Exception as e:
         raw_response = raw_response if 'raw_response' in locals() else "No response captured."
         print(f"ERROR in explain-incorrect: {e}. Raw snippet: '{raw_response[:300]}...'")
-        database.log_error_db("explain_incorrect", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response[:300]})
+        database.log_error_db("explain_incorrect", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
         raise HTTPException(status_code=500, detail=f"Failed to get explanation: {e}")
 
 # --- App Lifecycle and Static Files ---
 @app.on_event("startup")
 async def startup_event():
+    global generative_api_limiter, GENERATIVE_CONCURRENCY_SEMAPHORE, PRELOAD_CONCURRENCY_SEMAPHORE, PRELOAD_STATUS_LOCK
     database.init_db()
+    generative_api_limiter = AsyncLimiter(GENERATIVE_RATE_LIMIT_COUNT, GENERATIVE_RATE_LIMIT_PERIOD)
+    GENERATIVE_CONCURRENCY_SEMAPHORE = asyncio.Semaphore(GENERATIVE_INFLIGHT_LIMIT)
+    PRELOAD_CONCURRENCY_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_PRELOAD_TASKS)
+    PRELOAD_STATUS_LOCK = asyncio.Lock()
+    if DEBUG_MODE:
+        print("Startup completed. Rate limiter and semaphores initialized.")
+        print(f"Generative rate limit: {GENERATIVE_RATE_LIMIT_COUNT}/{GENERATIVE_RATE_LIMIT_PERIOD}s, inflight: {GENERATIVE_INFLIGHT_LIMIT}")
+        print(f"Preload concurrency limit: {MAX_CONCURRENT_PRELOAD_TASKS}, max categories per preload: {MAX_PRELOAD_CATEGORIES}")
 
 @app.get("/", include_in_schema=False)
 async def root(): return FileResponse('trivia.html')
