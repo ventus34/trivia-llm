@@ -79,10 +79,10 @@ export function initializeGame() {
     UI.setupScreen.classList.add('hidden');
     UI.gameScreen.classList.remove('hidden');
 
-    if (gameState.api.preloadQuestions) {
-        console.log("Question preload on game start..");
-        gameState.api.preloadQuestions();
-    }
+    // if (gameState.api.preloadQuestions) {
+    //     console.log("Question preload on game start..");
+    //     gameState.api.preloadQuestions();
+    // }
 }
 
 
