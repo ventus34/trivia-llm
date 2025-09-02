@@ -207,28 +207,39 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     random.shuffle(combined_rules)
     return "\n".join([prompt_struct["persona"], prompt_struct["chain_of_thought"], prompt_struct["context_header"], "\n".join(combined_rules), prompt_struct["output_format"]])
 
+
 def extract_json_from_response(text: str) -> Any:
     try:
         json_match_md = re.search(r'```json\s*({[\s\S]*?})\s*```', text, re.DOTALL)
         if json_match_md:
-            return json.loads(json_match_md.group(1))
+            json_str = json_match_md.group(1)
+            return json.loads(json_str)
 
-        json_match_raw = re.search(r'{[\s\S]*}', text, re.DOTALL)
-        if json_match_raw:
-            full_match = json_match_raw.group(0)
-            open_braces, end_index = 0, -1
-            for i, char in enumerate(full_match):
-                if char == '{': open_braces += 1
-                elif char == '}': open_braces -= 1
+        first_brace_index = text.find('{')
+        if first_brace_index != -1:
+            json_candidate_str = text[first_brace_index:]
+
+            open_braces = 0
+            end_index = -1
+            for i, char in enumerate(json_candidate_str):
+                if char == '{':
+                    open_braces += 1
+                elif char == '}':
+                    open_braces -= 1
+
                 if open_braces == 0:
                     end_index = i + 1
                     break
-            return json.loads(full_match[:end_index] if end_index != -1 else full_match)
 
-        raise ValueError("No valid JSON object found in response.")
+            if end_index != -1:
+                final_json_str = json_candidate_str[:end_index]
+                return json.loads(final_json_str)
+
+        raise ValueError("Nie znaleziono prawidłowego obiektu JSON w odpowiedzi.")
+
     except (json.JSONDecodeError, ValueError) as e:
         if DEBUG_MODE:
-            print(f"ERROR: JSON parsing failed. Reason: {e}. Raw text: {text[:500]}")
+            print(f"BŁĄD: Parsowanie JSON nie powiodło się. Powód: {e}. Surowy tekst: {text[:500]}")
         return text
 
 async def call_generative_model(prompt: str, model_name: str, temperature: float):
