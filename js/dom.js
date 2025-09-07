@@ -88,5 +88,6 @@ export const UI = {
     openGameMenuBtn: document.getElementById('open-game-menu-btn'),
     gameMenuPanel: document.getElementById('game-menu-panel'),
     gameMenuOverlay: document.getElementById('game-menu-overlay'),
+    categoryPresetSelect: document.getElementById('category-preset-select'),
     showHistoryBtn: document.getElementById('show-history-btn')
 };

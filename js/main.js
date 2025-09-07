@@ -9,7 +9,7 @@ import { UI } from './dom.js';
 import {
     setLanguage, updateDescriptions, updatePlayerNameInputs,
     updateModelSelection, closePopupAndContinue, hideHistoryModal,
-    showHistoryModal, setupGameMenu, populateModelSelectors
+    showHistoryModal, setupGameMenu, populateModelSelectors, populatePresetSelector, updateCategoryInputs
 } from './ui.js';
 import {
     loadGameState, restartGame, downloadGameState,
@@ -20,6 +20,7 @@ import {
     rollDice, handleOpenAnswer, handleManualVerification,
     verifyIncorrectAnswer
 } from './game.js';
+import {CATEGORY_PRESETS} from "./config.js";
 
 
 /**
@@ -30,6 +31,7 @@ export async function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
 
     await populateModelSelectors();
+    await populatePresetSelector();
 
     const urlParams = new URLSearchParams(window.location.search);
     const shouldLoadGame = urlParams.get('loadGame') === 'true';
@@ -105,6 +107,29 @@ export async function initializeApp(apiAdapter) {
         UI.setupScreen.classList.remove('hidden');
         const oldSvg = UI.boardWrapper.querySelector('.board-connections');
         if (oldSvg) oldSvg.remove();
+    });
+
+    UI.categoryPresetSelect.addEventListener('change', (e) => {
+        const selectedIndex = e.target.value;
+        if (selectedIndex !== '') {
+            const selectedPreset = CATEGORY_PRESETS[parseInt(selectedIndex)];
+            const lang = gameState.currentLanguage;
+
+            const categoryNames = selectedPreset.categories.map(cat => cat[lang] || cat.en);
+
+            updateCategoryInputs(categoryNames);
+
+            const presetName = selectedPreset.name[lang] || selectedPreset.name.en;
+
+            if (UI.themeInput) {
+                UI.themeInput.value = presetName;
+            }
+
+            if (UI.includeThemeToggle) {
+                UI.includeThemeToggle.checked = true;
+                if (gameState.api.saveSettings) gameState.api.saveSettings();
+            }
+        }
     });
 
     document.addEventListener('click', (e) => {

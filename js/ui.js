@@ -3,7 +3,7 @@
  * Handles all UI rendering, updates, notifications, and modal management.
  */
 
-import { CONFIG, translations } from './config.js';
+import { CONFIG, translations, CATEGORY_PRESETS} from './config.js';
 import { gameState } from './state.js';
 import { UI } from './dom.js';
 import {
@@ -32,6 +32,31 @@ export function updateModelSelection(selectedValue) {
     if (UI.gameMenuModelSelect.value !== selectedValue) {
         UI.gameMenuModelSelect.value = selectedValue;
     }
+}
+
+/**
+ * Populates the category preset selector dropdown and adds an event listener.
+ */
+export function populatePresetSelector() {
+    const lang = gameState.currentLanguage;
+    const select = UI.categoryPresetSelect;
+    if (!select) return;
+
+    select.innerHTML = '';
+
+    const defaultOption = document.createElement('option');
+    defaultOption.textContent = lang === 'pl' ? 'Wybierz gotowy zestaw...' : 'Select a preset...';
+    defaultOption.value = '';
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    select.appendChild(defaultOption);
+
+    CATEGORY_PRESETS.forEach((preset, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = preset.name[lang] || preset.name.en;
+        select.appendChild(option);
+    });
 }
 
 /**
@@ -102,6 +127,7 @@ export function setLanguage(lang) {
     updateCategoryInputs(translations.default_categories[lang].split(', '));
     updatePlayerNameInputs();
     updateDescriptions();
+    populatePresetSelector();
 }
 
 /**

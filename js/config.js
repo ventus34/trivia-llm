@@ -21,6 +21,327 @@ export const CONFIG = {
     EMOJI_OPTIONS: ['🚀', '🦄', '🤖', '🦊', '🧙', '👽', '👾', '👻', '👑', '💎', '🍕', '🍔', '⚽️', '🏀', '🎸', '🎨', '🎭', '🎬', '🎤', '🎮', '💻', '💡', '🧪', '🌍', '🏛️', '🏰', '🗿', '🛸', '🌲', '⛵️', '🐈', '🐕', '🦈']
 };
 
+// --- CATEGORY PRESETS ---
+export const CATEGORY_PRESETS = [
+    {
+        name: {pl: 'Wiedza Ogólna – Klasyk', en: 'General Knowledge – Classic'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Geografia', en: 'Geography'},
+            {pl: 'Nauka', en: 'Science'},
+            {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+            {pl: 'Sport', en: 'Sports'},
+            {pl: 'Media i rozrywka', en: 'Media & Entertainment'}
+        ]
+    },
+    {
+        name: {pl: 'Wiedza Ogólna – Współczesność', en: 'General Knowledge – Modern Times'},
+        categories: [
+            {pl: 'Wydarzenia bieżące', en: 'Current Events'},
+            {pl: 'Technologia', en: 'Technology'},
+            {pl: 'Popkultura', en: 'Pop Culture'},
+            {pl: 'Odkrycia naukowe', en: 'Scientific Discoveries'},
+            {pl: 'Polityka', en: 'Politics'},
+            {pl: 'Internet i media społecznościowe', en: 'Internet & Social Media'}
+        ]
+    },
+
+    {
+        name: {pl: 'Polska – Wiedza Ogólna', en: 'Poland – General Knowledge'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Geografia', en: 'Geography'},
+            {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+            {pl: 'Znani Polacy', en: 'Famous Poles'},
+            {pl: 'Sport', en: 'Sports'},
+            {pl: 'Społeczeństwo', en: 'Society'}
+        ]
+    },
+    {
+        name: {pl: 'Polska – Lata 90.', en: 'Poland – The 90s'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Muzyka', en: 'Music'},
+            {pl: 'Film i seriale', en: 'Movies & TV'},
+            {pl: 'Życie codzienne', en: 'Everyday Life'},
+            {pl: 'Sport', en: 'Sports'},
+            {pl: 'Technologia', en: 'Technology'}
+        ]
+    },
+    {
+        name: {pl: 'Polska – Lata 80.', en: 'Poland – The 80s'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Polityka', en: 'Politics'},
+            {pl: 'Muzyka', en: 'Music'},
+            {pl: 'Kultura i obyczaje', en: 'Culture & Customs'},
+            {pl: 'Życie codzienne', en: 'Everyday Life'},
+            {pl: 'Technologia', en: 'Technology'}
+        ]
+    },
+
+    {
+        name: {pl: 'Świat – Lata 2000.', en: 'World – The 2000s'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Muzyka', en: 'Music'},
+            {pl: 'Kino i TV', en: 'Cinema & TV'},
+            {pl: 'Technologia', en: 'Technology'},
+            {pl: 'Gadżety', en: 'Gadgets'},
+            {pl: 'Moda i trendy', en: 'Fashion & Trends'}
+        ]
+    },
+    {
+        name: {pl: 'Świat – Zimna Wojna', en: 'World – The Cold War'},
+        categories: [
+            {pl: 'Konflikty', en: 'Conflicts'},
+            {pl: 'Wyścig zbrojeń i kosmos', en: 'Arms & Space Race'},
+            {pl: 'Propaganda i szpiegostwo', en: 'Propaganda & Espionage'},
+            {pl: 'Kultura', en: 'Culture'},
+            {pl: 'Przywódcy', en: 'Leaders'},
+            {pl: 'Upadek systemu', en: 'Collapse of the Bloc'}
+        ]
+    },
+    {
+        name: {pl: 'Świat – Starożytność', en: 'World – Antiquity'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Mitologia', en: 'Mythology'},
+            {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+            {pl: 'Filozofia', en: 'Philosophy'},
+            {pl: 'Nauka i wynalazki', en: 'Science & Inventions'},
+            {pl: 'Wojny i konflikty', en: 'Wars & Conflicts'}
+        ]
+    },
+    {
+        name: {pl: 'Świat – Średniowiecze', en: 'World – Middle Ages'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Religia', en: 'Religion'},
+            {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+            {pl: 'Nauka i odkrycia', en: 'Science & Discoveries'},
+            {pl: 'Polityka', en: 'Politics'},
+            {pl: 'Wyprawy i podboje', en: 'Expeditions & Conquests'}
+        ]
+    },
+    {
+        name: {pl: 'Świat – Lata 60.', en: 'World – The 60s'},
+        categories: [
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Muzyka', en: 'Music'},
+            {pl: 'Film i TV', en: 'Movies & TV'},
+            {pl: 'Społeczeństwo', en: 'Society'},
+            {pl: 'Moda i styl', en: 'Fashion & Style'},
+            {pl: 'Polityka', en: 'Politics'}
+        ]
+    },
+
+    {
+        name: {pl: 'Nauka – Podstawy', en: 'Science – The Basics'},
+        categories: [
+            {pl: 'Fizyka', en: 'Physics'},
+            {pl: 'Chemia', en: 'Chemistry'},
+            {pl: 'Biologia', en: 'Biology'},
+            {pl: 'Astronomia', en: 'Astronomy'},
+            {pl: 'Matematyka', en: 'Mathematics'},
+            {pl: 'Wielcy odkrywcy', en: 'Great Discoverers'}
+        ]
+    },
+    {
+        name: {pl: 'Technologia – Historia', en: 'Technology – History'},
+        categories: [
+            {pl: 'Komputery', en: 'Computers'},
+            {pl: 'Internet', en: 'Internet'},
+            {pl: 'Telekomunikacja', en: 'Telecommunication'},
+            {pl: 'Transport', en: 'Transport'},
+            {pl: 'Energetyka', en: 'Energy'},
+            {pl: 'Wielkie wynalazki', en: 'Major Inventions'}
+        ]
+    },
+    {
+        name: {pl: 'Technologia – Współczesność', en: 'Technology – Modern Era'},
+        categories: [
+            {pl: 'Sztuczna inteligencja', en: 'Artificial Intelligence'},
+            {pl: 'Smartfony i aplikacje', en: 'Smartphones & Apps'},
+            {pl: 'Media społecznościowe', en: 'Social Media'},
+            {pl: 'Start-upy', en: 'Startups'},
+            {pl: 'Badania kosmiczne', en: 'Space Exploration'},
+            {pl: 'Cyberbezpieczeństwo', en: 'Cybersecurity'}
+        ]
+    },
+    {
+        name: {pl: 'Technika – Inżynieria', en: 'Engineering & Technology'},
+        categories: [
+            {pl: 'Budowle i mosty', en: 'Buildings & Bridges'},
+            {pl: 'Robotyka', en: 'Robotics'},
+            {pl: 'Transport', en: 'Transport'},
+            {pl: 'Energia i środowisko', en: 'Energy & Environment'},
+            {pl: 'Nanonauka', en: 'Nanoscience'},
+            {pl: 'Biotechnologia', en: 'Biotechnology'}
+        ]
+    },
+
+    {
+        name: {pl: 'Gry wideo', en: 'Video Games'},
+        categories: [
+            {pl: 'Historia gier', en: 'History of Games'},
+            {pl: 'Serie i postacie', en: 'Series & Characters'},
+            {pl: 'Konsole', en: 'Consoles'},
+            {pl: 'Gatunki', en: 'Genres'},
+            {pl: 'Kultura graczy', en: 'Gaming Culture'},
+            {pl: 'E-sport', en: 'E-sports'}
+        ]
+    },
+    {
+        name: {pl: 'Gry wideo – Retro', en: 'Video Games – Retro'},
+        categories: [
+            {pl: 'Konsole klasyczne', en: 'Classic Consoles'},
+            {pl: 'Gry arcade', en: 'Arcade Games'},
+            {pl: 'Platformówki', en: 'Platformers'},
+            {pl: 'RPG i przygodowe', en: 'RPG & Adventures'},
+            {pl: 'Kultowe serie', en: 'Iconic Series'},
+            {pl: 'Twórcy i studia', en: 'Developers & Studios'}
+        ]
+    },
+
+    {
+        name: {pl: 'Gry wideo – 2010+', en: 'Video Games – 2010+'},
+        categories: [
+            {pl: 'Nowe gatunki', en: 'New Genres'},
+            {pl: 'Multiplayer i e-sport', en: 'Multiplayer & E-sports'},
+            {pl: 'Indie games', en: 'Indie Games'},
+            {pl: 'Gry AAA', en: 'AAA Titles'},
+            {pl: 'Postacie i światy', en: 'Characters & Worlds'},
+            {pl: 'Gaming online', en: 'Online Gaming'}
+        ]
+    },
+    {
+        name: {pl: 'Rozrywka – Kino', en: 'Entertainment – Cinema'},
+        categories: [
+            {pl: 'Historia kina', en: 'History of Cinema'},
+            {pl: 'Gatunki filmowe', en: 'Film Genres'},
+            {pl: 'Reżyserzy', en: 'Directors'},
+            {pl: 'Aktorzy', en: 'Actors'},
+            {pl: 'Nagrody filmowe', en: 'Film Awards'},
+            {pl: 'Kultowe filmy', en: 'Cult Movies'}
+        ]
+    },
+    {
+        name: {pl: 'Rozrywka – Muzyka', en: 'Entertainment – Music'},
+        categories: [
+            {pl: 'Gatunki muzyczne', en: 'Music Genres'},
+            {pl: 'Artyści i zespoły', en: 'Artists & Bands'},
+            {pl: 'Albumy i single', en: 'Albums & Singles'},
+            {pl: 'Koncerty i festiwale', en: 'Concerts & Festivals'},
+            {pl: 'Nagrody muzyczne', en: 'Music Awards'},
+            {pl: 'Kultura muzyczna', en: 'Music Culture'}
+        ]
+    },
+
+    {
+        name: {pl: 'Podróże – Świat', en: 'Travel – World'},
+        categories: [
+            {pl: 'Kontynenty', en: 'Continents'},
+            {pl: 'Kraje', en: 'Countries'},
+            {pl: 'Miasta', en: 'Cities'},
+            {pl: 'Zabytki', en: 'Landmarks'},
+            {pl: 'Cuda natury', en: 'Natural Wonders'},
+            {pl: 'Kultury i tradycje', en: 'Cultures & Traditions'}
+        ]
+    },
+    {
+        name: {pl: 'Podróże – Europa', en: 'Travel – Europe'},
+        categories: [
+            {pl: 'Geografia', en: 'Geography'},
+            {pl: 'Miasta', en: 'Cities'},
+            {pl: 'Zabytki', en: 'Landmarks'},
+            {pl: 'Kultury i tradycje', en: 'Cultures & Traditions'},
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Kuchnia regionalna', en: 'Regional Cuisine'}
+        ]
+    },
+
+    {
+        name: {pl: 'Podróże – Polska', en: 'Travel – Poland'},
+        categories: [
+            {pl: 'Regiony i miasta', en: 'Regions & Cities'},
+            {pl: 'Zamki i pałace', en: 'Castles & Palaces'},
+            {pl: 'Parki narodowe', en: 'National Parks'},
+            {pl: 'Kultura i tradycje', en: 'Culture & Traditions'},
+            {pl: 'Historia', en: 'History'},
+            {pl: 'Turystyka współczesna', en: 'Modern Tourism'}
+        ]
+    },
+    {
+        name: {pl: 'Kuchnia Polska', en: 'Polish Cuisine'},
+        categories: [
+            {pl: 'Dania główne', en: 'Main Courses'},
+            {pl: 'Zupy', en: 'Soups'},
+            {pl: 'Przystawki', en: 'Appetizers'},
+            {pl: 'Desery', en: 'Desserts'},
+            {pl: 'Święta i tradycje kulinarne', en: 'Holiday & Traditional Foods'},
+            {pl: 'Znane potrawy regionalne', en: 'Famous Regional Dishes'}
+        ]
+    },
+    {
+        name: {pl: 'Kuchnie świata', en: 'World Cuisines'},
+        categories: [
+            {pl: 'Europa', en: 'Europe'},
+            {pl: 'Azja', en: 'Asia'},
+            {pl: 'Afryka', en: 'Africa'},
+            {pl: 'Ameryka Północna', en: 'North America'},
+            {pl: 'Ameryka Południowa', en: 'South America'},
+            {pl: 'Bliski Wschód', en: 'Middle East'}
+        ]
+    },
+    {
+        name: {pl: 'Napoje', en: 'Beverages'},
+        categories: [
+            {pl: 'Napoje bezalkoholowe', en: 'Non-Alcoholic Drinks'},
+            {pl: 'Herbata i kawa', en: 'Tea & Coffee'},
+            {pl: 'Soki i napoje owocowe', en: 'Juices & Fruit Drinks'},
+            {pl: 'Piwo i cydr', en: 'Beer & Cider'},
+            {pl: 'Wino', en: 'Wine'},
+            {pl: 'Trunki wysokoprocentowe', en: 'Spirits & Liquor'}
+        ]
+    },
+
+    {
+        name: {pl: 'Hobby i pasje', en: 'Hobbies & Passions'},
+        categories: [
+            {pl: 'Sport i rekreacja', en: 'Sports & Recreation'},
+            {pl: 'Sztuka i twórczość', en: 'Art & Creativity'},
+            {pl: 'Kolekcjonerstwo', en: 'Collecting'},
+            {pl: 'Podróże i turystyka', en: 'Travel & Tourism'},
+            {pl: 'Gry i zabawa', en: 'Games & Fun'},
+            {pl: 'Kulinaria', en: 'Culinary Arts'}
+        ]
+    },
+    {
+        name: {pl: 'Życie codzienne', en: 'Everyday Life'},
+        categories: [
+            {pl: 'Moda i trendy', en: 'Fashion & Trends'},
+            {pl: 'Jedzenie i gotowanie', en: 'Food & Cooking'},
+            {pl: 'Dom i rodzina', en: 'Home & Family'},
+            {pl: 'Praca i szkoła', en: 'Work & School'},
+            {pl: 'Media i internet', en: 'Media & Internet'},
+            {pl: 'Społeczne obyczaje', en: 'Social Customs'}
+        ]
+    },
+
+    {
+        name: {pl: 'Sport – Ogólne', en: 'Sport – General'},
+        categories: [
+            {pl: 'Igrzyska olimpijskie', en: 'Olympic Games'},
+            {pl: 'Piłka nożna', en: 'Football (Soccer)'},
+            {pl: 'Koszykówka', en: 'Basketball'},
+            {pl: 'Lekkoatletyka', en: 'Athletics'},
+            {pl: 'Sporty zimowe', en: 'Winter Sports'},
+            {pl: 'Znani sportowcy', en: 'Famous Athletes'}
+        ]
+    }
+];
+
 // --- TRANSLATIONS ---
 export const translations = {
     setup_title: { pl: "Ustawienia", en: "Settings" },
@@ -57,6 +378,7 @@ export const translations = {
     choose_move: { pl: "Wybierz pole, na które chcesz się przesunąć.", en: "Choose a square to move to." },
     dice_roll_result: { pl: "Wyrzucono: {roll}", en: "You rolled: {roll}" },
     category_title: { pl: "Kategoria: {category}", en: "Category: {category}" },
+    category_preset_label: { pl: "Wybierz zestaw kategorii:", en: "Choose a category set:" },
     regenerate_question_btn: { pl: "Nowe pytanie", en: "New Question" },
     choose_category_title: { pl: "Wybierz kategorię", en: "Choose a Category" },
     choose_mutation_title: { pl: "Kategoria mutuje! Wybierz nową:", en: "Category is mutating! Choose a new one:" },
