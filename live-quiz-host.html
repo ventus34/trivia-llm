@@ -183,9 +183,9 @@
     <!-- Game Screen -->
     <div id="game-screen" class="hidden container mx-auto px-4 py-8">
         <div class="max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6" id="game-layout">
                 <!-- Question Display - TV Optimized -->
-                <div class="lg:col-span-3">
+                <div class="lg:col-span-3" id="question-container">
                     <div class="bg-gray-800 rounded-2xl p-8">
                         <!-- Header -->
                         <div class="flex items-center justify-between mb-8">
@@ -228,6 +228,7 @@
                         
                         <!-- Game Controls -->
                         <div class="flex flex-wrap gap-4">
+                            <button id="toggle-fullscreen" class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-lg">📺 Fullscreen</button>
                             <button id="pause-timer" class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-lg">⏸️ Pause</button>
                             <button id="resume-timer" class="hidden px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-lg">▶️ Resume</button>
                             <button id="regenerate-question" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg">🔄 New Question</button>
@@ -237,7 +238,7 @@
                 </div>
                 
                 <!-- Game Status & Players - Side Panel -->
-                <div class="space-y-6">
+                <div class="space-y-6" id="side-panel">
                     <!-- Answer Status -->
                     <div class="bg-gray-800 rounded-2xl p-6">
                         <h3 class="text-xl font-semibold mb-4 text-white">📊 Answer Status</h3>
@@ -268,6 +269,65 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Question View -->
+    <div id="fullscreen-question" class="hidden fixed inset-0 bg-gray-900 z-50 flex flex-col">
+        <!-- Fullscreen Header -->
+        <div class="flex items-center justify-between p-8 bg-gray-800">
+            <div>
+                <h2 id="fullscreen-question-category" class="text-4xl font-bold text-blue-400">Category</h2>
+                <p id="fullscreen-question-number" class="text-2xl text-gray-400">Question 1/30</p>
+            </div>
+            <div class="text-right">
+                <div id="fullscreen-timer" class="text-8xl font-mono font-bold text-white">60</div>
+                <p class="text-xl text-gray-400">seconds</p>
+            </div>
+            <button id="exit-fullscreen" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xl">
+                ❌ Exit Fullscreen
+            </button>
+        </div>
+        
+        <!-- Fullscreen Question Content -->
+        <div class="flex-1 flex items-center justify-center p-8">
+            <div class="max-w-6xl w-full text-center">
+                <h3 id="fullscreen-question-text" class="text-6xl font-bold text-white leading-relaxing mb-12 min-h-[200px] flex items-center justify-center">
+                    Loading question...
+                </h3>
+                
+                <!-- Fullscreen Answer Options -->
+                <div id="fullscreen-question-options" class="grid grid-cols-2 gap-8 max-w-5xl mx-auto">
+                    <!-- Options will be added here in 2x2 grid -->
+                </div>
+                
+                <!-- Fullscreen Question Results -->
+                <div id="fullscreen-question-results" class="hidden mt-12">
+                    <div class="bg-gray-800 rounded-2xl p-8">
+                        <h4 class="text-3xl font-semibold text-white mb-6">📋 Results</h4>
+                        <div class="space-y-6">
+                            <div>
+                                <h5 class="text-2xl font-semibold text-green-300 mb-4">Correct Answer:</h5>
+                                <p id="fullscreen-correct-answer" class="text-green-200 text-2xl"></p>
+                            </div>
+                            <div>
+                                <h5 class="text-2xl font-semibold text-blue-300 mb-4">Explanation:</h5>
+                                <p id="fullscreen-question-explanation" class="text-blue-200 text-xl leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fullscreen Controls -->
+        <div class="p-8 bg-gray-800">
+            <div class="flex justify-center gap-6">
+                <button id="fullscreen-pause-timer" class="px-8 py-4 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-2xl">⏸️ Pause</button>
+                <button id="fullscreen-resume-timer" class="hidden px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-2xl">▶️ Resume</button>
+                <button id="fullscreen-regenerate-question" class="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-2xl">🔄 New Question</button>
+                <button id="fullscreen-next-question" class="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-2xl">➡️ Next Question</button>
             </div>
         </div>
     </div>
@@ -638,6 +698,14 @@
             document.getElementById('resume-timer').addEventListener('click', () => hostControl('resume_timer'));
             document.getElementById('regenerate-question').addEventListener('click', () => hostControl('regenerate_question'));
             document.getElementById('next-question').addEventListener('click', () => hostControl('next_question'));
+            
+            // Fullscreen controls
+            document.getElementById('toggle-fullscreen').addEventListener('click', enterFullscreen);
+            document.getElementById('exit-fullscreen').addEventListener('click', exitFullscreen);
+            document.getElementById('fullscreen-pause-timer').addEventListener('click', () => hostControl('pause_timer'));
+            document.getElementById('fullscreen-resume-timer').addEventListener('click', () => hostControl('resume_timer'));
+            document.getElementById('fullscreen-regenerate-question').addEventListener('click', () => hostControl('regenerate_question'));
+            document.getElementById('fullscreen-next-question').addEventListener('click', () => hostControl('next_question'));
             
             // Results screen
             document.getElementById('new-game').addEventListener('click', () => {
@@ -1034,6 +1102,11 @@
             const progress = (data.question_number / totalQuestions) * 100;
             document.getElementById('progress-question').textContent = `${data.question_number}/${totalQuestions}`;
             document.getElementById('progress-bar').style.width = `${progress}%`;
+            
+            // Sync to fullscreen if active
+            if (!document.getElementById('fullscreen-question').classList.contains('hidden')) {
+                syncFullscreenView();
+            }
         }
 
         function updateTimer(seconds) {
@@ -1190,6 +1263,149 @@
                 finalScores.appendChild(noPlayersElement);
             }
         }
+
+        // Fullscreen Functions
+        function enterFullscreen() {
+            // Hide regular game screen and show fullscreen
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('fullscreen-question').classList.remove('hidden');
+            
+            // Sync current question data to fullscreen view
+            syncFullscreenView();
+        }
+        
+        function exitFullscreen() {
+            // Hide fullscreen and show regular game screen
+            document.getElementById('fullscreen-question').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+        }
+        
+        function syncFullscreenView() {
+            // Copy all current question data to fullscreen view
+            if (gameState.currentQuestion) {
+                const q = gameState.currentQuestion;
+                
+                // Update header
+                document.getElementById('fullscreen-question-category').textContent = q.category;
+                document.getElementById('fullscreen-question-number').textContent = `Question ${q.question_number}/${gameState.totalQuestions || 30}`;
+                
+                // Update timer
+                document.getElementById('fullscreen-timer').textContent = gameState.timerSeconds;
+                updateFullscreenTimerStyle(gameState.timerSeconds);
+                
+                // Update question text
+                document.getElementById('fullscreen-question-text').textContent = q.question;
+                
+                // Update options
+                const fullscreenOptionsContainer = document.getElementById('fullscreen-question-options');
+                fullscreenOptionsContainer.innerHTML = '';
+                
+                if (q.options && q.options.length > 0) {
+                    // Ensure we have exactly 4 options for 2x2 grid
+                    const displayOptions = q.options.slice(0, 4);
+                    while (displayOptions.length < 4) {
+                        displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+                    }
+                    
+                    displayOptions.forEach((option, index) => {
+                        const optionElement = document.createElement('div');
+                        optionElement.className = 'p-8 bg-gray-700 rounded-2xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors';
+                        optionElement.innerHTML = `
+                            <div class="flex items-center space-x-6">
+                                <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
+                                    ${String.fromCharCode(65 + index)}
+                                </div>
+                                <span class="text-2xl flex-1">${option}</span>
+                            </div>
+                        `;
+                        fullscreenOptionsContainer.appendChild(optionElement);
+                    });
+                }
+                
+                // Update results if visible
+                const resultsVisible = !document.getElementById('question-results').classList.contains('hidden');
+                if (resultsVisible) {
+                    document.getElementById('fullscreen-question-results').classList.remove('hidden');
+                    document.getElementById('fullscreen-correct-answer').textContent = document.getElementById('correct-answer').textContent;
+                    document.getElementById('fullscreen-question-explanation').textContent = document.getElementById('question-explanation').textContent;
+                } else {
+                    document.getElementById('fullscreen-question-results').classList.add('hidden');
+                }
+                
+                // Sync timer control buttons
+                const pauseBtn = document.getElementById('pause-timer');
+                const resumeBtn = document.getElementById('resume-timer');
+                const fullscreenPauseBtn = document.getElementById('fullscreen-pause-timer');
+                const fullscreenResumeBtn = document.getElementById('fullscreen-resume-timer');
+                
+                if (pauseBtn.classList.contains('hidden')) {
+                    fullscreenPauseBtn.classList.add('hidden');
+                    fullscreenResumeBtn.classList.remove('hidden');
+                } else {
+                    fullscreenPauseBtn.classList.remove('hidden');
+                    fullscreenResumeBtn.classList.add('hidden');
+                }
+            }
+        }
+        
+        function updateFullscreenTimerStyle(seconds) {
+            const timerElement = document.getElementById('fullscreen-timer');
+            if (seconds <= 10) {
+                timerElement.className = 'text-8xl font-mono font-bold text-red-400';
+            } else if (seconds <= 30) {
+                timerElement.className = 'text-8xl font-mono font-bold text-yellow-400';
+            } else {
+                timerElement.className = 'text-8xl font-mono font-bold text-white';
+            }
+        }
+        
+        // Override the original updateTimer function to also update fullscreen
+        const originalUpdateTimer = updateTimer;
+        updateTimer = function(seconds) {
+            originalUpdateTimer(seconds);
+            // Also update fullscreen timer if it's visible
+            if (!document.getElementById('fullscreen-question').classList.contains('hidden')) {
+                document.getElementById('fullscreen-timer').textContent = seconds;
+                updateFullscreenTimerStyle(seconds);
+            }
+        };
+        
+        // Override the original showTimerPaused function
+        const originalShowTimerPaused = showTimerPaused;
+        showTimerPaused = function() {
+            originalShowTimerPaused();
+            // Sync to fullscreen
+            if (!document.getElementById('fullscreen-question').classList.contains('hidden')) {
+                document.getElementById('fullscreen-pause-timer').classList.add('hidden');
+                document.getElementById('fullscreen-resume-timer').classList.remove('hidden');
+                document.getElementById('fullscreen-timer').textContent = '⏸️';
+            }
+        };
+        
+        // Override the original showTimerResumed function
+        const originalShowTimerResumed = showTimerResumed;
+        showTimerResumed = function() {
+            originalShowTimerResumed();
+            // Sync to fullscreen
+            if (!document.getElementById('fullscreen-question').classList.contains('hidden')) {
+                document.getElementById('fullscreen-pause-timer').classList.remove('hidden');
+                document.getElementById('fullscreen-resume-timer').classList.add('hidden');
+                document.getElementById('fullscreen-timer').textContent = gameState.timerSeconds;
+                updateFullscreenTimerStyle(gameState.timerSeconds);
+            }
+        };
+        
+        // Override the original showQuestionResults function
+        const originalShowQuestionResults = showQuestionResults;
+        showQuestionResults = function(data) {
+            originalShowQuestionResults(data);
+            // Sync to fullscreen
+            if (!document.getElementById('fullscreen-question').classList.contains('hidden')) {
+                document.getElementById('fullscreen-question-results').classList.remove('hidden');
+                document.getElementById('fullscreen-correct-answer').textContent = data.correct_answer;
+                document.getElementById('fullscreen-question-explanation').textContent = data.explanation || 'No explanation available.';
+            }
+        };
 
         async function hostControl(action) {
             try {
