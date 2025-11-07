@@ -9,7 +9,7 @@ import { UI } from './dom.js';
 import {
     setLanguage, updateDescriptions, updatePlayerNameInputs,
     updateModelSelection, closePopupAndContinue, hideHistoryModal,
-    showHistoryModal, setupGameMenu, populateModelSelectors, populatePresetSelector, updateCategoryInputs
+    showHistoryModal, setupGameMenu, populateModelSelectors, populateSetupModelSelectors, populateExplanationModelSelectors, populateCategoryModelSelectors, populatePresetSelector, updateCategoryInputs
 } from './ui.js';
 import {
     loadGameState, restartGame, downloadGameState,
@@ -31,6 +31,7 @@ export async function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
 
     await populateModelSelectors();
+    await populateSetupModelSelectors();
     await populatePresetSelector();
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -72,18 +73,54 @@ export async function initializeApp(apiAdapter) {
     });
 
     UI.modelSelect.addEventListener('change', (e) => {
-        updateModelSelection(e.target.value);
+        updateModelSelection(e.target.value, 'question');
         if (gameState.api.saveSettings) {
             gameState.api.saveSettings();
         }
     });
 
     UI.gameMenuModelSelect.addEventListener('change', (e) => {
-        updateModelSelection(e.target.value);
+        updateModelSelection(e.target.value, 'question');
         if (gameState.api.saveSettings) {
             gameState.api.saveSettings();
         }
     });
+
+    if (UI.explanationModelSelect) {
+        UI.explanationModelSelect.addEventListener('change', (e) => {
+            updateModelSelection(e.target.value, 'explanation');
+            if (gameState.api.saveSettings) {
+                gameState.api.saveSettings();
+            }
+        });
+    }
+
+    if (UI.categoryModelSelect) {
+        UI.categoryModelSelect.addEventListener('change', (e) => {
+            updateModelSelection(e.target.value, 'category');
+            if (gameState.api.saveSettings) {
+                gameState.api.saveSettings();
+            }
+        });
+    }
+
+    if (UI.gameMenuExplanationModelSelect) {
+        UI.gameMenuExplanationModelSelect.addEventListener('change', (e) => {
+            updateModelSelection(e.target.value, 'explanation');
+            if (gameState.api.saveSettings) {
+                gameState.api.saveSettings();
+            }
+        });
+    }
+
+    if (UI.gameMenuCategoryModelSelect) {
+        UI.gameMenuCategoryModelSelect.addEventListener('change', (e) => {
+            updateModelSelection(e.target.value, 'category');
+            if (gameState.api.saveSettings) {
+                gameState.api.saveSettings();
+            }
+        });
+    }
 
     UI.playerCountInput.addEventListener('input', updatePlayerNameInputs);
     UI.startGameBtn.addEventListener('click', initializeGame);
@@ -141,4 +178,12 @@ export async function initializeApp(apiAdapter) {
     });
 
     setupGameMenu();
+
+    // Sync game menu selects after population
+    if (UI.explanationModelSelect) {
+        UI.explanationModelSelect.dispatchEvent(new Event('change'));
+    }
+    if (UI.categoryModelSelect) {
+        UI.categoryModelSelect.dispatchEvent(new Event('change'));
+    }
 }

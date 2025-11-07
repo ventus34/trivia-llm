@@ -1,0 +1,134 @@
+import re
+import random
+import json
+from typing import Any, Dict, List
+from collections import deque
+from fastapi import HTTPException
+
+from config import ALLOWED_MODELS, PROMPTS, DEBUG_MODE
+from state import CATEGORY_GENERATION_HISTORY, MAX_SUBCATEGORY_HISTORY, MAX_ENTITY_HISTORY, MAX_CATEGORIES_TRACKED
+
+def update_generation_history(category: str, subcategory: str, key_entities: List[str]):
+    if category not in CATEGORY_GENERATION_HISTORY:
+        if len(CATEGORY_GENERATION_HISTORY) >= MAX_CATEGORIES_TRACKED:
+            oldest = next(iter(CATEGORY_GENERATION_HISTORY))
+            del CATEGORY_GENERATION_HISTORY[oldest]
+            print(f"Removed oldest category '{oldest}' to enforce limit of {MAX_CATEGORIES_TRACKED}.")
+
+        CATEGORY_GENERATION_HISTORY[category] = {
+            "subcategories": deque(maxlen=MAX_SUBCATEGORY_HISTORY),
+            "entities": deque(maxlen=MAX_ENTITY_HISTORY)
+        }
+    if subcategory:
+        CATEGORY_GENERATION_HISTORY[category]["subcategories"].append(subcategory)
+    if key_entities:
+        for entity in key_entities:
+            CATEGORY_GENERATION_HISTORY[category]["entities"].append(entity)
+
+def is_question_valid(data: Any, game_mode: str) -> (bool, str):
+    if not data or not isinstance(data, dict):
+        return False, "Response is not a valid, non-empty dictionary."
+    question = data.get("question")
+    if not question or not isinstance(question, str) or not question.strip():
+        return False, "Response is missing a valid 'question' string."
+    if not (10 < len(question) < 500):
+        return False, f"Question length ({len(question)}) is outside the optimal range (10-500 chars)."
+    if not data.get("explanation_correct") or not data.get("explanation_summary"):
+        return False, "Response is missing one or more required explanation fields."
+    if not data.get("subcategory") or not data.get("key_entities"):
+        return False, "Response is missing 'subcategory' or 'key_entities' metadata."
+    if game_mode == "mcq":
+        options = data.get("options")
+        answer = data.get("answer")
+        if not options or not isinstance(options, list) or len(options) != 4:
+            return False, f"MCQ mode: Expected 4 options in a list, but found {len(options) if isinstance(options, list) else 'none'}."
+        if any(not isinstance(opt, str) or not opt.strip() for opt in options):
+            return False, "MCQ mode: One or more options are invalid (not a string or empty)."
+        if len(set(options)) != len(options):
+            return False, "MCQ mode: Duplicate options found."
+        if not answer or not isinstance(answer, str) or not answer.strip():
+            return False, "MCQ mode: Missing or invalid 'answer' string."
+        if answer not in options:
+            return False, "MCQ mode: The provided 'answer' is not in the 'options' list."
+    return True, "Validation successful."
+
+def validate_model(model: str):
+    # Allow any model when using dynamic models from API
+    from config import DYNAMIC_MODELS
+    if DYNAMIC_MODELS and model in DYNAMIC_MODELS:
+        return
+    # Otherwise check against allowed models
+    if model not in ALLOWED_MODELS:
+        raise HTTPException(status_code=400, detail=f"Model '{model}' is not supported.")
+
+def build_question_prompt(params: Dict[str, Any], category: str) -> str:
+    lang = params.get("language")
+    prompt_struct = PROMPTS["generate_question"][lang]
+
+    history = CATEGORY_GENERATION_HISTORY.get(category, {})
+    subcategory_history = list(history.get("subcategories", []))
+    entity_history = list(history.get("entities", []))
+
+    random.shuffle(subcategory_history)
+    random.shuffle(entity_history)
+
+    knowledge_prompt = PROMPTS["knowledge_prompts"][params.get("knowledgeLevel")][lang]
+    game_mode_prompt = PROMPTS["game_mode_prompts"][params.get("gameMode")][lang]
+    theme_context = f"The question must relate to the theme: {params.get('theme')}." if params.get("includeCategoryTheme") and params.get("theme") else "No additional theme."
+    subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "No history."
+    entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "No history."
+
+    context_lines = [line.format(category=category, knowledge_prompt=knowledge_prompt, game_mode_prompt=game_mode_prompt, theme_context=theme_context) for line in prompt_struct["context_lines"]]
+    rules = [rule.format(subcategory_history_prompt=subcategory_history_prompt, entity_history_prompt=entity_history_prompt) for rule in prompt_struct["rules"]]
+
+    combined_rules = context_lines + rules
+    random.shuffle(combined_rules)
+    prompt = "\n".join([prompt_struct["persona"], prompt_struct["chain_of_thought"], prompt_struct["context_header"], "\n".join(combined_rules), prompt_struct["output_format"]])
+
+    return prompt
+
+def extract_json_from_response(text: str) -> Any:
+    if not text or not isinstance(text, str):
+        return {"error": "Input text is empty or invalid."}
+
+    cleaned_text = text.strip()
+    cleaned_text = re.sub(r'```(?:json)?', '', cleaned_text)
+    cleaned_text = cleaned_text.lstrip('`').rstrip('`')
+
+    try:
+        return json.loads(cleaned_text)
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    json_match_md = re.search(r'{[\s\S]*?}', cleaned_text, re.DOTALL)
+    if json_match_md:
+        json_str = json_match_md.group().strip()
+        try:
+            return json.loads(json_str)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    first_brace_index = cleaned_text.find('{')
+    if first_brace_index != -1:
+        candidate = cleaned_text[first_brace_index:]
+        brace_count = 0
+        for i, char in enumerate(candidate):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+            if brace_count == 0:
+                json_str = candidate[:i+1].strip()
+                try:
+                    return json.loads(json_str)
+                except (json.JSONDecodeError, ValueError):
+                    break
+
+    print(f"ERROR: JSON parsing failed after all attempts. Raw snippet: {text[:200]}...")
+    return {"error": "Unable to parse JSON from response. Check model output format."}
+
+def format_explanation_part(part: Any) -> str:
+    if isinstance(part, str): return part
+    if isinstance(part, list): return "\n".join(str(item) for item in part if item)
+    if isinstance(part, dict): return "\n".join(f"- {key}: {value}" for key, value in part.items())
+    return ""
