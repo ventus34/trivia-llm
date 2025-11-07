@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import random
 from datetime import datetime
 from aiolimiter import AsyncLimiter
 from openai import AsyncOpenAI
@@ -74,13 +75,21 @@ def initialize_models(dynamic_models=None):
         QUESTION_MODELS = [{"id": model_id, "name": model_id} for model_id in dynamic_models]
         EXPLANATION_MODELS = [{"id": model_id, "name": model_id} for model_id in dynamic_models]
         CATEGORY_MODELS = [{"id": model_id, "name": model_id} for model_id in dynamic_models]
-        FALLBACK_MODEL = dynamic_models[0] if dynamic_models else STATIC_FALLBACK_MODEL
+        # Select random fallback model from dynamic models
+        FALLBACK_MODEL = random.choice(dynamic_models) if dynamic_models else STATIC_FALLBACK_MODEL
     else:
         # Fallback to static models
         QUESTION_MODELS = STATIC_QUESTION_MODELS
         EXPLANATION_MODELS = STATIC_EXPLANATION_MODELS
         CATEGORY_MODELS = STATIC_CATEGORY_MODELS
-        FALLBACK_MODEL = STATIC_FALLBACK_MODEL
+        # Select random fallback model from all available static models
+        all_static_models = []
+        for model_list in [STATIC_QUESTION_MODELS, STATIC_EXPLANATION_MODELS, STATIC_CATEGORY_MODELS]:
+            all_static_models.extend([model["id"] for model in model_list])
+        # Add static fallback model to the pool if it exists and isn't already included
+        if STATIC_FALLBACK_MODEL and STATIC_FALLBACK_MODEL not in all_static_models:
+            all_static_models.append(STATIC_FALLBACK_MODEL)
+        FALLBACK_MODEL = random.choice(all_static_models) if all_static_models else STATIC_FALLBACK_MODEL
 
     MODELS_BY_LANGUAGE = {"pl": [], "en": []}
     for model in QUESTION_MODELS:
