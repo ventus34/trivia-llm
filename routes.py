@@ -105,7 +105,7 @@ async def generate_question(req: QuestionRequest):
                 req.includeCategoryTheme = not req.includeCategoryTheme  # Toggle theme inclusion for variation
 
             prompt = build_question_prompt(req.model_dump(), req.category)
-            data, raw_response = await call_generative_model(prompt, req.model, temperature=1.2, return_raw=True)
+            data, raw_response = await call_generative_model(prompt, req.model, return_raw=True)
             raw_response_last = raw_response
             is_valid, error_message = is_question_valid(data, req.gameMode)
             if is_valid:
@@ -140,7 +140,7 @@ async def generate_categories(req: GenerateCategoriesRequest):
             # Use the provided model or fall back to a random one if not available
             model_to_use = req.model if req.model and req.model != 'auto' else (random.choice(CATEGORY_MODELS)['id'] if CATEGORY_MODELS else FALLBACK_MODEL)
             prompt = PROMPTS["generate_categories"][req.language].format(theme=req.theme)
-            response_data, raw_response = await call_generative_model(prompt, model_to_use, temperature=0.8, return_raw=True)
+            response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
             if response_data and isinstance(response_data, dict):
                 return JSONResponse(content=response_data)
             else:
@@ -161,7 +161,7 @@ async def get_category_mutation(req: MutationRequest):
         # Use the provided model or fall back to a random one if not available
         model_to_use = req.model if req.model and req.model != 'auto' else (random.choice(CATEGORY_MODELS)['id'] if CATEGORY_MODELS else FALLBACK_MODEL)
         prompt = PROMPTS["mutate_category"][req.language].format(old_category=req.old_category, theme=req.theme or "general", existing_categories=req.existing_categories)
-        response_data, raw_response = await call_generative_model(prompt, model_to_use, temperature=1.5, return_raw=True)
+        response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
         return JSONResponse(content=response_data) if isinstance(response_data, dict) else {"error": "Invalid response", "raw_snippet": raw_response[:300]}
     except Exception as e:
         raw_response = raw_response if 'raw_response' in locals() else "No response captured."
@@ -175,7 +175,7 @@ async def get_incorrect_explanation(req: ExplanationRequest):
         # Use the provided model or fall back to a random one if not available
         model_to_use = req.model if req.model and req.model != 'auto' else (random.choice(EXPLANATION_MODELS)['id'] if EXPLANATION_MODELS else FALLBACK_MODEL)
         prompt = PROMPTS["explain_incorrect"][req.language].format(question=req.question, correct_answer=req.correct_answer, player_answer=req.player_answer)
-        response_data, raw_response = await call_generative_model(prompt, model_to_use, temperature=0.2, return_raw=True)
+        response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
         if isinstance(response_data, str):
             response_data = {"explanation": response_data}
         if isinstance(response_data, dict):

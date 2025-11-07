@@ -82,7 +82,7 @@ async def generate_live_quiz_question(game_state: LiveQuizGameState, category: s
     
     # Use the existing generation logic
     prompt = build_question_prompt(req.model_dump(), category)
-    data, raw_response = await call_generative_model(prompt, req.model, temperature=1.2, return_raw=True)
+    data, raw_response = await call_generative_model(prompt, req.model, return_raw=True)
     
     if not data or not isinstance(data, dict) or not data.get('question'):
         raise ValueError("Failed to generate valid question")

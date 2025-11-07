@@ -38,7 +38,7 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
             params = request_data.model_dump()
             prompt = build_question_prompt(params, category)
             # call with timeout to avoid long blocking
-            data, raw_response = await asyncio.wait_for(call_generative_model(prompt, model_to_use, temperature=1.2, return_raw=True), timeout=30.0)
+            data, raw_response = await asyncio.wait_for(call_generative_model(prompt, model_to_use, return_raw=True), timeout=30.0)
             is_valid, error_msg = is_question_valid(data, params.get("gameMode"))
             if is_valid:
                 explanation_parts = [format_explanation_part(data.get(key)) for key in ["explanation_correct", "explanation_distractors", "explanation_summary"]]

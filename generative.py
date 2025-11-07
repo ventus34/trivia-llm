@@ -9,7 +9,7 @@ from config import client, DEBUG_MODE, GEN_CALL_MAX_ATTEMPTS, FALLBACK_MODEL, ge
 from utils import extract_json_from_response, validate_model
 
 # Rate-limit / retry aware call to generative model
-async def call_generative_model(prompt: str, model_name: str, temperature: float, return_raw=False) -> Any:
+async def call_generative_model(prompt: str, model_name: str, return_raw=False) -> Any:
     """
     Robust wrapper with:
     - global concurrency semaphore (to limit simultaneous external calls)
@@ -51,7 +51,7 @@ async def call_generative_model(prompt: str, model_name: str, temperature: float
             async with concurrency_ctx:
                 async with limiter_ctx:
                     messages = [{"role": "user", "content": prompt}]
-                    request_params = {"model": current_model, "messages": messages, "temperature": temperature, "response_format": {"type": "json_object"}}
+                    request_params = {"model": current_model, "messages": messages, "response_format": {"type": "json_object"}}
                     response = await client.chat.completions.create(**request_params)
                     response_text = response.choices[0].message.content
                     raw_response = response_text
