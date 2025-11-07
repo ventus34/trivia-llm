@@ -130,6 +130,17 @@ export function restoreGameState(stateToRestore) {
     gameState.isAwaitingMove = false;
     gameState.lastAnswerWasCorrect = false;
 
+    // Sync model selections with UI
+    if (UI.modelSelect && gameState.selectedQuestionModel) {
+        UI.modelSelect.value = gameState.selectedQuestionModel;
+    }
+    if (UI.explanationModelSelect && gameState.selectedExplanationModel) {
+        UI.explanationModelSelect.value = gameState.selectedExplanationModel;
+    }
+    if (UI.categoryModelSelect && gameState.selectedCategoryModel) {
+        UI.categoryModelSelect.value = gameState.selectedCategoryModel;
+    }
+
     createBoardLayout();
     setLanguage(gameState.currentLanguage);
 

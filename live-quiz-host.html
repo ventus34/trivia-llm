@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Quiz - Host</title>
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        (function() {
+            // Force dark theme for live quiz
+            document.documentElement.className = 'dark';
+        })();
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+
+    <!-- Setup Screen -->
+    <div id="setup-screen" class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl font-bold text-center mb-8 text-white">🎯 Live Quiz - Host</h1>
+            
+            <!-- Host Setup Form -->
+            <div class="bg-gray-800 rounded-2xl p-8 space-y-6">
+                <div>
+                    <h2 class="text-2xl font-semibold mb-6 text-center">Game Setup</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basic Settings -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Host Name</label>
+                                <input type="text" id="host-name" value="Host" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Game Mode</label>
+                                <select id="game-mode" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="mcq" selected>Multiple Choice</option>
+                                    <option value="short_answer">Short Answer</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Knowledge Level</label>
+                                <select id="knowledge-level" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="basic">Basic</option>
+                                    <option value="intermediate" selected>Intermediate</option>
+                                    <option value="expert">Expert</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Language</label>
+                                <select id="language" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="pl" selected>Polski</option>
+                                    <option value="en">English</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Category & Theme Settings -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Theme (Optional)</label>
+                                <input type="text" id="theme" placeholder="e.g., Lord of the Rings" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <input type="checkbox" id="include-theme" checked class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                                <label for="include-theme" class="ml-2 text-sm text-gray-300">Include theme in questions</label>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Question Model</label>
+                                <select id="question-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="auto" selected>Auto</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Explanation Model</label>
+                                <select id="explanation-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="auto" selected>Auto</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Category Model</label>
+                                <select id="category-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="auto" selected>Auto</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Categories Section -->
+                    <div class="mt-6">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Category Presets</label>
+                            <div class="flex gap-2">
+                                <select id="category-preset-select" class="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">Choose a preset...</option>
+                                </select>
+                                <button id="load-preset" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">Load Preset</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mb-4">
+                            <label class="block text-sm font-medium text-gray-300">Categories (6 required)</label>
+                            <button id="generate-categories" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Generate Categories</button>
+                        </div>
+                        <div id="categories-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" placeholder="Category 1" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" placeholder="Category 2" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" placeholder="Category 3" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" placeholder="Category 4" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" placeholder="Category 5" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="text" placeholder="Category 6" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8">
+                        <button id="create-room" class="w-full py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">🎮 Create Room</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobby-screen" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-8 text-white">🏠 Game Lobby</h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Room Info -->
+                <div class="bg-gray-800 rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-white">📋 Room Information</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Room Code:</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="room-code" class="text-2xl font-mono font-bold text-blue-400">------</span>
+                                <button id="copy-room-code" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                                    📋
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Game ID:</span>
+                            <span id="game-id" class="text-sm text-gray-400 font-mono">------------</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Players:</span>
+                            <span id="player-count" class="text-white font-semibold">0/12</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-gray-700 rounded-lg">
+                        <h3 class="text-sm font-medium text-gray-300 mb-2">Share with players:</h3>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="join-url" readonly class="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded text-sm text-white" value="">
+                            <button id="copy-join-url" class="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors">🔗</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Players List -->
+                <div class="bg-gray-800 rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-white">👥 Connected Players</h2>
+                    <div id="players-list" class="space-y-2 max-h-96 overflow-y-auto">
+                        <!-- Players will be added here -->
+                    </div>
+                    
+                    <div class="mt-6 space-y-3">
+                        <button id="start-game" class="w-full py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">🚀 Start Game</button>
+                        <button id="back-to-setup" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">← Back to Setup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Question Display -->
+                <div class="lg:col-span-2">
+                    <div class="bg-gray-800 rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 id="question-category" class="text-lg font-semibold text-blue-400">Category</h2>
+                                <p id="question-number" class="text-sm text-gray-400">Question 1/30</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-3xl font-mono font-bold text-white" id="timer">60</div>
+                                <p class="text-sm text-gray-400">seconds</p>
+                            </div>
+                        </div>
+                        
+                        <div id="question-content" class="mb-6">
+                            <h3 class="text-xl font-medium text-white mb-4" id="question-text">Loading question...</h3>
+                            <div id="question-options" class="space-y-2">
+                                <!-- Options will be added here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Question Results with Explanation -->
+                        <div id="question-results" class="hidden mb-6">
+                            <div class="bg-gray-700 rounded-lg p-4">
+                                <h4 class="text-lg font-semibold text-white mb-3">📋 Results</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <h5 class="text-sm font-semibold text-green-300 mb-1">Correct Answer:</h5>
+                                        <p id="correct-answer" class="text-green-200"></p>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-sm font-semibold text-blue-300 mb-1">Explanation:</h5>
+                                        <p id="question-explanation" class="text-blue-200 text-sm leading-relaxed"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Game Controls -->
+                        <div class="flex flex-wrap gap-3">
+                            <button id="pause-timer" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">⏸️ Pause</button>
+                            <button id="resume-timer" class="hidden px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">▶️ Resume</button>
+                            <button id="regenerate-question" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">🔄 New Question</button>
+                            <button id="next-question" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">➡️ Next Question</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Game Status & Players -->
+                <div class="space-y-6">
+                    <!-- Answer Status -->
+                    <div class="bg-gray-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold mb-4 text-white">📊 Answer Status</h3>
+                        <div id="answer-status" class="space-y-2">
+                            <!-- Answer status will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Current Scores -->
+                    <div class="bg-gray-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold mb-4 text-white">🏆 Current Scores</h3>
+                        <div id="scoreboard" class="space-y-2 max-h-64 overflow-y-auto">
+                            <!-- Scores will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Game Progress -->
+                    <div class="bg-gray-800 rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold mb-4 text-white">📈 Game Progress</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Question:</span>
+                                <span id="progress-question" class="text-white">1/30</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 3.33%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-gray-800 rounded-2xl p-8 text-center">
+                <h1 class="text-4xl font-bold text-yellow-400 mb-6">🎉 Game Finished!</h1>
+                <div id="final-scores" class="space-y-4 mb-8">
+                    <!-- Final scores will be added here -->
+                </div>
+                <div class="space-y-3">
+                    <button id="new-game" class="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">🎮 New Game</button>
+                    <button id="exit-game" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">🏠 Exit to Home</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-2xl p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p id="loading-text" class="text-white">Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        // Category Presets from board game
+        const CATEGORY_PRESETS = [
+            {
+                name: {pl: 'Wiedza Ogólna – Klasyk', en: 'General Knowledge – Classic'},
+                categories: [
+                    {pl: 'Historia', en: 'History'},
+                    {pl: 'Geografia', en: 'Geography'},
+                    {pl: 'Nauka', en: 'Science'},
+                    {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+                    {pl: 'Sport', en: 'Sports'},
+                    {pl: 'Media i rozrywka', en: 'Media & Entertainment'}
+                ]
+            },
+            {
+                name: {pl: 'Wiedza Ogólna – Współczesność', en: 'General Knowledge – Modern Times'},
+                categories: [
+                    {pl: 'Wydarzenia bieżące', en: 'Current Events'},
+                    {pl: 'Technologia', en: 'Technology'},
+                    {pl: 'Popkultura', en: 'Pop Culture'},
+                    {pl: 'Odkrycia naukowe', en: 'Scientific Discoveries'},
+                    {pl: 'Polityka', en: 'Politics'},
+                    {pl: 'Internet i media społecznościowe', en: 'Internet & Social Media'}
+                ]
+            },
+            {
+                name: {pl: 'Polska – Wiedza Ogólna', en: 'Poland – General Knowledge'},
+                categories: [
+                    {pl: 'Historia', en: 'History'},
+                    {pl: 'Geografia', en: 'Geography'},
+                    {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+                    {pl: 'Znani Polacy', en: 'Famous Poles'},
+                    {pl: 'Sport', en: 'Sports'},
+                    {pl: 'Społeczeństwo', en: 'Society'}
+                ]
+            },
+            {
+                name: {pl: 'Polska – Lata 90.', en: 'Poland – The 90s'},
+                categories: [
+                    {pl: 'Historia', en: 'History'},
+                    {pl: 'Muzyka', en: 'Music'},
+                    {pl: 'Film i seriale', en: 'Movies & TV'},
+                    {pl: 'Życie codzienne', en: 'Everyday Life'},
+                    {pl: 'Sport', en: 'Sports'},
+                    {pl: 'Technologia', en: 'Technology'}
+                ]
+            },
+            {
+                name: {pl: 'Nauka – Podstawy', en: 'Science – The Basics'},
+                categories: [
+                    {pl: 'Fizyka', en: 'Physics'},
+                    {pl: 'Chemia', en: 'Chemistry'},
+                    {pl: 'Biologia', en: 'Biology'},
+                    {pl: 'Astronomia', en: 'Astronomy'},
+                    {pl: 'Matematyka', en: 'Mathematics'},
+                    {pl: 'Wielcy odkrywcy', en: 'Great Discoverers'}
+                ]
+            },
+            {
+                name: {pl: 'Gry wideo', en: 'Video Games'},
+                categories: [
+                    {pl: 'Historia gier', en: 'History of Games'},
+                    {pl: 'Serie i postacie', en: 'Series & Characters'},
+                    {pl: 'Konsole', en: 'Consoles'},
+                    {pl: 'Gatunki', en: 'Genres'},
+                    {pl: 'Kultura graczy', en: 'Gaming Culture'},
+                    {pl: 'E-sport', en: 'E-sports'}
+                ]
+            },
+            {
+                name: {pl: 'Rozrywka – Kino', en: 'Entertainment – Cinema'},
+                categories: [
+                    {pl: 'Historia kina', en: 'History of Cinema'},
+                    {pl: 'Gatunki filmowe', en: 'Film Genres'},
+                    {pl: 'Reżyserzy', en: 'Directors'},
+                    {pl: 'Aktorzy', en: 'Actors'},
+                    {pl: 'Nagrody filmowe', en: 'Film Awards'},
+                    {pl: 'Kultowe filmy', en: 'Cult Movies'}
+                ]
+            },
+            {
+                name: {pl: 'Podróże – Świat', en: 'Travel – World'},
+                categories: [
+                    {pl: 'Kontynenty', en: 'Continents'},
+                    {pl: 'Kraje', en: 'Countries'},
+                    {pl: 'Miasta', en: 'Cities'},
+                    {pl: 'Zabytki', en: 'Landmarks'},
+                    {pl: 'Cuda natury', en: 'Natural Wonders'},
+                    {pl: 'Kultury i tradycje', en: 'Cultures & Traditions'}
+                ]
+            },
+            {
+                name: {pl: 'Kuchnia Polska', en: 'Polish Cuisine'},
+                categories: [
+                    {pl: 'Dania główne', en: 'Main Courses'},
+                    {pl: 'Zupy', en: 'Soups'},
+                    {pl: 'Przystawki', en: 'Appetizers'},
+                    {pl: 'Desery', en: 'Desserts'},
+                    {pl: 'Święta i tradycje kulinarne', en: 'Holiday & Traditional Foods'},
+                    {pl: 'Znane potrawy regionalne', en: 'Famous Regional Dishes'}
+                ]
+            },
+            {
+                name: {pl: 'Sport – Ogólne', en: 'Sport – General'},
+                categories: [
+                    {pl: 'Igrzyska olimpijskie', en: 'Olympic Games'},
+                    {pl: 'Piłka nożna', en: 'Football (Soccer)'},
+                    {pl: 'Koszykówka', en: 'Basketball'},
+                    {pl: 'Lekkoatletyka', en: 'Athletics'},
+                    {pl: 'Sporty zimowe', en: 'Winter Sports'},
+                    {pl: 'Znani sportowcy', en: 'Famous Athletes'}
+                ]
+            }
+        ];
+
+        // Global game state
+        let gameState = {
+            gameId: null,
+            roomCode: null,
+            hostId: null,
+            categories: [],
+            players: [],
+            currentQuestion: null,
+            timer: null,
+            timerSeconds: 60,
+            sse: null
+        };
+
+        // API helper
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(endpoint, options);
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.detail || 'API call failed');
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('API Error:', error);
+                showNotification('Error: ' + error.message, 'error');
+                throw error;
+            }
+        }
+
+        // UI Helpers
+        function showScreen(screenId) {
+            document.querySelectorAll('#setup-screen, #lobby-screen, #game-screen, #results-screen').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 ${
+                type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-green-600' : 'bg-blue-600'
+            }`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function showLoading(text = 'Loading...') {
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        // Load available models
+        async function loadModels() {
+            try {
+                console.log('Loading models...');
+                
+                const [questionModels, explanationModels, categoryModels] = await Promise.all([
+                    apiCall('/api/models/questions'),
+                    apiCall('/api/models/explanations'),
+                    apiCall('/api/models/categories')
+                ]);
+                
+                console.log('Question models loaded:', questionModels);
+                console.log('Explanation models loaded:', explanationModels);
+                console.log('Category models loaded:', categoryModels);
+                
+                // Populate question models
+                const questionModelSelect = document.getElementById('question-model');
+                questionModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
+                if (Array.isArray(questionModels)) {
+                    questionModels.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = model.name;
+                        questionModelSelect.appendChild(option);
+                    });
+                }
+                
+                // Populate explanation models
+                const explanationModelSelect = document.getElementById('explanation-model');
+                explanationModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
+                if (Array.isArray(explanationModels)) {
+                    explanationModels.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = model.name;
+                        explanationModelSelect.appendChild(option);
+                    });
+                }
+                
+                // Populate category models
+                const categoryModelSelect = document.getElementById('category-model');
+                categoryModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
+                if (Array.isArray(categoryModels)) {
+                    categoryModels.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = model.name;
+                        categoryModelSelect.appendChild(option);
+                    });
+                }
+                
+                console.log('Models loaded successfully');
+            } catch (error) {
+                console.error('Failed to load models:', error);
+                showNotification('Failed to load model options. Using defaults.', 'error');
+                // Keep default options if model loading fails
+            }
+        }
+
+        // Populate category presets
+        function populateCategoryPresets() {
+            const presetSelect = document.getElementById('category-preset-select');
+            const language = document.getElementById('language').value;
+            
+            presetSelect.innerHTML = '<option value="">Choose a preset...</option>';
+            
+            CATEGORY_PRESETS.forEach((preset, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = preset.name[language] || preset.name.en;
+                presetSelect.appendChild(option);
+            });
+        }
+
+        // Setup screen logic
+        function setupEventListeners() {
+            // Load models first
+            loadModels();
+            
+            // Generate categories
+            document.getElementById('generate-categories').addEventListener('click', async () => {
+                const theme = document.getElementById('theme').value.trim();
+                if (!theme) {
+                    showNotification('Please enter a theme first', 'error');
+                    return;
+                }
+                
+                showLoading('Generating categories...');
+                try {
+                    const response = await apiCall('/api/generate-categories', 'POST', {
+                        model: document.getElementById('category-model').value,
+                        theme: theme,
+                        language: document.getElementById('language').value
+                    });
+                    
+                    updateCategoryInputs(response.categories);
+                    showNotification('Categories generated successfully!', 'success');
+                } catch (error) {
+                    // Categories generation failed, but don't block the user
+                    showNotification('Failed to generate categories, you can add them manually', 'error');
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Load preset
+            document.getElementById('load-preset').addEventListener('click', () => {
+                const selectedIndex = document.getElementById('category-preset-select').value;
+                if (selectedIndex === '') {
+                    showNotification('Please select a preset first', 'error');
+                    return;
+                }
+                
+                const selectedPreset = CATEGORY_PRESETS[parseInt(selectedIndex)];
+                const language = document.getElementById('language').value;
+                
+                const categoryNames = selectedPreset.categories.map(cat => cat[language] || cat.en);
+                updateCategoryInputs(categoryNames);
+                
+                const presetName = selectedPreset.name[language] || selectedPreset.name.en;
+                document.getElementById('theme').value = presetName;
+                
+                showNotification('Preset loaded successfully!', 'success');
+            });
+
+            // Language change updates presets
+            document.getElementById('language').addEventListener('change', () => {
+                populateCategoryPresets();
+            });
+
+            // Create room
+            document.getElementById('create-room').addEventListener('click', createRoom);
+            
+            // Copy room code
+            document.getElementById('copy-room-code').addEventListener('click', () => {
+                navigator.clipboard.writeText(gameState.roomCode);
+                showNotification('Room code copied!', 'success');
+            });
+            
+            // Copy join URL
+            document.getElementById('copy-join-url').addEventListener('click', () => {
+                const url = document.getElementById('join-url').value;
+                navigator.clipboard.writeText(url);
+                showNotification('Join URL copied!', 'success');
+            });
+            
+            // Start game
+            document.getElementById('start-game').addEventListener('click', startGame);
+            
+            // Back to setup
+            document.getElementById('back-to-setup').addEventListener('click', () => {
+                if (gameState.sse) {
+                    gameState.sse.close();
+                }
+                showScreen('setup-screen');
+            });
+            
+            // Game controls
+            document.getElementById('pause-timer').addEventListener('click', () => hostControl('pause_timer'));
+            document.getElementById('resume-timer').addEventListener('click', () => hostControl('resume_timer'));
+            document.getElementById('regenerate-question').addEventListener('click', () => hostControl('regenerate_question'));
+            document.getElementById('next-question').addEventListener('click', () => hostControl('next_question'));
+            
+            // Results screen
+            document.getElementById('new-game').addEventListener('click', () => {
+                if (gameState.sse) {
+                    gameState.sse.close();
+                }
+                showScreen('setup-screen');
+            });
+            
+            document.getElementById('exit-game').addEventListener('click', () => {
+                if (gameState.sse) {
+                    gameState.sse.close();
+                }
+                showScreen('setup-screen');
+            });
+        }
+
+        function updateCategoryInputs(categories) {
+            const inputs = document.querySelectorAll('.category-input');
+            categories.slice(0, 6).forEach((category, index) => {
+                if (inputs[index]) {
+                    inputs[index].value = category;
+                }
+            });
+        }
+
+        async function createRoom() {
+            // Validate categories
+            const categories = Array.from(document.querySelectorAll('.category-input'))
+                .map(input => input.value.trim())
+                .filter(cat => cat !== '');
+            
+            if (categories.length !== 6) {
+                showNotification('Please fill in all 6 categories', 'error');
+                return;
+            }
+            
+            showLoading('Creating room...');
+            try {
+                const response = await apiCall('/api/live-quiz/create-room', 'POST', {
+                    host_name: document.getElementById('host-name').value || 'Host',
+                    categories: categories,
+                    game_mode: document.getElementById('game-mode').value,
+                    knowledge_level: document.getElementById('knowledge-level').value,
+                    language: document.getElementById('language').value,
+                    theme: document.getElementById('theme').value.trim() || null,
+                    include_category_theme: document.getElementById('include-theme').checked,
+                    selected_question_model: document.getElementById('question-model').value,
+                    selected_explanation_model: document.getElementById('explanation-model').value,
+                    selected_category_model: document.getElementById('category-model').value
+                });
+                
+                gameState.gameId = response.game_id;
+                gameState.roomCode = response.room_code;
+                gameState.hostId = response.host_id;
+                gameState.categories = categories;
+                
+                // Update lobby screen
+                document.getElementById('room-code').textContent = response.room_code;
+                document.getElementById('game-id').textContent = response.game_id;
+                document.getElementById('join-url').value = `${window.location.origin}/live-quiz/player?room=${response.room_code}`;
+                
+                showScreen('lobby-screen');
+                setupSSE();
+                
+            } catch (error) {
+                showNotification('Failed to create room: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function setupSSE() {
+            const sseUrl = `/api/live-quiz/events?game_id=${gameState.gameId}&player_id=${gameState.hostId}&type=host`;
+            gameState.sse = new EventSource(sseUrl);
+            
+            gameState.sse.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleSSEEvent(data);
+            };
+            
+            gameState.sse.onerror = (error) => {
+                console.error('SSE Error:', error);
+                showNotification('Connection lost. Please refresh the page.', 'error');
+            };
+        }
+
+        function handleSSEEvent(event) {
+            switch (event.type) {
+                case 'connected':
+                    updateLobby(event.data);
+                    break;
+                    
+                case 'players_update':
+                    updatePlayersList(event.data.players);
+                    updatePlayerCount(event.data.player_count);
+                    break;
+                    
+                case 'player_joined':
+                    addPlayer(event.data.player);
+                    showNotification(`${event.data.player.name} joined the game!`, 'success');
+                    break;
+                    
+                case 'question_started':
+                    startQuestion(event.data);
+                    break;
+                    
+                case 'timer_update':
+                    updateTimer(event.data.remaining_seconds);
+                    break;
+                    
+                case 'timer_paused':
+                    showTimerPaused();
+                    break;
+                    
+                case 'timer_resumed':
+                    showTimerResumed();
+                    break;
+                    
+                case 'answer_submitted':
+                    updateAnswerStatus(event.data);
+                    break;
+                    
+                case 'question_results':
+                    showQuestionResults(event.data);
+                    break;
+                    
+                case 'question_regenerated':
+                    showNotification('Question regenerated!', 'info');
+                    break;
+                    
+                case 'game_started':
+                    showScreen('game-screen');
+                    showNotification('Game started!', 'success');
+                    break;
+                    
+                case 'game_finished':
+                    showFinalResults(event.data);
+                    break;
+            }
+        }
+
+        function updateLobby(data) {
+            // Update player count
+            if (data && data.players) {
+                gameState.players = data.players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score
+                }));
+            }
+            updatePlayersList(gameState.players);
+            updatePlayerCount(gameState.players.length);
+        }
+
+        function updatePlayerCount(count) {
+            document.getElementById('player-count').textContent = `${count}/12`;
+        }
+
+        function updatePlayersList(players) {
+            const playersList = document.getElementById('players-list');
+            playersList.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const playerElement = document.createElement('div');
+                playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded-lg';
+                playerElement.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            ${player.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-white">${player.name}</span>
+                    </div>
+                    <div class="text-sm text-gray-400">Score: ${player.score}</div>
+                `;
+                playersList.appendChild(playerElement);
+            });
+        }
+
+        function addPlayer(player) {
+            // Add to game state
+            if (!gameState.players.find(p => p.id === player.id)) {
+                gameState.players.push(player);
+            }
+            
+            // Update UI
+            const playersList = document.getElementById('players-list');
+            const playerElement = document.createElement('div');
+            playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded-lg';
+            playerElement.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                        ${player.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span class="text-white">${player.name}</span>
+                </div>
+                <div class="text-sm text-gray-400">Score: ${player.score}</div>
+            `;
+            playersList.appendChild(playerElement);
+        }
+
+        async function startGame() {
+            showLoading('Starting game...');
+            try {
+                await hostControl('start_game');
+            } catch (error) {
+                showNotification('Failed to start game: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function startQuestion(data) {
+            gameState.currentQuestion = data;
+            gameState.timerSeconds = data.time_limit;
+            
+            // Hide results section when new question starts
+            document.getElementById('question-results').classList.add('hidden');
+            
+            // Update UI
+            document.getElementById('question-category').textContent = data.category;
+            document.getElementById('question-number').textContent = `Question ${data.question_number}/30`;
+            document.getElementById('question-text').textContent = data.question;
+            
+            // Update options
+            const optionsContainer = document.getElementById('question-options');
+            optionsContainer.innerHTML = '';
+            
+            if (data.options && data.options.length > 0) {
+                data.options.forEach((option, index) => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'p-3 bg-gray-700 rounded-lg text-white';
+                    optionElement.innerHTML = `<span class="font-semibold">${String.fromCharCode(65 + index)}.</span> ${option}`;
+                    optionsContainer.appendChild(optionElement);
+                });
+            }
+            
+            // Reset answer status (exclude host from count)
+            const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
+            updateAnswerStatus({ answered_count: 0, total_players: nonHostPlayers.length });
+            
+            // Update progress
+            const progress = (data.question_number / 30) * 100;
+            document.getElementById('progress-question').textContent = `${data.question_number}/30`;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+        }
+
+        function updateTimer(seconds) {
+            gameState.timerSeconds = seconds;
+            document.getElementById('timer').textContent = seconds;
+            
+            // Change color based on time remaining
+            const timerElement = document.getElementById('timer');
+            if (seconds <= 10) {
+                timerElement.className = 'text-3xl font-mono font-bold text-red-400';
+            } else if (seconds <= 30) {
+                timerElement.className = 'text-3xl font-mono font-bold text-yellow-400';
+            } else {
+                timerElement.className = 'text-3xl font-mono font-bold text-white';
+            }
+        }
+
+        function showTimerPaused() {
+            document.getElementById('pause-timer').classList.add('hidden');
+            document.getElementById('resume-timer').classList.remove('hidden');
+            showNotification('Timer paused', 'info');
+        }
+
+        function showTimerResumed() {
+            document.getElementById('pause-timer').classList.remove('hidden');
+            document.getElementById('resume-timer').classList.add('hidden');
+            showNotification('Timer resumed', 'info');
+        }
+
+        function updateAnswerStatus(data) {
+            const answerStatus = document.getElementById('answer-status');
+            const answered = data.answered_count || 0;
+            const total = data.total_players || gameState.players.filter(p => p.id !== gameState.hostId).length;
+            
+            // Calculate percentage, avoiding division by zero
+            const percentage = total > 0 ? (answered / total) * 100 : 0;
+            
+            answerStatus.innerHTML = `
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-300">Answered:</span>
+                    <span class="text-white font-semibold">${answered}/${total}</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+                </div>
+            `;
+        }
+
+        function showQuestionResults(data) {
+            // Update scoreboard
+            updateScoreboard(data.scores);
+            
+            // Show correct answer and explanation on host screen
+            document.getElementById('correct-answer').textContent = data.correct_answer;
+            document.getElementById('question-explanation').textContent = data.explanation || 'No explanation available.';
+            
+            // Show the results section
+            document.getElementById('question-results').classList.remove('hidden');
+            
+            // Show results notification
+            const correctCount = Object.values(data.answers).filter(a => a.is_correct).length;
+            showNotification(`Question ${data.question_number} results: ${correctCount}/${Object.keys(data.answers).length} correct`, 'info');
+            
+            // Auto-advance to next question after 10 seconds (host can skip)
+            setTimeout(() => {
+                if (document.getElementById('game-screen').classList.contains('hidden') === false) {
+                    showNotification('Ready for next question. Click "Next Question" to continue.', 'info');
+                }
+            }, 10000);
+        }
+
+        function updateScoreboard(scores) {
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = '';
+            
+            // Sort players by score (exclude host)
+            const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
+            const sortedPlayers = nonHostPlayers
+                .map(player => ({
+                    ...player,
+                    score: scores[player.id] || 0
+                }))
+                .sort((a, b) => b.score - a.score);
+            
+            sortedPlayers.forEach((player, index) => {
+                const playerElement = document.createElement('div');
+                playerElement.className = 'flex items-center justify-between p-2 bg-gray-700 rounded';
+                playerElement.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm font-semibold text-gray-400">${index + 1}.</span>
+                        <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs">
+                            ${player.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-white">${player.name}</span>
+                    </div>
+                    <span class="text-white font-semibold">${player.score}</span>
+                `;
+                scoreboard.appendChild(playerElement);
+            });
+        }
+
+        function showFinalResults(data) {
+            showScreen('results-screen');
+            
+            const finalScores = document.getElementById('final-scores');
+            finalScores.innerHTML = '';
+            
+            // Sort players by final score
+            const sortedPlayers = Object.entries(data.final_scores)
+                .map(([playerId, score]) => {
+                    const player = gameState.players.find(p => p.id === playerId);
+                    return {
+                        name: player ? player.name : 'Unknown',
+                        score: score
+                    };
+                })
+                .sort((a, b) => b.score - a.score);
+            
+            // Add winner
+            const winner = sortedPlayers[0];
+            const winnerElement = document.createElement('div');
+            winnerElement.className = 'bg-yellow-600 rounded-lg p-4 mb-4';
+            winnerElement.innerHTML = `
+                <h2 class="text-2xl font-bold text-white">🏆 Winner: ${winner.name}</h2>
+                <p class="text-yellow-200">Final Score: ${winner.score} points</p>
+            `;
+            finalScores.appendChild(winnerElement);
+            
+            // Add all scores
+            sortedPlayers.forEach((player, index) => {
+                if (index === 0) return; // Skip winner, already added
+                
+                const playerElement = document.createElement('div');
+                playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded';
+                playerElement.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg font-semibold text-gray-400">${index + 1}.</span>
+                        <span class="text-white">${player.name}</span>
+                    </div>
+                    <span class="text-white font-semibold">${player.score}</span>
+                `;
+                finalScores.appendChild(playerElement);
+            });
+        }
+
+        async function hostControl(action) {
+            try {
+                await apiCall('/api/live-quiz/host-control', 'POST', {
+                    game_id: gameState.gameId,
+                    action: action
+                });
+            } catch (error) {
+                showNotification('Action failed: ' + error.message, 'error');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            populateCategoryPresets();
+            showScreen('setup-screen');
+        });
+    </script>
+</body>
+</html>

@@ -17,6 +17,11 @@ from routes import (
     root, manifest, service_worker
 )
 
+# Import live quiz routes
+from live_quiz_routes import (
+    create_room, join_room, get_room_status, submit_answer, host_control, sse_endpoint
+)
+
 # --- Configuration ---
 app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 
@@ -33,10 +38,23 @@ app.post("/api/generate-categories")(generate_categories)
 app.post("/api/mutate-category")(get_category_mutation)
 app.post("/api/explain-incorrect")(get_incorrect_explanation)
 
+# Live Quiz API routes
+app.post("/api/live-quiz/create-room")(create_room)
+app.post("/api/live-quiz/join-room")(join_room)
+app.get("/api/live-quiz/room-status/{game_id}")(get_room_status)
+app.post("/api/live-quiz/submit-answer")(submit_answer)
+app.post("/api/live-quiz/host-control")(host_control)
+app.get("/api/live-quiz/events")(sse_endpoint)
+
 # Register static file routes
 app.get("/", include_in_schema=False)(root)
 app.get("/manifest.json", include_in_schema=False)(manifest)
 app.get("/service-worker.js", include_in_schema=False)(service_worker)
+
+# Live Quiz static routes
+app.get("/live-quiz/host", include_in_schema=False)(lambda: FileResponse('live-quiz-host.html'))
+app.get("/live-quiz/player", include_in_schema=False)(lambda: FileResponse('live-quiz-player.html'))
+app.get("/test", include_in_schema=False)(lambda: FileResponse('test_live_quiz.html'))
 
 # --- App Lifecycle and Static Files ---
 @app.on_event("startup")
