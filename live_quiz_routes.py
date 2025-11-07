@@ -129,6 +129,7 @@ async def create_room(req: CreateRoomRequest):
     )
     
     # Create game state
+    total_questions = len(req.categories) * req.questions_per_category
     game_state = LiveQuizGameState(
         game_id=game_id,
         room_code=room_code,
@@ -145,7 +146,9 @@ async def create_room(req: CreateRoomRequest):
         include_category_theme=req.include_category_theme,
         selected_question_model=req.selected_question_model,
         selected_explanation_model=req.selected_explanation_model,
-        selected_category_model=req.selected_category_model
+        selected_category_model=req.selected_category_model,
+        questions_per_category=req.questions_per_category,
+        total_questions=total_questions
     )
     
     # Store game
@@ -325,11 +328,19 @@ async def start_question(game_id: str, question_index: int):
     # Generate question if it doesn't exist
     if game_state.questions[question_index] is None:
         try:
-            # Calculate category and question number
-            category_index = question_index // 5  # 5 questions per category
-            question_number_in_category = (question_index % 5) + 1
-            category = game_state.categories[category_index % len(game_state.categories)]
-            question_number = question_index + 1  # 1-based numbering
+            # Calculate category using 6-category cycling system
+            # Questions cycle through categories: 1,2,3,4,5,6,1,2,3,4,5,6...
+            category_cycle_position = question_index % 6
+            category_index = category_cycle_position  # Direct mapping: 0->Cat1, 1->Cat2, etc.
+            category = game_state.categories[category_index]
+            
+            # Calculate question number within the category
+            questions_per_round = len(game_state.categories)  # 6 questions per full cycle
+            questions_in_current_round = question_index // questions_per_round
+            question_number_in_category = questions_in_current_round + 1
+            
+            # Calculate overall question number (1-based)
+            question_number = question_index + 1
             
             # Generate the question
             question = await generate_live_quiz_question(game_state, category, question_number)
@@ -341,13 +352,14 @@ async def start_question(game_id: str, question_index: int):
             )
             game_state.questions[question_index] = game_question
             
-            print(f"Generated question {question_number} for category: {category}")
+            print(f"Generated question {question_number} for category {category_cycle_position + 1}: {category} (round {question_number_in_category})")
             
         except Exception as e:
             print(f"Failed to generate question {question_index + 1}: {e}")
             # Add a fallback question
-            category_index = question_index // 5
-            category = game_state.categories[category_index % len(game_state.categories)]
+            category_cycle_position = question_index % 6
+            category_index = category_cycle_position
+            category = game_state.categories[category_index]
             question_number = question_index + 1
             
             fallback_question = GameQuestion(
@@ -411,9 +423,15 @@ async def pregenerate_next_question(game_id: str, next_question_index: int):
         
         # Only generate if not already generated
         if game_state.questions[next_question_index] is None:
-            category_index = next_question_index // 5
-            question_number_in_category = (next_question_index % 5) + 1
-            category = game_state.categories[category_index % len(game_state.categories)]
+            # Calculate category using 6-category cycling system
+            category_cycle_position = next_question_index % 6
+            category_index = category_cycle_position
+            category = game_state.categories[category_index]
+            
+            # Calculate question number within the category
+            questions_per_round = len(game_state.categories)  # 6 questions per full cycle
+            questions_in_current_round = next_question_index // questions_per_round
+            question_number_in_category = questions_in_current_round + 1
             question_number = next_question_index + 1
             
             question = await generate_live_quiz_question(game_state, category, question_number)
@@ -425,7 +443,7 @@ async def pregenerate_next_question(game_id: str, next_question_index: int):
             )
             game_state.questions[next_question_index] = game_question
             
-            print(f"Pre-generated question {question_number} for category: {category}")
+            print(f"Pre-generated question {question_number} for category {category_cycle_position + 1}: {category} (round {question_number_in_category})")
             
     except Exception as e:
         print(f"Failed to pre-generate question {next_question_index + 1}: {e}")

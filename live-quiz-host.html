@@ -16,6 +16,7 @@
             document.documentElement.className = 'dark';
         })();
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
 
@@ -35,14 +36,6 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Host Name</label>
                                 <input type="text" id="host-name" value="Host" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Game Mode</label>
-                                <select id="game-mode" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="mcq" selected>Multiple Choice</option>
-                                    <option value="short_answer">Short Answer</option>
-                                </select>
                             </div>
                             
                             <div>
@@ -83,16 +76,13 @@
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Explanation Model</label>
-                                <select id="explanation-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="auto" selected>Auto</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Category Model</label>
-                                <select id="category-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <option value="auto" selected>Auto</option>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Questions per Category</label>
+                                <select id="questions-per-category" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="2">2 questions</option>
+                                    <option value="3" selected>3 questions</option>
+                                    <option value="4">4 questions</option>
+                                    <option value="5">5 questions</option>
+                                    <option value="6">6 questions</option>
                                 </select>
                             </div>
                         </div>
@@ -167,6 +157,10 @@
                             <input type="text" id="join-url" readonly class="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded text-sm text-white" value="">
                             <button id="copy-join-url" class="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors">🔗</button>
                         </div>
+                        <div class="mt-4 text-center">
+                            <div id="qr-code" class="inline-block p-2 bg-white rounded-lg"></div>
+                            <p class="text-xs text-gray-400 mt-2">Scan QR code to join</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -188,61 +182,65 @@
 
     <!-- Game Screen -->
     <div id="game-screen" class="hidden container mx-auto px-4 py-8">
-        <div class="max-w-6xl mx-auto">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Question Display -->
-                <div class="lg:col-span-2">
-                    <div class="bg-gray-800 rounded-2xl p-6">
-                        <div class="flex items-center justify-between mb-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Question Display - TV Optimized -->
+                <div class="lg:col-span-3">
+                    <div class="bg-gray-800 rounded-2xl p-8">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-8">
                             <div>
-                                <h2 id="question-category" class="text-lg font-semibold text-blue-400">Category</h2>
-                                <p id="question-number" class="text-sm text-gray-400">Question 1/30</p>
+                                <h2 id="question-category" class="text-2xl font-bold text-blue-400">Category</h2>
+                                <p id="question-number" class="text-lg text-gray-400">Question 1/30</p>
                             </div>
                             <div class="text-right">
-                                <div class="text-3xl font-mono font-bold text-white" id="timer">60</div>
-                                <p class="text-sm text-gray-400">seconds</p>
+                                <div class="text-5xl font-mono font-bold text-white" id="timer">60</div>
+                                <p class="text-base text-gray-400">seconds</p>
                             </div>
                         </div>
                         
-                        <div id="question-content" class="mb-6">
-                            <h3 class="text-xl font-medium text-white mb-4" id="question-text">Loading question...</h3>
-                            <div id="question-options" class="space-y-2">
-                                <!-- Options will be added here -->
-                            </div>
+                        <!-- Question Text - Larger for TV -->
+                        <div id="question-content" class="mb-8">
+                            <h3 class="text-3xl font-bold text-white leading-relaxing mb-8 min-h-[120px] flex items-center" id="question-text">Loading question...</h3>
+                        </div>
+                        
+                        <!-- Answer Options - 2x2 Grid for TV -->
+                        <div id="question-options" class="grid grid-cols-2 gap-6 mb-8">
+                            <!-- Options will be added here in 2x2 grid -->
                         </div>
                         
                         <!-- Question Results with Explanation -->
                         <div id="question-results" class="hidden mb-6">
-                            <div class="bg-gray-700 rounded-lg p-4">
-                                <h4 class="text-lg font-semibold text-white mb-3">📋 Results</h4>
-                                <div class="space-y-3">
+                            <div class="bg-gray-700 rounded-lg p-6">
+                                <h4 class="text-xl font-semibold text-white mb-4">📋 Results</h4>
+                                <div class="space-y-4">
                                     <div>
-                                        <h5 class="text-sm font-semibold text-green-300 mb-1">Correct Answer:</h5>
-                                        <p id="correct-answer" class="text-green-200"></p>
+                                        <h5 class="text-lg font-semibold text-green-300 mb-2">Correct Answer:</h5>
+                                        <p id="correct-answer" class="text-green-200 text-lg"></p>
                                     </div>
                                     <div>
-                                        <h5 class="text-sm font-semibold text-blue-300 mb-1">Explanation:</h5>
-                                        <p id="question-explanation" class="text-blue-200 text-sm leading-relaxed"></p>
+                                        <h5 class="text-lg font-semibold text-blue-300 mb-2">Explanation:</h5>
+                                        <p id="question-explanation" class="text-blue-200 text-base leading-relaxed"></p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Game Controls -->
-                        <div class="flex flex-wrap gap-3">
-                            <button id="pause-timer" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">⏸️ Pause</button>
-                            <button id="resume-timer" class="hidden px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">▶️ Resume</button>
-                            <button id="regenerate-question" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">🔄 New Question</button>
-                            <button id="next-question" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">➡️ Next Question</button>
+                        <div class="flex flex-wrap gap-4">
+                            <button id="pause-timer" class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-lg">⏸️ Pause</button>
+                            <button id="resume-timer" class="hidden px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-lg">▶️ Resume</button>
+                            <button id="regenerate-question" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg">🔄 New Question</button>
+                            <button id="next-question" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-lg">➡️ Next Question</button>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Game Status & Players -->
+                <!-- Game Status & Players - Side Panel -->
                 <div class="space-y-6">
                     <!-- Answer Status -->
                     <div class="bg-gray-800 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold mb-4 text-white">📊 Answer Status</h3>
+                        <h3 class="text-xl font-semibold mb-4 text-white">📊 Answer Status</h3>
                         <div id="answer-status" class="space-y-2">
                             <!-- Answer status will be added here -->
                         </div>
@@ -250,22 +248,22 @@
                     
                     <!-- Current Scores -->
                     <div class="bg-gray-800 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold mb-4 text-white">🏆 Current Scores</h3>
-                        <div id="scoreboard" class="space-y-2 max-h-64 overflow-y-auto">
+                        <h3 class="text-xl font-semibold mb-4 text-white">🏆 Current Scores</h3>
+                        <div id="scoreboard" class="space-y-2 max-h-80 overflow-y-auto">
                             <!-- Scores will be added here -->
                         </div>
                     </div>
                     
                     <!-- Game Progress -->
                     <div class="bg-gray-800 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold mb-4 text-white">📈 Game Progress</h3>
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-sm">
+                        <h3 class="text-xl font-semibold mb-4 text-white">📈 Game Progress</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-lg">
                                 <span class="text-gray-300">Question:</span>
-                                <span id="progress-question" class="text-white">1/30</span>
+                                <span id="progress-question" class="text-white font-semibold">1/30</span>
                             </div>
-                            <div class="w-full bg-gray-700 rounded-full h-2">
-                                <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 3.33%"></div>
+                            <div class="w-full bg-gray-700 rounded-full h-3">
+                                <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 3.33%"></div>
                             </div>
                         </div>
                     </div>
@@ -490,57 +488,28 @@
             try {
                 console.log('Loading models...');
                 
-                const [questionModels, explanationModels, categoryModels] = await Promise.all([
-                    apiCall('/api/models/questions'),
-                    apiCall('/api/models/explanations'),
-                    apiCall('/api/models/categories')
-                ]);
-                
+                const questionModels = await apiCall('/api/models/questions');
                 console.log('Question models loaded:', questionModels);
-                console.log('Explanation models loaded:', explanationModels);
-                console.log('Category models loaded:', categoryModels);
                 
                 // Populate question models
                 const questionModelSelect = document.getElementById('question-model');
-                questionModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
-                if (Array.isArray(questionModels)) {
-                    questionModels.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.id;
-                        option.textContent = model.name;
-                        questionModelSelect.appendChild(option);
-                    });
-                }
-                
-                // Populate explanation models
-                const explanationModelSelect = document.getElementById('explanation-model');
-                explanationModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
-                if (Array.isArray(explanationModels)) {
-                    explanationModels.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.id;
-                        option.textContent = model.name;
-                        explanationModelSelect.appendChild(option);
-                    });
-                }
-                
-                // Populate category models
-                const categoryModelSelect = document.getElementById('category-model');
-                categoryModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
-                if (Array.isArray(categoryModels)) {
-                    categoryModels.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.id;
-                        option.textContent = model.name;
-                        categoryModelSelect.appendChild(option);
-                    });
+                if (questionModelSelect) {
+                    questionModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
+                    if (Array.isArray(questionModels)) {
+                        questionModels.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.textContent = model.name;
+                            questionModelSelect.appendChild(option);
+                        });
+                    }
                 }
                 
                 console.log('Models loaded successfully');
             } catch (error) {
                 console.error('Failed to load models:', error);
-                showNotification('Failed to load model options. Using defaults.', 'error');
-                // Keep default options if model loading fails
+                // Don't show error notification, just use default values
+                console.log('Using default model options');
             }
         }
 
@@ -561,8 +530,27 @@
 
         // Setup screen logic
         function setupEventListeners() {
-            // Load models first
+            // Load models and saved setup
             loadModels();
+            loadGameSetup();
+            
+            // Add auto-save to all form elements
+            const formElements = [
+                'host-name', 'knowledge-level', 'language', 'theme',
+                'include-theme', 'question-model', 'questions-per-category'
+            ];
+            formElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', saveGameSetup);
+                    element.addEventListener('input', saveGameSetup);
+                }
+            });
+            
+            // Category inputs auto-save
+            document.querySelectorAll('.category-input').forEach(input => {
+                input.addEventListener('input', saveGameSetup);
+            });
             
             // Generate categories
             document.getElementById('generate-categories').addEventListener('click', async () => {
@@ -575,12 +563,13 @@
                 showLoading('Generating categories...');
                 try {
                     const response = await apiCall('/api/generate-categories', 'POST', {
-                        model: document.getElementById('category-model').value,
+                        model: 'auto', // Use default model
                         theme: theme,
                         language: document.getElementById('language').value
                     });
                     
                     updateCategoryInputs(response.categories);
+                    saveGameSetup(); // Save after generating
                     showNotification('Categories generated successfully!', 'success');
                 } catch (error) {
                     // Categories generation failed, but don't block the user
@@ -606,6 +595,7 @@
                 
                 const presetName = selectedPreset.name[language] || selectedPreset.name.en;
                 document.getElementById('theme').value = presetName;
+                saveGameSetup(); // Save after loading preset
                 
                 showNotification('Preset loaded successfully!', 'success');
             });
@@ -613,6 +603,7 @@
             // Language change updates presets
             document.getElementById('language').addEventListener('change', () => {
                 populateCategoryPresets();
+                saveGameSetup();
             });
 
             // Create room
@@ -674,6 +665,9 @@
         }
 
         async function createRoom() {
+            // Save current setup to localStorage
+            saveGameSetup();
+            
             // Validate categories
             const categories = Array.from(document.querySelectorAll('.category-input'))
                 .map(input => input.value.trim())
@@ -684,30 +678,40 @@
                 return;
             }
             
+            const questionsPerCategory = parseInt(document.getElementById('questions-per-category').value);
+            const totalQuestions = categories.length * questionsPerCategory;
+            
             showLoading('Creating room...');
             try {
                 const response = await apiCall('/api/live-quiz/create-room', 'POST', {
                     host_name: document.getElementById('host-name').value || 'Host',
                     categories: categories,
-                    game_mode: document.getElementById('game-mode').value,
+                    game_mode: 'mcq', // Always multiple choice
                     knowledge_level: document.getElementById('knowledge-level').value,
                     language: document.getElementById('language').value,
                     theme: document.getElementById('theme').value.trim() || null,
                     include_category_theme: document.getElementById('include-theme').checked,
                     selected_question_model: document.getElementById('question-model').value,
-                    selected_explanation_model: document.getElementById('explanation-model').value,
-                    selected_category_model: document.getElementById('category-model').value
+                    selected_explanation_model: 'auto', // Default value
+                    selected_category_model: 'auto', // Default value
+                    questions_per_category: questionsPerCategory
                 });
                 
                 gameState.gameId = response.game_id;
                 gameState.roomCode = response.room_code;
                 gameState.hostId = response.host_id;
                 gameState.categories = categories;
+                gameState.questionsPerCategory = questionsPerCategory;
+                gameState.totalQuestions = totalQuestions;
                 
                 // Update lobby screen
                 document.getElementById('room-code').textContent = response.room_code;
                 document.getElementById('game-id').textContent = response.game_id;
-                document.getElementById('join-url').value = `${window.location.origin}/live-quiz/player?room=${response.room_code}`;
+                const joinUrl = `${window.location.origin}/live-quiz/player?room=${response.room_code}`;
+                document.getElementById('join-url').value = joinUrl;
+                
+                // Generate QR code
+                generateQRCode(joinUrl);
                 
                 showScreen('lobby-screen');
                 setupSSE();
@@ -717,6 +721,88 @@
             } finally {
                 hideLoading();
             }
+        }
+
+        // Local Storage Functions
+        function saveGameSetup() {
+            const setup = {
+                hostName: document.getElementById('host-name')?.value || 'Host',
+                knowledgeLevel: document.getElementById('knowledge-level')?.value || 'intermediate',
+                language: document.getElementById('language')?.value || 'pl',
+                theme: document.getElementById('theme')?.value || '',
+                includeTheme: document.getElementById('include-theme')?.checked ?? true,
+                questionModel: document.getElementById('question-model')?.value || 'auto',
+                questionsPerCategory: document.getElementById('questions-per-category')?.value || '3',
+                categories: Array.from(document.querySelectorAll('.category-input'))
+                    .map(input => input.value)
+            };
+            localStorage.setItem('liveQuizSetup', JSON.stringify(setup));
+        }
+
+        function loadGameSetup() {
+            const saved = localStorage.getItem('liveQuizSetup');
+            if (saved) {
+                try {
+                    const setup = JSON.parse(saved);
+                    if (setup.hostName && document.getElementById('host-name')) {
+                        document.getElementById('host-name').value = setup.hostName;
+                    }
+                    if (setup.knowledgeLevel && document.getElementById('knowledge-level')) {
+                        document.getElementById('knowledge-level').value = setup.knowledgeLevel;
+                    }
+                    if (setup.language && document.getElementById('language')) {
+                        document.getElementById('language').value = setup.language;
+                    }
+                    if (setup.theme && document.getElementById('theme')) {
+                        document.getElementById('theme').value = setup.theme;
+                    }
+                    if (setup.includeTheme !== undefined && document.getElementById('include-theme')) {
+                        document.getElementById('include-theme').checked = setup.includeTheme;
+                    }
+                    if (setup.questionModel && document.getElementById('question-model')) {
+                        document.getElementById('question-model').value = setup.questionModel;
+                    }
+                    if (setup.questionsPerCategory && document.getElementById('questions-per-category')) {
+                        document.getElementById('questions-per-category').value = setup.questionsPerCategory;
+                    }
+                    if (setup.categories && setup.categories.length > 0) {
+                        updateCategoryInputs(setup.categories);
+                    }
+                } catch (error) {
+                    console.log('Failed to load saved setup:', error);
+                }
+            }
+        }
+
+        // QR Code Generation
+        function generateQRCode(url) {
+            const qrContainer = document.getElementById('qr-code');
+            qrContainer.innerHTML = '';
+            
+            // Clear previous QR code
+            qrContainer.innerHTML = '';
+            
+            // Generate QR code
+            const qr = qrcode(0, 'M');
+            qr.addData(url);
+            qr.make();
+            
+            // Create canvas for QR code
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw QR code
+            const moduleSize = canvas.width / qr.getModuleCount();
+            for (let row = 0; row < qr.getModuleCount(); row++) {
+                for (let col = 0; col < qr.getModuleCount(); col++) {
+                    ctx.fillStyle = qr.isDark(row, col) ? '#000000' : '#FFFFFF';
+                    ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+                }
+            }
+            
+            qrContainer.appendChild(canvas);
         }
 
         function setupSSE() {
@@ -737,12 +823,20 @@
         function handleSSEEvent(event) {
             switch (event.type) {
                 case 'connected':
-                    updateLobby(event.data);
+                    // Filter out host from initial lobby data
+                    if (event.data.players) {
+                        const filteredPlayers = event.data.players.filter(p => p.id !== gameState.hostId);
+                        updateLobby({ ...event.data, players: filteredPlayers });
+                    } else {
+                        updateLobby(event.data);
+                    }
                     break;
                     
                 case 'players_update':
-                    updatePlayersList(event.data.players);
-                    updatePlayerCount(event.data.player_count);
+                    // Filter out host from player updates
+                    const filteredPlayers = event.data.players.filter(p => p.id !== gameState.hostId);
+                    updatePlayersList(filteredPlayers);
+                    updatePlayerCount(filteredPlayers.length);
                     break;
                     
                 case 'player_joined':
@@ -790,7 +884,7 @@
         }
 
         function updateLobby(data) {
-            // Update player count
+            // Update player count (exclude host)
             if (data && data.players) {
                 gameState.players = data.players.map(p => ({
                     id: p.id,
@@ -798,8 +892,20 @@
                     score: p.score
                 }));
             }
-            updatePlayersList(gameState.players);
-            updatePlayerCount(gameState.players.length);
+            // Filter out host and update UI
+            const nonHostPlayers = gameState.players.filter(p => {
+                // Don't count host in player count
+                if (gameState.hostId && p.id === gameState.hostId) {
+                    return false;
+                }
+                // Backup check: don't count host-like names
+                if (p.name && (p.name.toLowerCase().includes('host') || p.name === 'Host')) {
+                    return false;
+                }
+                return true;
+            });
+            updatePlayersList(nonHostPlayers);
+            updatePlayerCount(nonHostPlayers.length);
         }
 
         function updatePlayerCount(count) {
@@ -810,7 +916,20 @@
             const playersList = document.getElementById('players-list');
             playersList.innerHTML = '';
             
-            players.forEach((player, index) => {
+            // Filter out host (primary check by ID, backup by name)
+            const nonHostPlayers = players.filter(player => {
+                // Don't show host in player list
+                if (gameState.hostId && player.id === gameState.hostId) {
+                    return false;
+                }
+                // Backup check: don't show players with host-like names
+                if (player.name && (player.name.toLowerCase().includes('host') || player.name === 'Host')) {
+                    return false;
+                }
+                return true;
+            });
+            
+            nonHostPlayers.forEach((player, index) => {
                 const playerElement = document.createElement('div');
                 playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded-lg';
                 playerElement.innerHTML = `
@@ -827,12 +946,17 @@
         }
 
         function addPlayer(player) {
+            // Don't add host to the players list
+            if (player.id === gameState.hostId) {
+                return;
+            }
+            
             // Add to game state
             if (!gameState.players.find(p => p.id === player.id)) {
                 gameState.players.push(player);
             }
             
-            // Update UI
+            // Update UI (only show non-host players)
             const playersList = document.getElementById('players-list');
             const playerElement = document.createElement('div');
             playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded-lg';
@@ -846,6 +970,10 @@
                 <div class="text-sm text-gray-400">Score: ${player.score}</div>
             `;
             playersList.appendChild(playerElement);
+            
+            // Update player count
+            const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
+            updatePlayerCount(nonHostPlayers.length);
         }
 
         async function startGame() {
@@ -868,18 +996,31 @@
             
             // Update UI
             document.getElementById('question-category').textContent = data.category;
-            document.getElementById('question-number').textContent = `Question ${data.question_number}/30`;
+            document.getElementById('question-number').textContent = `Question ${data.question_number}/${gameState.totalQuestions || 30}`;
             document.getElementById('question-text').textContent = data.question;
             
-            // Update options
+            // Update options in 2x2 grid for TV
             const optionsContainer = document.getElementById('question-options');
             optionsContainer.innerHTML = '';
             
             if (data.options && data.options.length > 0) {
-                data.options.forEach((option, index) => {
+                // Ensure we have exactly 4 options for 2x2 grid
+                const displayOptions = data.options.slice(0, 4);
+                while (displayOptions.length < 4) {
+                    displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+                }
+                
+                displayOptions.forEach((option, index) => {
                     const optionElement = document.createElement('div');
-                    optionElement.className = 'p-3 bg-gray-700 rounded-lg text-white';
-                    optionElement.innerHTML = `<span class="font-semibold">${String.fromCharCode(65 + index)}.</span> ${option}`;
+                    optionElement.className = 'p-6 bg-gray-700 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors';
+                    optionElement.innerHTML = `
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-xl font-bold">
+                                ${String.fromCharCode(65 + index)}
+                            </div>
+                            <span class="text-xl flex-1">${option}</span>
+                        </div>
+                    `;
                     optionsContainer.appendChild(optionElement);
                 });
             }
@@ -889,8 +1030,9 @@
             updateAnswerStatus({ answered_count: 0, total_players: nonHostPlayers.length });
             
             // Update progress
-            const progress = (data.question_number / 30) * 100;
-            document.getElementById('progress-question').textContent = `${data.question_number}/30`;
+            const totalQuestions = gameState.totalQuestions || 30;
+            const progress = (data.question_number / totalQuestions) * 100;
+            document.getElementById('progress-question').textContent = `${data.question_number}/${totalQuestions}`;
             document.getElementById('progress-bar').style.width = `${progress}%`;
         }
 
@@ -898,14 +1040,14 @@
             gameState.timerSeconds = seconds;
             document.getElementById('timer').textContent = seconds;
             
-            // Change color based on time remaining
+            // Change color based on time remaining - larger for TV
             const timerElement = document.getElementById('timer');
             if (seconds <= 10) {
-                timerElement.className = 'text-3xl font-mono font-bold text-red-400';
+                timerElement.className = 'text-5xl font-mono font-bold text-red-400';
             } else if (seconds <= 30) {
-                timerElement.className = 'text-3xl font-mono font-bold text-yellow-400';
+                timerElement.className = 'text-5xl font-mono font-bold text-yellow-400';
             } else {
-                timerElement.className = 'text-3xl font-mono font-bold text-white';
+                timerElement.className = 'text-5xl font-mono font-bold text-white';
             }
         }
 
@@ -999,8 +1141,9 @@
             const finalScores = document.getElementById('final-scores');
             finalScores.innerHTML = '';
             
-            // Sort players by final score
-            const sortedPlayers = Object.entries(data.final_scores)
+            // Filter out host from final results
+            const nonHostScores = Object.entries(data.final_scores)
+                .filter(([playerId, score]) => playerId !== gameState.hostId)
                 .map(([playerId, score]) => {
                     const player = gameState.players.find(p => p.id === playerId);
                     return {
@@ -1010,31 +1153,42 @@
                 })
                 .sort((a, b) => b.score - a.score);
             
-            // Add winner
-            const winner = sortedPlayers[0];
-            const winnerElement = document.createElement('div');
-            winnerElement.className = 'bg-yellow-600 rounded-lg p-4 mb-4';
-            winnerElement.innerHTML = `
-                <h2 class="text-2xl font-bold text-white">🏆 Winner: ${winner.name}</h2>
-                <p class="text-yellow-200">Final Score: ${winner.score} points</p>
-            `;
-            finalScores.appendChild(winnerElement);
-            
-            // Add all scores
-            sortedPlayers.forEach((player, index) => {
-                if (index === 0) return; // Skip winner, already added
-                
-                const playerElement = document.createElement('div');
-                playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded';
-                playerElement.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg font-semibold text-gray-400">${index + 1}.</span>
-                        <span class="text-white">${player.name}</span>
-                    </div>
-                    <span class="text-white font-semibold">${player.score}</span>
+            // Add winner (if there are any non-host players)
+            if (nonHostScores.length > 0) {
+                const winner = nonHostScores[0];
+                const winnerElement = document.createElement('div');
+                winnerElement.className = 'bg-yellow-600 rounded-lg p-4 mb-4';
+                winnerElement.innerHTML = `
+                    <h2 class="text-2xl font-bold text-white">🏆 Winner: ${winner.name}</h2>
+                    <p class="text-yellow-200">Final Score: ${winner.score} points</p>
                 `;
-                finalScores.appendChild(playerElement);
-            });
+                finalScores.appendChild(winnerElement);
+                
+                // Add all scores
+                nonHostScores.forEach((player, index) => {
+                    if (index === 0) return; // Skip winner, already added
+                    
+                    const playerElement = document.createElement('div');
+                    playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded';
+                    playerElement.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="text-lg font-semibold text-gray-400">${index + 1}.</span>
+                            <span class="text-white">${player.name}</span>
+                        </div>
+                        <span class="text-white font-semibold">${player.score}</span>
+                    `;
+                    finalScores.appendChild(playerElement);
+                });
+            } else {
+                // No non-host players played
+                const noPlayersElement = document.createElement('div');
+                noPlayersElement.className = 'bg-gray-700 rounded-lg p-4 mb-4 text-center';
+                noPlayersElement.innerHTML = `
+                    <h2 class="text-xl font-bold text-white">No Players Participated</h2>
+                    <p class="text-gray-300">No non-host players joined the game</p>
+                `;
+                finalScores.appendChild(noPlayersElement);
+            }
         }
 
         async function hostControl(action) {

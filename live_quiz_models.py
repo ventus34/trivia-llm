@@ -59,19 +59,21 @@ class LiveQuizGameState(BaseModel):
     selected_question_model: str = "random-pl"
     selected_explanation_model: str = "auto"
     selected_category_model: str = "auto"
+    questions_per_category: int = 5  # Configurable: 2, 3, 5, etc.
     total_questions: int = 30
 
 class CreateRoomRequest(BaseModel):
     host_name: str
     categories: List[str]
     game_mode: str = "mcq"
-    knowledge_level: str = "intermediate" 
+    knowledge_level: str = "intermediate"
     language: str = "pl"
     theme: Optional[str] = None
     include_category_theme: bool = True
     selected_question_model: str = "auto"
     selected_explanation_model: str = "auto"
     selected_category_model: str = "auto"
+    questions_per_category: int = 5
 
 class JoinRoomRequest(BaseModel):
     room_code: str

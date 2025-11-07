@@ -116,34 +116,34 @@
 
     <!-- Question Screen -->
     <div id="question-screen" class="hidden container mx-auto px-4 py-4">
-        <div class="max-w-md mx-auto">
+        <div class="max-w-4xl mx-auto">
             <!-- Header with timer and progress -->
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <p id="question-category" class="text-sm text-blue-400 font-semibold">Category</p>
-                    <p id="question-number" class="text-xs text-gray-400">Question 1/30</p>
+                    <p id="question-category" class="text-xl text-blue-400 font-semibold">Category</p>
+                    <p id="question-number" class="text-lg text-gray-400">Question 1/30</p>
                 </div>
                 <div class="text-center">
                     <div class="timer-display" id="timer">60</div>
-                    <p class="text-xs text-gray-400">seconds</p>
+                    <p class="text-base text-gray-400">seconds</p>
                 </div>
             </div>
             
-            <!-- Question -->
+            <!-- Question - Larger for mobile/tablet -->
             <div class="bg-gray-800 rounded-2xl p-6 mb-6">
-                <h2 id="question-text" class="question-text text-white font-medium leading-relaxed">
+                <h2 id="question-text" class="question-text text-white font-medium leading-relaxing text-xl">
                     Loading question...
                 </h2>
             </div>
             
-            <!-- Answer Options -->
-            <div id="answer-options" class="space-y-3 mb-6">
-                <!-- Options will be added here -->
+            <!-- Answer Options - 2x2 Grid -->
+            <div id="answer-options" class="grid grid-cols-2 gap-4 mb-6">
+                <!-- Options will be added here in 2x2 grid -->
             </div>
             
             <!-- Answer Status -->
             <div id="answer-status" class="text-center">
-                <div class="text-sm text-gray-400">Select your answer</div>
+                <div class="text-lg text-gray-400">Select your answer</div>
             </div>
         </div>
     </div>
@@ -592,20 +592,26 @@
             document.getElementById('question-number').textContent = `Question ${data.question_number}/30`;
             document.getElementById('question-text').textContent = data.question;
             
-            // Update options
+            // Update options in 2x2 grid
             const optionsContainer = document.getElementById('answer-options');
             optionsContainer.innerHTML = '';
             
             if (data.options && data.options.length > 0) {
-                data.options.forEach((option, index) => {
+                // Ensure we have exactly 4 options for 2x2 grid
+                const displayOptions = data.options.slice(0, 4);
+                while (displayOptions.length < 4) {
+                    displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+                }
+                
+                displayOptions.forEach((option, index) => {
                     const button = document.createElement('button');
-                    button.className = 'w-full p-4 text-left answer-option bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors';
+                    button.className = 'w-full p-6 text-left answer-option bg-gray-700 hover:bg-gray-600 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors';
                     button.innerHTML = `
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-lg font-semibold">
                                 ${String.fromCharCode(65 + index)}
                             </div>
-                            <span class="flex-1">${option}</span>
+                            <span class="text-lg flex-1">${option}</span>
                         </div>
                     `;
                     button.addEventListener('click', () => submitAnswer(option));
@@ -614,7 +620,7 @@
             }
             
             // Reset answer status
-            document.getElementById('answer-status').innerHTML = '<div class="text-sm text-gray-400">Select your answer</div>';
+            document.getElementById('answer-status').innerHTML = '<div class="text-lg text-gray-400">Select your answer</div>';
             
             showScreen('question-screen');
         }
