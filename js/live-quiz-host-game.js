@@ -107,7 +107,7 @@ window.LiveQuizHostGame = (function(Common) {
         document.getElementById('pause-timer')?.addEventListener('click', () => hostControl('pause_timer'));
         document.getElementById('resume-timer')?.addEventListener('click', () => hostControl('resume_timer'));
         document.getElementById('regenerate-question')?.addEventListener('click', () => hostControl('regenerate_question'));
-        document.getElementById('next-question')?.addEventListener('click', () => hostControl('next_question'));
+        document.getElementById('next-question')?.addEventListener('click', () => hostControl('next_question', { manual: true }));
 
         // Fullscreen controls
         document.getElementById('toggle-fullscreen')?.addEventListener('click', enterFullscreen);
@@ -115,7 +115,7 @@ window.LiveQuizHostGame = (function(Common) {
         document.getElementById('fullscreen-pause-timer')?.addEventListener('click', () => hostControl('pause_timer'));
         document.getElementById('fullscreen-resume-timer')?.addEventListener('click', () => hostControl('resume_timer'));
         document.getElementById('fullscreen-regenerate-question')?.addEventListener('click', () => hostControl('regenerate_question'));
-        document.getElementById('fullscreen-next-question')?.addEventListener('click', () => hostControl('next_question'));
+        document.getElementById('fullscreen-next-question')?.addEventListener('click', () => hostControl('next_question', { manual: true }));
     }
 
     function startQuestion(data) {
@@ -601,7 +601,7 @@ window.LiveQuizHostGame = (function(Common) {
                     // Check if auto-advance is still enabled before proceeding
                     const currentToggle = document.getElementById('auto-advance-toggle');
                     if (currentToggle && currentToggle.checked) {
-                        // Auto-advance to next question
+                        // Auto-advance to next question (without manual flag, so auto-advance stays enabled)
                         hostControl('next_question');
                         Common.showNotification('Auto-advancing to next question...', 'info');
                     }
@@ -825,7 +825,7 @@ window.LiveQuizHostGame = (function(Common) {
         }
     }
 
-    async function hostControl(action) {
+    async function hostControl(action, options = {}) {
         // Prevent multiple simultaneous actions
         if (gameState.isActionInProgress) {
             console.log('Action already in progress, skipping...');
@@ -870,8 +870,8 @@ window.LiveQuizHostGame = (function(Common) {
                 Common.showNotification(`${actionNames[action]}!`, 'success');
             }
 
-            // Turn off auto-advance when host manually advances to next question
-            if (action === 'next_question') {
+            // Turn off auto-advance ONLY when host manually advances to next question
+            if (action === 'next_question' && options.manual) {
                 // Clear any pending auto-advance timeout
                 if (gameState.autoAdvanceTimeout) {
                     clearTimeout(gameState.autoAdvanceTimeout);
