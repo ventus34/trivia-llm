@@ -152,6 +152,27 @@ body {
     @apply p-6 bg-gray-700 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors;
 }
 
+/* Correct answer highlighting that preserves player names */
+.correct-answer-highlight {
+    background-color: #15803d !important; /* bg-green-700 */
+    border-color: #22c55e !important; /* border-green-500 */
+}
+
+.correct-answer-highlight .player-names {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Player names in answer options */
+.player-names {
+    @apply text-sm;
+}
+
+.player-names div {
+    @apply text-blue-300 font-medium;
+}
+
 /* Connection status */
 .connection-status {
     @apply fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-2 text-sm z-50;

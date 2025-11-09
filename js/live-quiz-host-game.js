@@ -13,11 +13,18 @@ window.LiveQuizHostGame = (function(Common) {
         timer: null,
         timerSeconds: 60,
         sse: null,
-        isActionInProgress: false
+        isActionInProgress: false,
+        currentQuestionVotes: {}, // Track current question votes
+        previousScores: {}, // Track previous scores for calculating changes
+        currentScores: {} // Track current scores
     });
 
     // Game control event listeners
     function setupGameEventListeners() {
+        // Results toggle
+        document.getElementById('toggle-results')?.addEventListener('click', toggleResults);
+        document.getElementById('fullscreen-toggle-results')?.addEventListener('click', toggleFullscreenResults);
+        
         // Game controls
         document.getElementById('pause-timer')?.addEventListener('click', () => hostControl('pause_timer'));
         document.getElementById('resume-timer')?.addEventListener('click', () => hostControl('resume_timer'));
@@ -41,11 +48,29 @@ window.LiveQuizHostGame = (function(Common) {
     }
 
     function refreshQuestionUI(data) {
+        // Clear previous question votes
+        gameState.currentQuestionVotes = {};
+        
         // Hide results section when new question starts
         const questionResults = document.getElementById('question-results');
         if (questionResults) {
             questionResults.classList.add('hidden');
         }
+        
+        // Reset results toggle button text
+        const toggleResultsBtn = document.getElementById('toggle-results');
+        if (toggleResultsBtn) {
+            toggleResultsBtn.textContent = '📋 Show Results';
+        }
+        
+        // Reset fullscreen results toggle button text
+        const fullscreenToggleResultsBtn = document.getElementById('fullscreen-toggle-results');
+        if (fullscreenToggleResultsBtn) {
+            fullscreenToggleResultsBtn.textContent = '📋 Show Results';
+        }
+        
+        // Remove any previous answer highlighting
+        clearAnswerHighlighting();
         
         // Update UI with current question data
         updateQuestionDisplay(data);
@@ -53,6 +78,9 @@ window.LiveQuizHostGame = (function(Common) {
         // Reset answer status (exclude host from count)
         const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
         updateAnswerStatus({ answered_count: 0, total_players: nonHostPlayers.length });
+        
+        // Reset previous scores to track changes for next question
+        gameState.previousScores = { ...gameState.currentScores };
         
         // Update progress
         const totalQuestions = gameState.totalQuestions || 30;
@@ -94,7 +122,7 @@ window.LiveQuizHostGame = (function(Common) {
                 
                 displayOptions.forEach((option, index) => {
                     const optionElement = document.createElement('div');
-                    optionElement.className = 'p-6 bg-gray-700 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors';
+                    optionElement.className = 'p-6 bg-gray-700 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors answer-option';
                     optionElement.innerHTML = `
                         <div class="flex items-center space-x-4">
                             <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-xl font-bold">
@@ -156,18 +184,220 @@ window.LiveQuizHostGame = (function(Common) {
         // Calculate percentage, avoiding division by zero
         const percentage = total > 0 ? (answered / total) * 100 : 0;
         
+        // Get non-host players
+        const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
+        
+        // Build player list with their answers showing letter circles
+        let playerListHtml = '';
+        nonHostPlayers.forEach(player => {
+            const playerAnswer = gameState.currentQuestionVotes[player.id];
+            if (playerAnswer) {
+                // Player has answered - show their choice with letter circle
+                const optionLetter = getOptionLetter(playerAnswer.selected_option);
+                playerListHtml += `
+                    <div class="flex justify-between items-center py-1 px-2 bg-gray-700 rounded text-sm">
+                        <span class="text-white">${player.name}</span>
+                        <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                            ${optionLetter}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Player hasn't answered yet
+                playerListHtml += `
+                    <div class="flex justify-between items-center py-1 px-2 bg-gray-600 rounded text-sm">
+                        <span class="text-gray-300">${player.name}</span>
+                        <span class="text-gray-400">...</span>
+                    </div>
+                `;
+            }
+        });
+        
         answerStatus.innerHTML = `
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-sm mb-3">
                 <span class="text-gray-300">Answered:</span>
                 <span class="text-white font-semibold">${answered}/${total}</span>
             </div>
-            <div class="w-full bg-gray-700 rounded-full h-2">
+            <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
                 <div class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
+            </div>
+            <div class="space-y-1">
+                <h4 class="text-sm font-semibold text-gray-300 mb-2">Players:</h4>
+                ${playerListHtml}
             </div>
         `;
     }
+    
+    // Helper function to get option letter (A, B, C, D) from option text
+    function getOptionLetter(optionText) {
+        if (!gameState.currentQuestion || !gameState.currentQuestion.options) {
+            return '?';
+        }
+        
+        const optionIndex = gameState.currentQuestion.options.indexOf(optionText);
+        if (optionIndex >= 0 && optionIndex < 4) {
+            return String.fromCharCode(65 + optionIndex); // A, B, C, D
+        }
+        return '?';
+    }
+    
+    // Removed old functions that are no longer needed
+    // - updateOptionPlayerNames()
+    // - updateOptionDisplay()
+    // - testPlayerNamesDisplay()
+    // All player vote display is now handled in updateAnswerStatus()
+    
+    // Function to record a player's vote
+    function recordPlayerVote(playerId, selectedOption) {
+        const player = gameState.players.find(p => p.id === playerId);
+        console.log(`recordPlayerVote: Player ${playerId} (${player?.name}) voting for "${selectedOption}"`);
+        
+        if (player && selectedOption) {
+            // Store by player ID for easy lookup
+            gameState.currentQuestionVotes[playerId] = {
+                player: player,
+                selected_option: selectedOption
+            };
+            console.log(`Recorded ${player.name} -> "${selectedOption}"`);
+            console.log('Current votes:', gameState.currentQuestionVotes);
+        } else {
+            console.log(`Failed to record vote - Player: ${player}, Option: ${selectedOption}`);
+        }
+    }
 
+    // Toggle results visibility
+    function toggleResults() {
+        const questionResults = document.getElementById('question-results');
+        const toggleBtn = document.getElementById('toggle-results');
+        
+        if (questionResults && toggleBtn) {
+            if (questionResults.classList.contains('hidden')) {
+                questionResults.classList.remove('hidden');
+                toggleBtn.textContent = '📋 Hide Results';
+            } else {
+                questionResults.classList.add('hidden');
+                toggleBtn.textContent = '📋 Show Results';
+            }
+        }
+    }
+    
+    // Toggle fullscreen results visibility
+    function toggleFullscreenResults() {
+        const questionResults = document.getElementById('fullscreen-question-results');
+        const toggleBtn = document.getElementById('fullscreen-toggle-results');
+        
+        if (questionResults && toggleBtn) {
+            if (questionResults.classList.contains('hidden')) {
+                questionResults.classList.remove('hidden');
+                toggleBtn.textContent = '📋 Hide Results';
+            } else {
+                questionResults.classList.add('hidden');
+                toggleBtn.textContent = '📋 Show Results';
+            }
+        }
+    }
+    
+    // Clear previous answer highlighting (preserve player name containers)
+    function clearAnswerHighlighting() {
+        const optionsContainer = document.getElementById('question-options');
+        if (optionsContainer) {
+            const options = optionsContainer.querySelectorAll('.answer-option');
+            options.forEach(option => {
+                // Remove highlighting class, keep base classes
+                option.classList.remove('correct-answer-highlight');
+                // Reset background and border colors
+                option.style.backgroundColor = '';
+                option.style.borderColor = '';
+            });
+        }
+        
+        // Clear fullscreen options too
+        const fullscreenOptionsContainer = document.getElementById('fullscreen-question-options');
+        if (fullscreenOptionsContainer) {
+            const options = fullscreenOptionsContainer.querySelectorAll('.answer-option');
+            options.forEach(option => {
+                // Remove highlighting class, keep base classes
+                option.classList.remove('correct-answer-highlight');
+                // Reset background and border colors
+                option.style.backgroundColor = '';
+                option.style.borderColor = '';
+            });
+        }
+    }
+    
+    // Highlight correct answer in green (preserve player name containers)
+    function highlightCorrectAnswer(correctAnswerText) {
+        // Clear all highlighting first
+        clearAnswerHighlighting();
+        
+        // Highlight in regular view
+        const optionsContainer = document.getElementById('question-options');
+        if (optionsContainer) {
+            const options = optionsContainer.querySelectorAll('.answer-option');
+            options.forEach(option => {
+                // Get the text content from the option (last span contains the actual answer text)
+                const spans = option.querySelectorAll('span');
+                const optionText = spans[spans.length - 1].textContent;
+                
+                console.log(`Comparing: "${optionText}" with "${correctAnswerText}"`);
+                
+                if (optionText === correctAnswerText) {
+                    console.log('Found correct answer, highlighting...');
+                    // Add highlighting class and force background color
+                    option.classList.add('correct-answer-highlight');
+                    option.style.backgroundColor = '#15803d'; // bg-green-700
+                    option.style.borderColor = '#22c55e'; // border-green-500
+                }
+            });
+        }
+        
+        // Highlight in fullscreen view
+        const fullscreenOptionsContainer = document.getElementById('fullscreen-question-options');
+        if (fullscreenOptionsContainer) {
+            const options = fullscreenOptionsContainer.querySelectorAll('.answer-option');
+            options.forEach(option => {
+                // Get the text content from the option (last span contains the actual answer text)
+                const spans = option.querySelectorAll('span');
+                const optionText = spans[spans.length - 1].textContent;
+                
+                if (optionText === correctAnswerText) {
+                    // Add highlighting class and force background color
+                    option.classList.add('correct-answer-highlight');
+                    option.style.backgroundColor = '#15803d'; // bg-green-700
+                    option.style.borderColor = '#22c55e'; // border-green-500
+                }
+            });
+        }
+    }
+    
+    // Show player votes in results
+    function showPlayerVotes(answersData) {
+        // This function is now simpler since we show votes in answer status
+        // We can keep it for the modal but it might not be needed
+        console.log('showPlayerVotes called - votes are now shown in Answer Status section');
+    }
+    
     function showQuestionResults(data) {
+        console.log('=== showQuestionResults called ===');
+        console.log('Full data:', data);
+        console.log('Answers data:', data.answers);
+        
+        // Record all player votes for display in answer status
+        Object.entries(data.answers).forEach(([playerId, answerData]) => {
+            if (answerData && answerData.answer && answerData.answer !== "No Answer" && answerData.answer !== "Skipped") {
+                console.log(`Recording vote: Player ${playerId} chose "${answerData.answer}"`);
+                recordPlayerVote(playerId, answerData.answer);
+            } else {
+                console.log(`Skipping vote for player ${playerId}:`, answerData);
+            }
+        });
+        
+        console.log('=== Current question votes after recording ===', gameState.currentQuestionVotes);
+        
+        // Update answer status with player votes
+        const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
+        updateAnswerStatus({ answered_count: nonHostPlayers.length, total_players: nonHostPlayers.length });
+        
         // Update scoreboard
         updateScoreboard(data.scores);
         
@@ -177,11 +407,8 @@ window.LiveQuizHostGame = (function(Common) {
         if (correctAnswerElement) correctAnswerElement.textContent = data.correct_answer;
         if (explanationElement) explanationElement.textContent = data.explanation || 'No explanation available.';
         
-        // Show the results section
-        const questionResults = document.getElementById('question-results');
-        if (questionResults) {
-            questionResults.classList.remove('hidden');
-        }
+        // Highlight correct answer
+        highlightCorrectAnswer(data.correct_answer);
         
         // Show results notification
         const correctCount = Object.values(data.answers).filter(a => a.is_correct).length;
@@ -211,9 +438,43 @@ window.LiveQuizHostGame = (function(Common) {
             }))
             .sort((a, b) => b.score - a.score);
         
+        // Initialize score tracking objects if they don't exist
+        if (!gameState.currentScores) {
+            gameState.currentScores = {};
+        }
+        if (!gameState.previousScores) {
+            gameState.previousScores = {};
+        }
+        
+        // Update current scores and calculate changes
+        sortedPlayers.forEach(player => {
+            const previousScore = gameState.currentScores[player.id] || 0;
+            const currentScore = player.score;
+            const scoreChange = currentScore - previousScore;
+            
+            // Store the current score for next time
+            gameState.currentScores[player.id] = currentScore;
+        });
+        
         sortedPlayers.forEach((player, index) => {
+            const previousScore = gameState.previousScores[player.id] || 0;
+            const currentScore = gameState.currentScores[player.id] || 0;
+            const scoreChange = currentScore - previousScore;
+            
+            // Update previous scores for next calculation
+            gameState.previousScores[player.id] = currentScore;
+            
             const playerElement = document.createElement('div');
             playerElement.className = 'flex items-center justify-between p-2 bg-gray-700 rounded';
+            
+            // Format score change display
+            let changeDisplay = '';
+            if (scoreChange > 0) {
+                changeDisplay = `<span class="text-green-400 text-xs">+${scoreChange}</span>`;
+            } else if (scoreChange < 0) {
+                changeDisplay = `<span class="text-red-400 text-xs">${scoreChange}</span>`;
+            }
+            
             playerElement.innerHTML = `
                 <div class="flex items-center space-x-2">
                     <span class="text-sm font-semibold text-gray-400">${index + 1}.</span>
@@ -222,7 +483,10 @@ window.LiveQuizHostGame = (function(Common) {
                     </div>
                     <span class="text-white">${player.name}</span>
                 </div>
-                <span class="text-white font-semibold">${player.score}</span>
+                <div class="flex items-center space-x-2">
+                    ${changeDisplay}
+                    <span class="text-white font-semibold">${currentScore}</span>
+                </div>
             `;
             scoreboard.appendChild(playerElement);
         });
@@ -273,7 +537,7 @@ window.LiveQuizHostGame = (function(Common) {
                 
                 displayOptions.forEach((option, index) => {
                     const optionElement = document.createElement('div');
-                    optionElement.className = 'p-8 bg-gray-700 rounded-2xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors';
+                    optionElement.className = 'p-8 bg-gray-700 rounded-2xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors answer-option';
                     optionElement.innerHTML = `
                         <div class="flex items-center space-x-6">
                             <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
@@ -286,15 +550,34 @@ window.LiveQuizHostGame = (function(Common) {
                 });
             }
             
-            // Update results if visible
+            // Sync results visibility and toggle button
             const resultsVisible = !document.getElementById('question-results').classList.contains('hidden');
+            const fullscreenResults = document.getElementById('fullscreen-question-results');
+            const fullscreenToggleBtn = document.getElementById('fullscreen-toggle-results');
             if (resultsVisible) {
-                document.getElementById('fullscreen-question-results').classList.remove('hidden');
+                fullscreenResults.classList.remove('hidden');
+                if (fullscreenToggleBtn) fullscreenToggleBtn.textContent = '📋 Hide Results';
                 document.getElementById('fullscreen-correct-answer').textContent = document.getElementById('correct-answer').textContent;
                 document.getElementById('fullscreen-question-explanation').textContent = document.getElementById('question-explanation').textContent;
+                
+                // Sync player votes display
+                const regularPlayerVotes = document.getElementById('player-votes');
+                const fullscreenPlayerVotes = document.getElementById('fullscreen-player-votes');
+                const regularPlayerVotesContent = document.getElementById('player-votes-content');
+                const fullscreenPlayerVotesContent = document.getElementById('fullscreen-player-votes-content');
+                
+                if (regularPlayerVotes && !regularPlayerVotes.classList.contains('hidden') &&
+                    fullscreenPlayerVotes && fullscreenPlayerVotesContent) {
+                    fullscreenPlayerVotesContent.innerHTML = regularPlayerVotesContent.innerHTML;
+                    fullscreenPlayerVotes.classList.remove('hidden');
+                }
             } else {
-                document.getElementById('fullscreen-question-results').classList.add('hidden');
+                fullscreenResults.classList.add('hidden');
+                if (fullscreenToggleBtn) fullscreenToggleBtn.textContent = '📋 Show Results';
             }
+            
+            // Update player names in fullscreen answer options
+            updateOptionPlayerNames();
             
             // Sync timer control buttons
             const pauseBtn = document.getElementById('pause-timer');
@@ -302,7 +585,7 @@ window.LiveQuizHostGame = (function(Common) {
             const fullscreenPauseBtn = document.getElementById('fullscreen-pause-timer');
             const fullscreenResumeBtn = document.getElementById('fullscreen-resume-timer');
             
-            if (pauseBtn && fullscreenPauseBtn && fullscreenResumeBtn) {
+            if (pauseBtn && resumeBtn && fullscreenPauseBtn && fullscreenResumeBtn) {
                 if (pauseBtn.classList.contains('hidden')) {
                     fullscreenPauseBtn.classList.add('hidden');
                     fullscreenResumeBtn.classList.remove('hidden');
@@ -433,9 +716,19 @@ window.LiveQuizHostGame = (function(Common) {
             originalShowQuestionResults(data);
             // Sync to fullscreen
             if (!document.getElementById('fullscreen-question').classList.contains('hidden')) {
-                document.getElementById('fullscreen-question-results').classList.remove('hidden');
+                // Set results content
                 document.getElementById('fullscreen-correct-answer').textContent = data.correct_answer;
                 document.getElementById('fullscreen-question-explanation').textContent = data.explanation || 'No explanation available.';
+                
+                // Sync player votes if visible in regular view
+                const regularPlayerVotes = document.getElementById('player-votes');
+                if (regularPlayerVotes && !regularPlayerVotes.classList.contains('hidden')) {
+                    document.getElementById('fullscreen-player-votes-content').innerHTML = document.getElementById('player-votes-content').innerHTML;
+                    document.getElementById('fullscreen-player-votes').classList.remove('hidden');
+                }
+                
+                // Don't automatically show results in fullscreen - let host decide
+                // document.getElementById('fullscreen-question-results').classList.remove('hidden');
             }
         };
         
@@ -457,6 +750,11 @@ window.LiveQuizHostGame = (function(Common) {
         showTimerResumed: showTimerResumed,
         updateAnswerStatus: updateAnswerStatus,
         showQuestionResults: showQuestionResults,
+        toggleResults: toggleResults,
+        highlightCorrectAnswer: highlightCorrectAnswer,
+        showPlayerVotes: showPlayerVotes,
+        recordPlayerVote: recordPlayerVote,
+        getOptionLetter: getOptionLetter,
         enterFullscreen: enterFullscreen,
         exitFullscreen: exitFullscreen,
         gameState: gameState
