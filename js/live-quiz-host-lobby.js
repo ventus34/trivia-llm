@@ -80,6 +80,11 @@ window.LiveQuizHostLobby = (function(Common) {
                 addPlayer(event.data.player);
                 Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
                 break;
+
+            case 'late_player_joined':
+                addPlayer(event.data.player);
+                Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
+                break;
                 
             case 'question_started':
                 if (window.LiveQuizHostGame) {

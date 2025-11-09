@@ -167,7 +167,8 @@ window.LiveQuizHostSetup = (function(Common) {
                 selected_question_model: document.getElementById('question-model').value,
                 selected_explanation_model: 'auto', // Default value
                 selected_category_model: 'auto', // Default value
-                questions_per_category: questionsPerCategory
+                questions_per_category: questionsPerCategory,
+                answer_time: parseInt(document.getElementById('answer-time').value)
             });
             
             // Update game state

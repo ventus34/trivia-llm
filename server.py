@@ -25,6 +25,9 @@ from live_quiz_routes import (
 # --- Configuration ---
 app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 
+# Import cleanup functions
+from live_quiz_routes import start_cleanup_task, stop_cleanup_task
+
 # Register API routes
 app.get("/api/db/stats")(get_db_stats)
 app.get("/api/db/prompts")(get_db_prompts)
@@ -66,9 +69,19 @@ async def startup_event():
     dynamic_models = await fetch_models_from_api()
     initialize_models(dynamic_models)
 
+    # Start background cleanup task for live quiz games
+    start_cleanup_task()
+
     if DEBUG_MODE:
         print("Startup completed. Rate limiter and semaphores initialized.")
         print(f"Generative rate limit: {GENERATIVE_RATE_LIMIT_COUNT}/{GENERATIVE_RATE_LIMIT_PERIOD}s, inflight: {GENERATIVE_INFLIGHT_LIMIT}")
         print(f"Preload concurrency limit: {MAX_CONCURRENT_PRELOAD_TASKS}, max categories per preload: {MAX_PRELOAD_CATEGORIES}")
+        print("Live quiz cleanup task started.")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    # Stop background cleanup task
+    stop_cleanup_task()
+    print("Shutdown completed. Cleanup task stopped.")
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

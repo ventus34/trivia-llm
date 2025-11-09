@@ -17,6 +17,8 @@ class Player(BaseModel):
     has_answered: bool = False
     last_answer: Optional[str] = None
     is_correct: Optional[bool] = None
+    last_seen: Optional[datetime] = None  # Track when player was last active
+    reconnect_count: int = 0  # Track number of reconnections
 
 class Question(BaseModel):
     id: str
@@ -63,6 +65,7 @@ class LiveQuizGameState(BaseModel):
     selected_category_model: str = "auto"
     questions_per_category: int = 5  # Configurable: 2, 3, 5, etc.
     total_questions: int = 30
+    last_activity: datetime = None  # Track last activity for cleanup
 
 class CreateRoomRequest(BaseModel):
     categories: List[str]

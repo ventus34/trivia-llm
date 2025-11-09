@@ -14,7 +14,14 @@ window.LiveQuizHost = (function(Common) {
         timerSeconds: 60,
         sse: null,
         questionsPerCategory: null,
-        totalQuestions: null
+        totalQuestions: null,
+        autoAdvance: {
+            enabled: false,
+            timeSeconds: 15,
+            countdown: null,
+            countdownInterval: null,
+            preventNextAutoAdvance: false
+        }
     };
 
     // Session Storage Functions with better debugging
@@ -303,15 +310,27 @@ window.LiveQuizHost = (function(Common) {
         document.getElementById('pause-timer')?.addEventListener('click', () => hostControl('pause_timer'));
         document.getElementById('resume-timer')?.addEventListener('click', () => hostControl('resume_timer'));
         document.getElementById('regenerate-question')?.addEventListener('click', () => hostControl('regenerate_question'));
-        document.getElementById('next-question')?.addEventListener('click', () => hostControl('next_question'));
+        document.getElementById('next-question')?.addEventListener('click', () => {
+            // When manually advancing, disable auto-advance like unchecking the checkbox
+            disableAutoAdvance();
+            hostControl('next_question');
+        });
         
         // Fullscreen controls
         document.getElementById('toggle-fullscreen')?.addEventListener('click', enterFullscreen);
         document.getElementById('exit-fullscreen')?.addEventListener('click', exitFullscreen);
         document.getElementById('fullscreen-pause-timer')?.addEventListener('click', () => hostControl('pause_timer'));
         document.getElementById('fullscreen-resume-timer')?.addEventListener('click', () => hostControl('resume_timer'));
-        document.getElementById('fullscreen-regenerate-question')?.addEventListener('click', () => hostControl('regenerate_question'));
-        document.getElementById('fullscreen-next-question')?.addEventListener('click', () => hostControl('next_question'));
+        document.getElementById('fullscreen-regenerate-question')?.addEventListener('click', () => {
+            // When manually advancing, disable auto-advance like unchecking the checkbox
+            disableAutoAdvance();
+            hostControl('regenerate_question');
+        });
+        document.getElementById('fullscreen-next-question')?.addEventListener('click', () => {
+            // When manually advancing, disable auto-advance like unchecking the checkbox
+            disableAutoAdvance();
+            hostControl('next_question');
+        });
         
         // Results screen
         document.getElementById('new-game')?.addEventListener('click', () => {
@@ -329,6 +348,70 @@ window.LiveQuizHost = (function(Common) {
             clearHostState();
             Common.showScreen('setup-screen');
         });
+
+        // Set up auto-advance controls with multiple attempts
+        setupAutoAdvanceControls();
+    }
+    
+    function setupAutoAdvanceControls() {
+        console.log('🔧 Setting up auto-advance controls...');
+        
+        // Regular auto-advance controls
+        const autoAdvanceToggle = document.getElementById('auto-advance-toggle');
+        const autoAdvanceSlider = document.getElementById('auto-advance-slider');
+        const autoAdvanceSliderValue = document.getElementById('auto-advance-slider-value');
+        
+        if (autoAdvanceToggle) {
+            autoAdvanceToggle.addEventListener('change', toggleAutoAdvance);
+            console.log('✅ Auto-advance toggle event attached');
+        } else {
+            console.log('❌ Auto-advance toggle not found');
+        }
+        
+        if (autoAdvanceSlider && autoAdvanceSliderValue) {
+            autoAdvanceSlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                autoAdvanceSliderValue.textContent = value;
+                gameState.autoAdvance.timeSeconds = value;
+                console.log(`📊 Auto-advance slider changed to ${value}s`);
+                
+                // Sync with fullscreen slider
+                const fullscreenSlider = document.getElementById('fullscreen-auto-advance-slider');
+                const fullscreenSliderValue = document.getElementById('fullscreen-auto-advance-slider-value');
+                if (fullscreenSlider && fullscreenSliderValue) {
+                    fullscreenSlider.value = value;
+                    fullscreenSliderValue.textContent = value;
+                }
+            });
+            console.log('✅ Auto-advance slider event attached');
+        } else {
+            console.log('❌ Auto-advance slider not found');
+        }
+        
+        // Fullscreen auto-advance controls
+        const fullscreenAutoAdvanceToggle = document.getElementById('fullscreen-auto-advance-toggle');
+        const fullscreenAutoAdvanceSlider = document.getElementById('fullscreen-auto-advance-slider');
+        const fullscreenAutoAdvanceSliderValue = document.getElementById('fullscreen-auto-advance-slider-value');
+        
+        if (fullscreenAutoAdvanceToggle) {
+            fullscreenAutoAdvanceToggle.addEventListener('change', toggleAutoAdvance);
+        }
+        
+        if (fullscreenAutoAdvanceSlider && fullscreenAutoAdvanceSliderValue) {
+            fullscreenAutoAdvanceSlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                fullscreenAutoAdvanceSliderValue.textContent = value;
+                gameState.autoAdvance.timeSeconds = value;
+                
+                // Sync with regular slider
+                const regularSlider = document.getElementById('auto-advance-slider');
+                const regularSliderValue = document.getElementById('auto-advance-slider-value');
+                if (regularSlider && regularSliderValue) {
+                    regularSlider.value = value;
+                    regularSliderValue.textContent = value;
+                }
+            });
+        }
     }
 
     async function createRoom() {
@@ -429,6 +512,14 @@ window.LiveQuizHost = (function(Common) {
                 addPlayer(event.data.player);
                 Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
                 break;
+
+            case 'late_player_joined':
+                addPlayer(event.data.player);
+                Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
+                // Update answer status with new player count for future questions
+                const nonHostPlayers = gameState.players.filter(p => p.id !== gameState.hostId);
+                updateAnswerStatus({ answered_count: 0, total_players: nonHostPlayers.length });
+                break;
                 
             case 'question_started':
                 startQuestion(event.data);
@@ -452,6 +543,10 @@ window.LiveQuizHost = (function(Common) {
                 
             case 'answer_submitted':
                 updateAnswerStatus(event.data);
+                // Update player list if all_players data is provided
+                if (event.data.all_players) {
+                    updatePlayersList(event.data.all_players);
+                }
                 break;
                 
             case 'question_results':
@@ -590,6 +685,14 @@ window.LiveQuizHost = (function(Common) {
         gameState.currentQuestion = data;
         gameState.timerSeconds = data.time_limit;
         
+        // Stop any running auto-advance when new question starts
+        if (gameState.autoAdvance.countdownInterval) {
+            clearInterval(gameState.autoAdvance.countdownInterval);
+            gameState.autoAdvance.countdownInterval = null;
+        }
+        gameState.autoAdvance.countdown = null;
+        updateAutoAdvanceDisplay();
+        
         // Hide results section when new question starts
         const questionResults = document.getElementById('question-results');
         if (questionResults) {
@@ -687,13 +790,15 @@ window.LiveQuizHost = (function(Common) {
     function updateAnswerStatus(data) {
         const answerStatus = document.getElementById('answer-status');
         if (!answerStatus) return;
-        
+
         const answered = data.answered_count || 0;
-        const total = data.total_players || gameState.players.filter(p => p.id !== gameState.hostId).length;
-        
+        // Use current_question_players if available (players who could answer this question)
+        // Otherwise fall back to total non-host players
+        const total = data.current_question_players || data.total_players || gameState.players.filter(p => p.id !== gameState.hostId).length;
+
         // Calculate percentage, avoiding division by zero
         const percentage = total > 0 ? (answered / total) * 100 : 0;
-        
+
         answerStatus.innerHTML = `
             <div class="flex justify-between text-sm">
                 <span class="text-gray-300">Answered:</span>
@@ -725,13 +830,36 @@ window.LiveQuizHost = (function(Common) {
         const correctCount = Object.values(data.answers).filter(a => a.is_correct).length;
         Common.showNotification(`Question ${data.question_number} results: ${correctCount}/${Object.keys(data.answers).length} correct`, 'info');
         
-        // Auto-advance to next question after 10 seconds (host can skip)
-        setTimeout(() => {
-            const gameScreen = document.getElementById('game-screen');
-            if (gameScreen && !gameScreen.classList.contains('hidden')) {
-                Common.showNotification('Ready for next question. Click "Next Question" to continue.', 'info');
-            }
-        }, 10000);
+        // Auto-advance if enabled
+        if (gameState.autoAdvance.enabled) {
+            // Start auto-advance countdown using main game timer
+            gameState.autoAdvance.countdown = gameState.autoAdvance.timeSeconds;
+            updateAutoAdvanceDisplay();
+            
+            // Show countdown message
+            Common.showNotification(`Auto-advancing in ${gameState.autoAdvance.timeSeconds} seconds...`, 'info');
+            
+            // Start countdown using main game timer
+            gameState.autoAdvance.countdownInterval = setInterval(() => {
+                gameState.autoAdvance.countdown--;
+                updateAutoAdvanceDisplay();
+                
+                if (gameState.autoAdvance.countdown <= 0) {
+                    // Auto-advance to next question
+                    Common.showNotification('Auto-advancing to next question...', 'info');
+                    disableAutoAdvance(); // Disable auto-advance
+                    hostControl('next_question');
+                }
+            }, 1000);
+        } else {
+            // Show manual advance message after 10 seconds if auto-advance is disabled
+            setTimeout(() => {
+                const gameScreen = document.getElementById('game-screen');
+                if (gameScreen && !gameScreen.classList.contains('hidden')) {
+                    Common.showNotification('Ready for next question. Click "Next Question" to continue.', 'info');
+                }
+            }, 10000);
+        }
     }
 
     function updateScoreboard(scores) {
@@ -968,6 +1096,74 @@ window.LiveQuizHost = (function(Common) {
         }
     };
 
+    // Auto-advance Functions
+    function toggleAutoAdvance() {
+        const regularToggle = document.getElementById('auto-advance-toggle');
+        const fullscreenToggle = document.getElementById('fullscreen-auto-advance-toggle');
+        
+        if (gameState.autoAdvance.enabled) {
+            // Disable auto-advance
+            disableAutoAdvance();
+        } else {
+            // Enable auto-advance
+            enableAutoAdvance();
+        }
+    }
+    
+    function enableAutoAdvance() {
+        gameState.autoAdvance.enabled = true;
+        updateAutoAdvanceDisplay();
+        
+        const regularToggle = document.getElementById('auto-advance-toggle');
+        const fullscreenToggle = document.getElementById('fullscreen-auto-advance-toggle');
+        
+        if (regularToggle) regularToggle.checked = true;
+        if (fullscreenToggle) fullscreenToggle.checked = true;
+        
+        Common.showNotification(`Auto-advance enabled (${gameState.autoAdvance.timeSeconds}s)`, 'info');
+    }
+    
+    function disableAutoAdvance() {
+        gameState.autoAdvance.enabled = false;
+        gameState.autoAdvance.countdown = null;
+        gameState.autoAdvance.preventNextAutoAdvance = false;
+        
+        // Stop any running timer
+        if (gameState.autoAdvance.countdownInterval) {
+            clearInterval(gameState.autoAdvance.countdownInterval);
+            gameState.autoAdvance.countdownInterval = null;
+        }
+        
+        updateAutoAdvanceDisplay();
+        
+        const regularToggle = document.getElementById('auto-advance-toggle');
+        const fullscreenToggle = document.getElementById('fullscreen-auto-advance-toggle');
+        
+        if (regularToggle) regularToggle.checked = false;
+        if (fullscreenToggle) fullscreenToggle.checked = false;
+        
+        Common.showNotification('Auto-advance disabled', 'info');
+    }
+    
+    function updateAutoAdvanceDisplay() {
+        const regularLabel = document.querySelector('label[for="auto-advance-toggle"]');
+        const fullscreenLabel = document.querySelector('label[for="fullscreen-auto-advance-toggle"]');
+        
+        if (gameState.autoAdvance.enabled && gameState.autoAdvance.countdown !== null) {
+            // Currently counting down
+            if (regularLabel) regularLabel.textContent = `Auto-advance (${gameState.autoAdvance.countdown}s)`;
+            if (fullscreenLabel) fullscreenLabel.textContent = `Auto-advance (${gameState.autoAdvance.countdown}s)`;
+        } else if (gameState.autoAdvance.enabled) {
+            // Enabled but not counting down (during questions)
+            if (regularLabel) regularLabel.textContent = `Auto-advance (${gameState.autoAdvance.timeSeconds}s)`;
+            if (fullscreenLabel) fullscreenLabel.textContent = `Auto-advance (${gameState.autoAdvance.timeSeconds}s)`;
+        } else {
+            // Disabled
+            if (regularLabel) regularLabel.textContent = 'Auto-advance';
+            if (fullscreenLabel) fullscreenLabel.textContent = 'Auto-advance';
+        }
+    }
+
     async function hostControl(action) {
         try {
             await Common.apiCall('/api/live-quiz/host-control', 'POST', {
@@ -991,6 +1187,14 @@ window.LiveQuizHost = (function(Common) {
             } else {
                 Common.showNotification('Recovered your previous session!', 'success');
             }
+            
+            // Set up auto-advance controls
+            setupAutoAdvanceControls();
+            
+            // Also set up after a longer delay to catch any late-loading elements
+            setTimeout(() => {
+                setupAutoAdvanceControls();
+            }, 1000);
         }, 200);
     }
 

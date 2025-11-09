@@ -32,11 +32,60 @@ window.LiveQuizPlayer = (function(Common) {
                 timestamp: Date.now(),
                 version: '2.0'
             };
-            
+
             Common.saveToSession('playerState', stateData);
             console.log('✅ Player state saved:', stateData);
         } catch (error) {
             console.error('❌ Failed to save player state:', error);
+        }
+    }
+
+    // Local Storage Functions for persistent player identity
+    function savePlayerIdentity(playerName, playerId, roomCode) {
+        try {
+            const identityData = {
+                playerName: playerName,
+                playerId: playerId,
+                roomCode: roomCode,
+                timestamp: Date.now(),
+                version: '1.0'
+            };
+
+            localStorage.setItem('liveQuizPlayerIdentity', JSON.stringify(identityData));
+            console.log('✅ Player identity saved:', identityData);
+        } catch (error) {
+            console.error('❌ Failed to save player identity:', error);
+        }
+    }
+
+    function loadPlayerIdentity() {
+        try {
+            const saved = localStorage.getItem('liveQuizPlayerIdentity');
+            if (saved) {
+                const identityData = JSON.parse(saved);
+
+                // Check if identity is not too old (24 hours)
+                const age = Date.now() - identityData.timestamp;
+                if (age < 86400000 && identityData.version === '1.0') { // 24 hours
+                    console.log('📁 Loaded player identity:', identityData);
+                    return identityData;
+                } else {
+                    console.log('⏰ Player identity too old, clearing');
+                    clearPlayerIdentity();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Failed to load player identity:', error);
+        }
+        return null;
+    }
+
+    function clearPlayerIdentity() {
+        try {
+            localStorage.removeItem('liveQuizPlayerIdentity');
+            console.log('🗑️ Player identity cleared');
+        } catch (error) {
+            console.error('❌ Failed to clear player identity:', error);
         }
     }
 
@@ -177,6 +226,23 @@ window.LiveQuizPlayer = (function(Common) {
                 joinGame();
             }
         });
+
+        // Handle credential conflicts - if user manually enters different name/room
+        document.getElementById('room-code')?.addEventListener('input', (e) => {
+            const storedIdentity = loadPlayerIdentity();
+            if (storedIdentity && e.target.value !== storedIdentity.roomCode) {
+                console.log('Room code changed, clearing stored identity');
+                clearPlayerIdentity();
+            }
+        });
+
+        document.getElementById('player-name')?.addEventListener('input', (e) => {
+            const storedIdentity = loadPlayerIdentity();
+            if (storedIdentity && e.target.value !== storedIdentity.playerName) {
+                console.log('Player name changed, clearing stored identity');
+                clearPlayerIdentity();
+            }
+        });
         
         // Leave lobby
         document.getElementById('leave-lobby')?.addEventListener('click', () => {
@@ -184,16 +250,18 @@ window.LiveQuizPlayer = (function(Common) {
                 gameState.sse.close();
             }
             clearPlayerState();
+            clearPlayerIdentity(); // Also clear stored identity when leaving
             resetGame();
             Common.showScreen('join-screen');
         });
-        
+
         // Play again
         document.getElementById('play-again')?.addEventListener('click', () => {
             if (gameState.sse) {
                 gameState.sse.close();
             }
             clearPlayerState();
+            clearPlayerIdentity(); // Also clear stored identity when playing again
             resetGame();
             Common.showScreen('join-screen');
         });
@@ -221,38 +289,108 @@ window.LiveQuizPlayer = (function(Common) {
         };
     }
 
-    async function joinGame() {
-        const roomCode = document.getElementById('room-code').value.trim();
-        const playerName = document.getElementById('player-name').value.trim();
-        
+    async function joinGame(autoReconnect = false) {
+        let roomCode = document.getElementById('room-code').value.trim();
+        let playerName = document.getElementById('player-name').value.trim();
+
+        // If auto-reconnecting, use stored identity
+        if (autoReconnect) {
+            const storedIdentity = loadPlayerIdentity();
+            if (storedIdentity) {
+                roomCode = storedIdentity.roomCode;
+                playerName = storedIdentity.playerName;
+                console.log('🔄 Auto-reconnecting with stored identity:', storedIdentity);
+            } else {
+                console.log('❌ No stored identity found for auto-reconnection');
+                return;
+            }
+        }
+
         if (!roomCode || roomCode.length !== 6) {
-            Common.showNotification('Please enter a valid 6-digit room code', 'error');
+            if (!autoReconnect) {
+                Common.showNotification('Please enter a valid 6-digit room code', 'error');
+            }
             return;
         }
-        
+
         if (!playerName) {
-            Common.showNotification('Please enter your name', 'error');
+            if (!autoReconnect) {
+                Common.showNotification('Please enter your name', 'error');
+            }
             return;
         }
-        
-        Common.showLoading('Joining game...');
+
+        if (!autoReconnect) {
+            Common.showLoading('Joining game...');
+        }
+
         try {
             const response = await Common.apiCall('/api/live-quiz/join-room', 'POST', {
                 room_code: roomCode,
                 player_name: playerName
             });
-            
+
             gameState.gameId = response.game_id;
             gameState.playerId = response.player_id;
             gameState.roomCode = roomCode;
-            
-            // Check if this is a late join (game already in progress)
-            const isLateJoin = response.game_status === 'playing';
-            
-            if (isLateJoin) {
-                // Show game in progress screen
+
+            // Save player identity to localStorage for future auto-reconnection
+            savePlayerIdentity(playerName, response.player_id, roomCode);
+
+            // Check if this is a reconnection
+            const isReconnection = response.is_reconnection;
+
+            if (isReconnection) {
+                // Handle reconnection
+                if (autoReconnect) {
+                    Common.showNotification('Auto-reconnected to game!', 'success');
+                } else {
+                    Common.showNotification('Reconnected to game successfully!', 'success');
+                }
+
+                // Restore player score and state
+                if (response.player_score !== undefined) {
+                    console.log(`Reconnected with score: ${response.player_score}`);
+                }
+
+                // Determine which screen to show based on game status
+                if (response.game_status === 'playing') {
+                    Common.showScreen('question-screen');
+
+                    // If player hasn't answered current question, show normal question screen
+                    if (!response.has_answered_current) {
+                        console.log('Reconnected during active question - can still participate');
+                    } else {
+                        // Show that they've already answered
+                        const answerStatus = document.getElementById('answer-status');
+                        if (answerStatus) {
+                            answerStatus.innerHTML = '<div class="text-sm text-green-400">✓ Answer submitted!</div>';
+                        }
+                        // Disable answer buttons
+                        setTimeout(() => {
+                            document.querySelectorAll('#answer-options button').forEach(button => {
+                                button.disabled = true;
+                                button.classList.add('opacity-50', 'cursor-not-allowed');
+                            });
+                        }, 500);
+                    }
+                } else if (response.game_status === 'waiting') {
+                    Common.showScreen('lobby-screen');
+                    const displayRoomCodeElement = document.getElementById('display-room-code');
+                    if (displayRoomCodeElement) {
+                        displayRoomCodeElement.textContent = roomCode;
+                    }
+                } else {
+                    // Game finished or other status
+                    Common.showScreen('lobby-screen'); // Fallback
+                }
+
+                savePlayerState(response.game_status === 'playing' ? 'question-screen' : 'lobby-screen');
+
+            } else if (response.game_status === 'playing') {
+                // Late join (not reconnection)
                 Common.showScreen('question-screen');
-                
+
                 // Add categories to show what's being played
                 const categoriesList = document.getElementById('categories-list');
                 if (categoriesList) {
@@ -264,7 +402,7 @@ window.LiveQuizPlayer = (function(Common) {
                         categoriesList.appendChild(categoryElement);
                     });
                 }
-                
+
                 // Update status message
                 const answerStatus = document.getElementById('answer-status');
                 if (answerStatus) {
@@ -278,7 +416,15 @@ window.LiveQuizPlayer = (function(Common) {
                         </div>
                     `;
                 }
-                
+
+                // Disable answer buttons for late joiners
+                setTimeout(() => {
+                    document.querySelectorAll('#answer-options button').forEach(button => {
+                        button.disabled = true;
+                        button.classList.add('opacity-50', 'cursor-not-allowed');
+                    });
+                }, 500);
+
                 Common.showNotification('Joined game in progress! You\'ll start from the next question.', 'info');
                 savePlayerState('question-screen');
             } else {
@@ -288,7 +434,7 @@ window.LiveQuizPlayer = (function(Common) {
                 if (displayRoomCodeElement) {
                     displayRoomCodeElement.textContent = roomCode;
                 }
-                
+
                 // Add categories
                 const categoriesList = document.getElementById('categories-list');
                 if (categoriesList) {
@@ -300,18 +446,26 @@ window.LiveQuizPlayer = (function(Common) {
                         categoriesList.appendChild(categoryElement);
                     });
                 }
-                
+
                 Common.showScreen('lobby-screen');
                 savePlayerState('lobby-screen'); // Save state after successful join
                 Common.showNotification('Joined game successfully!', 'success');
             }
-            
+
             setupSSE(); // Always setup SSE to receive real-time updates
-            
+
         } catch (error) {
-            Common.showNotification('Failed to join game: ' + error.message, 'error');
+            if (!autoReconnect) {
+                Common.showNotification('Failed to join game: ' + error.message, 'error');
+            } else {
+                console.log('Auto-reconnection failed:', error.message);
+                // Clear invalid stored identity
+                clearPlayerIdentity();
+            }
         } finally {
-            Common.hideLoading();
+            if (!autoReconnect) {
+                Common.hideLoading();
+            }
         }
     }
 
@@ -332,49 +486,80 @@ window.LiveQuizPlayer = (function(Common) {
 
     function handleSSEEvent(event) {
         hideConnectionStatus();
-        
+
         switch (event.type) {
             case 'connected':
                 updateLobby();
                 break;
-                
+
             case 'player_joined':
                 Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
                 break;
-                
+
+            case 'player_reconnected':
+                if (event.data.player.id !== gameState.playerId) {
+                    // Someone else reconnected
+                    Common.showNotification(`${event.data.player.name} reconnected!`, 'info');
+                } else {
+                    // We reconnected
+                    Common.showNotification('Successfully reconnected to game!', 'success');
+                }
+                break;
+
             case 'question_started':
                 startQuestion(event.data);
                 savePlayerState('question-screen'); // Save state when question starts
+
+                // Re-enable answer buttons for new questions (late joiners can now participate)
+                if (gameState.roomCode) { // Only if we're in a game
+                    setTimeout(() => {
+                        document.querySelectorAll('#answer-options button').forEach(button => {
+                            button.disabled = false;
+                            button.classList.remove('opacity-50', 'cursor-not-allowed');
+                        });
+                    }, 500);
+                }
                 break;
-                
+
             case 'timer_update':
                 updateTimer(event.data.remaining_seconds);
                 savePlayerState('question-screen'); // Save state on timer updates
                 break;
-                
+
             case 'timer_paused':
                 showTimerPaused();
                 savePlayerState('question-screen'); // Save state when timer paused
                 break;
-                
+
             case 'timer_resumed':
                 showTimerResumed();
                 savePlayerState('question-screen'); // Save state when timer resumed
                 break;
-                
+
             case 'question_results':
                 showQuestionResults(event.data);
                 savePlayerState('results-screen'); // Save state when results shown
                 break;
-                
+
             case 'game_started':
                 Common.showNotification('Game started!', 'success');
                 savePlayerState('question-screen'); // Save state when game starts
                 break;
-                
+
             case 'game_finished':
                 showFinalResults(event.data);
                 savePlayerState('final-results-screen'); // Save state when game finishes
+                break;
+
+            case 'game_expired':
+                Common.showNotification('Game has expired due to inactivity.', 'error');
+                // Disconnect and return to join screen
+                if (gameState.sse) {
+                    gameState.sse.close();
+                }
+                clearPlayerState();
+                resetGame();
+                Common.showScreen('join-screen');
                 break;
         }
     }
@@ -799,12 +984,12 @@ window.LiveQuizPlayer = (function(Common) {
 
     function init() {
         setupEventListeners();
-        
+
         // Pre-fill room code if provided in URL
         if (roomFromUrl) {
             const roomCodeInput = document.getElementById('room-code');
             const playerNameInput = document.getElementById('player-name');
-            
+
             if (roomCodeInput) {
                 roomCodeInput.value = roomFromUrl;
             }
@@ -812,9 +997,23 @@ window.LiveQuizPlayer = (function(Common) {
                 playerNameInput.focus();
             }
         }
-        
-        // Try to recover previous state after a delay
-        setTimeout(() => {
+
+        // Try to auto-reconnect first, then fall back to session recovery
+        setTimeout(async () => {
+            const storedIdentity = loadPlayerIdentity();
+            if (storedIdentity) {
+                console.log('🔄 Attempting auto-reconnection...');
+                try {
+                    await joinGame(true); // Auto-reconnect with stored credentials
+                    Common.showNotification('Auto-reconnected to your game!', 'success');
+                    return;
+                } catch (error) {
+                    console.log('Auto-reconnection failed, trying session recovery...');
+                    clearPlayerIdentity(); // Clear invalid identity
+                }
+            }
+
+            // Fall back to session recovery
             const recovered = recoverPlayerState();
             if (!recovered) {
                 Common.showScreen('join-screen');

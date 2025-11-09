@@ -24,6 +24,100 @@ from config import PROMPTS, DEBUG_MODE
 # Store active SSE connections with their queues
 ACTIVE_SSE_QUEUES: Dict[str, List[asyncio.Queue]] = {}
 
+# --- CLEANUP MANAGEMENT ---
+# Background task for cleaning up stale games and connections
+cleanup_task = None
+
+async def cleanup_stale_games():
+    """Background task to clean up stale games and connections."""
+    while True:
+        try:
+            current_time = datetime.now()
+            stale_games = []
+            stale_connections = []
+
+            # Check for stale games (no activity for 2 hours)
+            for game_id, game_state in LIVE_QUIZ_GAMES.items():
+                if game_state.last_activity:
+                    inactivity_duration = current_time - game_state.last_activity
+                    if inactivity_duration.total_seconds() > 7200:  # 2 hours
+                        stale_games.append(game_id)
+                        print(f"Marking game {game_id} as stale (inactive for {inactivity_duration.total_seconds() / 3600:.1f} hours)")
+
+            # Check for games with no active connections for 30 minutes
+            for game_id, queues in ACTIVE_SSE_QUEUES.items():
+                if len(queues) == 0 and game_id in LIVE_QUIZ_GAMES:
+                    game_state = LIVE_QUIZ_GAMES[game_id]
+                    if game_state.last_activity:
+                        no_connection_duration = current_time - game_state.last_activity
+                        if no_connection_duration.total_seconds() > 1800:  # 30 minutes
+                            stale_connections.append(game_id)
+                            print(f"Marking game {game_id} as stale (no connections for {no_connection_duration.total_seconds() / 60:.1f} minutes)")
+
+            # Clean up stale games
+            for game_id in stale_games:
+                if game_id in LIVE_QUIZ_GAMES:
+                    game_state = LIVE_QUIZ_GAMES[game_id]
+                    room_code = game_state.room_code
+
+                    # Cancel any running timer tasks
+                    if hasattr(game_state, 'current_timer_task') and game_state.current_timer_task:
+                        try:
+                            game_state.current_timer_task.cancel()
+                        except Exception as e:
+                            print(f"Error cancelling timer task for game {game_id}: {e}")
+
+                    # Notify any remaining connected clients about game cleanup
+                    try:
+                        await broadcast_to_game(game_id, "game_expired", {
+                            "message": "This game has been automatically closed due to inactivity.",
+                            "reason": "inactive"
+                        })
+                    except Exception as e:
+                        print(f"Error broadcasting game expiration for {game_id}: {e}")
+
+                    # Remove from storage
+                    del LIVE_QUIZ_GAMES[game_id]
+                    if room_code in ROOM_CODES:
+                        del ROOM_CODES[room_code]
+
+                    # Clean up SSE queues
+                    if game_id in ACTIVE_SSE_QUEUES:
+                        del ACTIVE_SSE_QUEUES[game_id]
+
+                    print(f"Cleaned up stale game: {game_id} (room: {room_code})")
+
+            # Clean up stale connections (games with no connections but not yet stale)
+            for game_id in stale_connections:
+                if game_id in ACTIVE_SSE_QUEUES:
+                    del ACTIVE_SSE_QUEUES[game_id]
+                    print(f"Cleaned up SSE queues for game: {game_id}")
+
+            # Clean up empty SSE queue entries
+            empty_queues = [game_id for game_id, queues in ACTIVE_SSE_QUEUES.items() if len(queues) == 0]
+            for game_id in empty_queues:
+                del ACTIVE_SSE_QUEUES[game_id]
+
+        except Exception as e:
+            print(f"Error during cleanup: {e}")
+
+        # Run cleanup every 5 minutes
+        await asyncio.sleep(300)
+
+def start_cleanup_task():
+    """Start the background cleanup task."""
+    global cleanup_task
+    if cleanup_task is None or cleanup_task.done():
+        cleanup_task = asyncio.create_task(cleanup_stale_games())
+        print("Started background cleanup task")
+
+def stop_cleanup_task():
+    """Stop the background cleanup task."""
+    global cleanup_task
+    if cleanup_task and not cleanup_task.done():
+        cleanup_task.cancel()
+        print("Stopped background cleanup task")
+
 def generate_room_code() -> str:
     """Generate a 6-digit room code."""
     return ''.join(random.choices(string.digits, k=6))
@@ -44,22 +138,26 @@ async def broadcast_to_game(game_id: str, event_type: str, data: dict):
     if game_id not in ACTIVE_SSE_QUEUES:
         return
 
+    # Update last activity timestamp for the game
+    if game_id in LIVE_QUIZ_GAMES:
+        LIVE_QUIZ_GAMES[game_id].last_activity = datetime.now()
+
     event = {
         "type": event_type,
         "data": data,
         "timestamp": datetime.now().isoformat()
     }
-    
+
     message = f"data: {json.dumps(event)}\n\n"
     dead_queues = []
-    
+
     for queue in ACTIVE_SSE_QUEUES[game_id]:
         try:
             await queue.put(message)
         except Exception as e:
             print(f"Failed to send SSE message: {e}")
             dead_queues.append(queue)
-    
+
     # Remove dead queues
     for dead_queue in dead_queues:
         ACTIVE_SSE_QUEUES[game_id].remove(dead_queue)
@@ -123,22 +221,22 @@ async def create_room(req: CreateRoomRequest):
     """Create a new live quiz room."""
     if len(req.categories) != 6:
         raise HTTPException(status_code=400, detail="Exactly 6 categories are required")
-    
+
     # Generate room code and game ID
     while True:
         room_code = generate_room_code()
         if room_code not in ROOM_CODES:
             break
-    
+
     game_id = generate_game_id()
-    
+
     # Create host player (use default name since host name is not provided)
     host_player = Player(
         id=f"host_{game_id}",
         name="Host",  # Default host name
         joined_at=datetime.now()
     )
-    
+
     # Create game state
     total_questions = len(req.categories) * req.questions_per_category
     game_state = LiveQuizGameState(
@@ -150,6 +248,7 @@ async def create_room(req: CreateRoomRequest):
         questions=[],  # Will be generated when game starts
         status="waiting",
         created_at=datetime.now(),
+        last_activity=datetime.now(),  # Initialize last activity
         game_mode=req.game_mode,
         knowledge_level=req.knowledge_level,
         language=req.language,
@@ -161,11 +260,13 @@ async def create_room(req: CreateRoomRequest):
         questions_per_category=req.questions_per_category,
         total_questions=total_questions
     )
-    
+
     # Store game
     LIVE_QUIZ_GAMES[game_id] = game_state
     ROOM_CODES[room_code] = game_id
-    
+
+    print(f"Created new game room: {game_id} (room code: {room_code})")
+
     return JSONResponse(content={
         "game_id": game_id,
         "room_code": room_code,
@@ -176,24 +277,85 @@ async def join_room(req: JoinRoomRequest):
     """Join an existing live quiz room."""
     if req.room_code not in ROOM_CODES:
         raise HTTPException(status_code=404, detail="Room not found")
-    
+
     game_id = ROOM_CODES[req.room_code]
     game_state = LIVE_QUIZ_GAMES[game_id]
-    
-    if len(game_state.players) >= 12:  # Max 12 players
-        raise HTTPException(status_code=400, detail="Room is full")
-    
+
     # Check if game is finished
     if game_state.status == "finished":
         raise HTTPException(status_code=400, detail="Game has already finished")
-    
+
+    # Check for existing player with same name (reconnection)
+    existing_player = None
+    for player in game_state.players:
+        if player.name == req.player_name and player.id != game_state.host_id:
+            existing_player = player
+            break
+
+    if existing_player:
+        # Handle reconnection
+        print(f"Player {req.player_name} reconnecting to game {game_id}")
+
+        # Update player state for reconnection
+        existing_player.connected = True
+        existing_player.last_seen = datetime.now()
+        existing_player.reconnect_count += 1
+
+        # If game is in progress and player hasn't answered current question, reset their state
+        if game_state.status == "playing" and game_state.current_question_index is not None:
+            current_question = game_state.questions[game_state.current_question_index]
+            if current_question and current_question.is_active:
+                # Check if player has already answered this question
+                if existing_player.id not in current_question.answers:
+                    # Player hasn't answered current question, allow them to participate
+                    existing_player.has_answered = False
+                    existing_player.last_answer = None
+                    existing_player.is_correct = None
+                # If they have answered, keep their existing state
+
+        # Broadcast reconnection
+        await broadcast_to_game(game_id, "player_reconnected", {
+            "player": {
+                "id": existing_player.id,
+                "name": existing_player.name,
+                "score": existing_player.score,
+                "reconnect_count": existing_player.reconnect_count
+            },
+            "player_count": len(game_state.players)
+        })
+
+        # Send updated player list to host
+        players_data = [{"id": p.id, "name": p.name, "score": p.score, "connected": p.connected} for p in game_state.players]
+        await broadcast_to_game(game_id, "players_update", {
+            "player_count": len(game_state.players),
+            "players": players_data
+        })
+
+        return JSONResponse(content={
+            "game_id": game_id,
+            "player_id": existing_player.id,
+            "room_code": game_state.room_code,
+            "host_id": game_state.host_id,
+            "categories": game_state.categories,
+            "game_status": game_state.status,
+            "is_reconnection": True,
+            "current_question": game_state.current_question_index + 1 if game_state.current_question_index is not None else None,
+            "player_score": existing_player.score,
+            "has_answered_current": existing_player.has_answered if game_state.status == "playing" else False
+        })
+
+    # New player join (not a reconnection)
+    if len(game_state.players) >= 12:  # Max 12 players
+        raise HTTPException(status_code=400, detail="Room is full")
+
     # Create new player
     player = Player(
         id=generate_player_id(),
         name=req.player_name,
-        joined_at=datetime.now()
+        joined_at=datetime.now(),
+        last_seen=datetime.now()
     )
-    
+
     # Handle late joining - if game is in progress
     if game_state.status == "playing":
         # If game is in progress, initialize player state
@@ -201,22 +363,23 @@ async def join_room(req: JoinRoomRequest):
         player.last_answer = "late_join"
         player.is_correct = False
         player.score = 0  # Late joiners start with 0 points
-        
+
         # If there's an active question, we need to handle it specially
         if game_state.current_question_index is not None and game_state.current_question_index < len(game_state.questions):
             current_question = game_state.questions[game_state.current_question_index]
             if current_question and current_question.is_active:
-                # Late joiner gets marked as "no answer" for current question
+                # Late joiner gets marked as "skipped" for current question (same as skip button)
                 current_question.answers[player.id] = {
-                    "answer": "no_answer",
+                    "answer": "",  # Empty answer for skipped questions
                     "timestamp": datetime.now().isoformat(),
-                    "is_correct": False  # Late joiner doesn't get points for missed question
+                    "is_correct": False,  # Late joiner doesn't get points for missed question
+                    "skipped": True  # Mark as skipped to avoid penalty points
                 }
-        
+
         print(f"Late join: Player {player.name} joined game {game_id} during active question")
-    
+
     game_state.players.append(player)
-    
+
     # Broadcast to all clients
     if game_state.status == "waiting":
         # Normal lobby join
@@ -241,14 +404,14 @@ async def join_room(req: JoinRoomRequest):
             "current_question": game_state.current_question_index + 1 if game_state.current_question_index is not None else None,
             "status": game_state.status
         })
-    
+
     # Also send updated player list specifically to host
-    players_data = [{"id": p.id, "name": p.name, "score": p.score} for p in game_state.players]
+    players_data = [{"id": p.id, "name": p.name, "score": p.score, "connected": p.connected} for p in game_state.players]
     await broadcast_to_game(game_id, "players_update", {
         "player_count": len(game_state.players),
         "players": players_data
     })
-    
+
     return JSONResponse(content={
         "game_id": game_id,
         "player_id": player.id,
@@ -284,15 +447,18 @@ async def submit_answer(req: SubmitAnswerRequest):
     """Submit an answer for the current question."""
     if req.game_id not in LIVE_QUIZ_GAMES:
         raise HTTPException(status_code=404, detail="Game not found")
-    
+
     game_state = LIVE_QUIZ_GAMES[req.game_id]
     current_question = game_state.questions[game_state.current_question_index]
-    
+
     # Find player
     player = next((p for p in game_state.players if p.id == req.player_id), None)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
-    
+
+    # Update player activity
+    player.last_seen = datetime.now()
+
     # Record answer
     current_question.answers[req.player_id] = {
         "answer": req.answer,
@@ -300,31 +466,33 @@ async def submit_answer(req: SubmitAnswerRequest):
         "is_correct": None,  # Will be set when question is scored
         "skipped": req.skipped  # Track if this was a skip
     }
-    
+
     player.has_answered = True
     player.last_answer = req.answer
-    
+
     # Check if all players have answered (excluding host)
     players_only = [p for p in game_state.players if p.id != game_state.host_id]
     all_answered = all(p.has_answered for p in players_only)
     no_time_left = datetime.now() >= current_question.expires_at if current_question.expires_at else False
-    
-    # Count only non-host players for answer status
+
+    # Count only non-host players who have actually submitted answers to this question
     players_only = [p for p in game_state.players if p.id != game_state.host_id]
-    answered_count = sum(1 for p in players_only if p.has_answered)
-    
+    answered_count = len(current_question.answers)
+
     await broadcast_to_game(req.game_id, "answer_submitted", {
         "player_id": req.player_id,
         "player_name": player.name,
         "has_answered": True,
         "total_players": len(players_only),
-        "answered_count": answered_count
+        "answered_count": answered_count,
+        "current_question_players": len(players_only),  # All players who could potentially answer this question
+        "all_players": [{"id": p.id, "name": p.name, "score": p.score} for p in players_only]  # Include all players for UI updates
     })
-    
+
     # If all answered or time's up, show results
     if all_answered or no_time_left:
         await show_question_results(req.game_id)
-    
+
     return JSONResponse(content={"message": "Answer submitted"})
 
 async def host_control(req: HostControlRequest):
@@ -440,6 +608,7 @@ async def start_question(game_id: str, question_index: int):
     game_question = game_state.questions[question_index]
     
     # Reset player states (exclude host from answering requirement)
+    # For late joiners, they should be able to participate in future questions
     players_only = [p for p in game_state.players if p.id != game_state.host_id]
     for player in players_only:
         player.has_answered = False
@@ -700,22 +869,25 @@ async def sse_endpoint(request: Request):
     game_id = request.query_params.get("game_id")
     player_id = request.query_params.get("player_id")
     connection_type = request.query_params.get("type", "player")  # host or player
-    
+
     if not game_id or not player_id:
         raise HTTPException(status_code=400, detail="game_id and player_id are required")
-    
+
     if game_id not in LIVE_QUIZ_GAMES:
         raise HTTPException(status_code=404, detail="Game not found")
-    
+
+    # Update last activity when a new connection is established
+    LIVE_QUIZ_GAMES[game_id].last_activity = datetime.now()
+
     async def event_stream():
         # Create message queue for this connection
         message_queue = asyncio.Queue()
-        
+
         # Add to active queues
         if game_id not in ACTIVE_SSE_QUEUES:
             ACTIVE_SSE_QUEUES[game_id] = []
         ACTIVE_SSE_QUEUES[game_id].append(message_queue)
-        
+
         try:
             # Send initial connection event
             game_state = LIVE_QUIZ_GAMES[game_id]
@@ -726,37 +898,43 @@ async def sse_endpoint(request: Request):
                 "player_count": len(game_state.players),
                 "players": [{"id": p.id, "name": p.name, "score": p.score} for p in game_state.players]
             }
-            
+
             yield f"data: {json.dumps({'type': 'connected', 'data': initial_data})}\n\n"
-            
+
             # Send immediate player count update for host
             if connection_type == "host":
                 yield f"data: {json.dumps({'type': 'players_update', 'data': {'player_count': len(game_state.players), 'players': initial_data['players']}})}\n\n"
-            
+
             # Keep connection alive and check for messages
             last_ping = datetime.now()
+            connection_start = datetime.now()
+
             while True:
                 current_time = datetime.now()
-                
+
+                # Update last activity periodically (every ping)
+                if (current_time - last_ping).total_seconds() >= 30:
+                    LIVE_QUIZ_GAMES[game_id].last_activity = current_time
+
                 # Send ping every 30 seconds
                 if (current_time - last_ping).total_seconds() >= 30:
                     yield f"data: {json.dumps({'type': 'ping', 'data': {'timestamp': current_time.isoformat()}})}\n\n"
                     last_ping = current_time
-                
+
                 # Check for new messages to send
                 try:
                     message = await asyncio.wait_for(message_queue.get(), timeout=1.0)
                     yield message
                 except asyncio.TimeoutError:
                     pass
-                
+
                 # Check if this queue is still active
                 if game_id in ACTIVE_SSE_QUEUES and message_queue not in ACTIVE_SSE_QUEUES[game_id]:
                     break
-                
+
                 # Brief pause to prevent tight loop
                 await asyncio.sleep(0.1)
-                
+
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -765,7 +943,11 @@ async def sse_endpoint(request: Request):
             # Clean up queue
             if game_id in ACTIVE_SSE_QUEUES and message_queue in ACTIVE_SSE_QUEUES[game_id]:
                 ACTIVE_SSE_QUEUES[game_id].remove(message_queue)
-    
+
+            # Log disconnection for monitoring
+            connection_duration = datetime.now() - connection_start
+            print(f"SSE connection closed for {connection_type} {player_id} in game {game_id} after {connection_duration.total_seconds():.1f} seconds")
+
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",

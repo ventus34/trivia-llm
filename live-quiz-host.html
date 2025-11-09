@@ -68,20 +68,20 @@
                                     <span>10</span>
                                 </div>
                             </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Answer Time: <span id="answer-time-slider-value" class="text-blue-400 font-semibold">60</span> seconds</label>
+                                <input type="range" id="answer-time" min="30" max="180" value="60" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                    <span>30</span>
+                                    <span>105</span>
+                                    <span>180</span>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- Theme Settings (Moved closer to categories) -->
+                        <!-- Question Model -->
                         <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Theme (Optional)</label>
-                                <input type="text" id="theme" placeholder="e.g., Lord of the Rings" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            </div>
-                            
-                            <div class="flex items-center">
-                                <input type="checkbox" id="include-theme" checked class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                                <label for="include-theme" class="ml-2 text-sm text-gray-300">Include theme in questions</label>
-                            </div>
-                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Question Model</label>
                                 <select id="question-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -91,8 +91,22 @@
                         </div>
                     </div>
                     
-                    <!-- Categories Section -->
+                    <!-- Theme and Categories Section -->
                     <div class="mt-6">
+                        <!-- Theme Settings -->
+                        <div class="mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Theme (Optional)</label>
+                                    <input type="text" id="theme" placeholder="e.g., Lord of the Rings" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="include-theme" checked class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                                    <label for="include-theme" class="ml-2 text-sm text-gray-300">Include theme in questions</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-300 mb-2">Category Presets</label>
                             <div class="flex gap-2">
@@ -102,7 +116,7 @@
                                 <button id="load-preset" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">Load Preset</button>
                             </div>
                         </div>
-                        
+
                         <div class="flex items-center justify-between mb-4">
                             <label class="block text-sm font-medium text-gray-300">Categories (6 required)</label>
                             <button id="generate-categories" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Generate Categories</button>
@@ -136,7 +150,7 @@
                             <div>
                                 <h4 class="font-semibold text-white mb-2">Game Flow:</h4>
                                 <ul class="space-y-1 text-xs">
-                                    <li>• Each question has 60 seconds</li>
+                                    <li>• Each question has 30-180 seconds (slider)</li>
                                     <li>• Questions per category: 1-10 (slider)</li>
                                     <li>• Auto-advance available (15s delay)</li>
                                 </ul>
@@ -292,7 +306,16 @@
                             </div>
                             <div class="flex items-center space-x-2">
                                 <input type="checkbox" id="auto-advance-toggle" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                                <label for="auto-advance-toggle" class="text-sm text-gray-300">Auto-advance (15s)</label>
+                                <label for="auto-advance-toggle" class="text-sm text-gray-300">Auto-advance</label>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="block text-sm text-gray-300">Auto-advance time: <span id="auto-advance-slider-value" class="text-blue-400 font-semibold">15</span>s</label>
+                                <input type="range" id="auto-advance-slider" min="5" max="45" value="15" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                                <div class="flex justify-between text-xs text-gray-400">
+                                    <span>5s</span>
+                                    <span>25s</span>
+                                    <span>45s</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -389,7 +412,16 @@
                 <button id="fullscreen-toggle-results" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xl">📋 Show Explanation</button>
                 <div class="flex items-center space-x-2">
                     <input type="checkbox" id="fullscreen-auto-advance-toggle" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                    <label for="fullscreen-auto-advance-toggle" class="text-sm text-gray-300">Auto-advance (15s)</label>
+                    <label for="fullscreen-auto-advance-toggle" class="text-sm text-gray-300">Auto-advance</label>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm text-gray-300">Auto-advance time: <span id="fullscreen-auto-advance-slider-value" class="text-blue-400 font-semibold">15</span>s</label>
+                    <input type="range" id="fullscreen-auto-advance-slider" min="5" max="45" value="15" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                    <div class="flex justify-between text-xs text-gray-400">
+                        <span>5s</span>
+                        <span>25s</span>
+                        <span>45s</span>
+                    </div>
                 </div>
                 <button id="fullscreen-pause-timer" class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-xl">⏸️ Pause</button>
                 <button id="fullscreen-resume-timer" class="hidden px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xl">▶️ Resume</button>
@@ -458,17 +490,56 @@
         
         // Setup slider functionality
         document.addEventListener('DOMContentLoaded', () => {
-            const slider = document.getElementById('questions-per-category');
-            const sliderValue = document.getElementById('questions-slider-value');
-            
-            if (slider && sliderValue) {
+            // Questions per category slider
+            const questionsSlider = document.getElementById('questions-per-category');
+            const questionsSliderValue = document.getElementById('questions-slider-value');
+
+            if (questionsSlider && questionsSliderValue) {
                 // Update value display on slider change
-                slider.addEventListener('input', (e) => {
-                    sliderValue.textContent = e.target.value;
+                questionsSlider.addEventListener('input', (e) => {
+                    questionsSliderValue.textContent = e.target.value;
                 });
-                
+
                 // Initialize display
-                sliderValue.textContent = slider.value;
+                questionsSliderValue.textContent = questionsSlider.value;
+            }
+
+            // Answer time slider
+            const answerTimeSlider = document.getElementById('answer-time');
+            const answerTimeSliderValue = document.getElementById('answer-time-slider-value');
+
+            if (answerTimeSlider && answerTimeSliderValue) {
+                // Update value display on slider change
+                answerTimeSlider.addEventListener('input', (e) => {
+                    answerTimeSliderValue.textContent = e.target.value;
+                });
+
+                // Initialize display
+                answerTimeSliderValue.textContent = answerTimeSlider.value;
+            }
+            
+            // Auto-advance sliders (both regular and fullscreen)
+            const autoAdvanceSlider = document.getElementById('auto-advance-slider');
+            const autoAdvanceSliderValue = document.getElementById('auto-advance-slider-value');
+            const fullscreenAutoAdvanceSlider = document.getElementById('fullscreen-auto-advance-slider');
+            const fullscreenAutoAdvanceSliderValue = document.getElementById('fullscreen-auto-advance-slider-value');
+
+            // Initialize regular auto-advance slider
+            if (autoAdvanceSlider && autoAdvanceSliderValue) {
+                autoAdvanceSliderValue.textContent = autoAdvanceSlider.value;
+                // Add input event listener for real-time updates
+                autoAdvanceSlider.addEventListener('input', (e) => {
+                    autoAdvanceSliderValue.textContent = e.target.value;
+                });
+            }
+
+            // Initialize fullscreen auto-advance slider
+            if (fullscreenAutoAdvanceSlider && fullscreenAutoAdvanceSliderValue) {
+                fullscreenAutoAdvanceSliderValue.textContent = fullscreenAutoAdvanceSlider.value;
+                // Add input event listener for real-time updates
+                fullscreenAutoAdvanceSlider.addEventListener('input', (e) => {
+                    fullscreenAutoAdvanceSliderValue.textContent = e.target.value;
+                });
             }
         });
     </script>
