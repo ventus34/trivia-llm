@@ -51,7 +51,9 @@
                         📱
                     </div>
                     <h2 class="text-xl font-semibold text-white mb-2">Join a Game</h2>
-                    <p class="text-gray-400 text-sm">Enter the room code provided by the host</p>
+                    <p class="text-gray-400 text-sm">
+                        Enter the 6-digit room code from the host screen and play on your phone while watching the main screen.
+                    </p>
                 </div>
                 
                 <div>
@@ -70,7 +72,7 @@
                 
                 <div class="text-center">
                     <p class="text-xs text-gray-500">
-                        Or scan the QR code to join automatically
+                        Or scan the QR code from the host screen to join instantly on this device.
                     </p>
                 </div>
             </div>
@@ -104,7 +106,9 @@
                 
                 <div class="bg-blue-900 rounded-lg p-4 text-center">
                     <div class="text-2xl mb-2">⏳</div>
-                    <p class="text-blue-200">Waiting for host to start the game...</p>
+                    <p class="text-blue-200">
+                        Waiting for the host to start. Keep this page open — questions will appear here.
+                    </p>
                 </div>
                 
                 <button id="leave-lobby" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
@@ -146,7 +150,9 @@
             
             <!-- Answer Status -->
             <div id="answer-status" class="text-center">
-                <div class="text-lg text-gray-400">Select your answer</div>
+                <div class="text-lg text-gray-400">
+                    Select your answer before time runs out. You can skip if you are not sure.
+                </div>
             </div>
             
             <!-- Skip Question Button -->
@@ -683,7 +689,7 @@
             }
             
             // Reset answer status
-            document.getElementById('answer-status').innerHTML = '<div class="text-lg text-gray-400">Select your answer</div>';
+            document.getElementById('answer-status').innerHTML = '<div class="text-lg text-gray-400">Select your answer before time runs out. You can skip if you are not sure.</div>';
             
             // Enable skip button for new question
             const skipButton = document.getElementById('skip-question');

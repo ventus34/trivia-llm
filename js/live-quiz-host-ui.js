@@ -120,11 +120,11 @@ window.LiveQuizHostUI = (function(Common) {
                 <div class="mt-6 p-4 bg-gray-700 rounded-lg">
                     <h3 class="text-lg font-semibold text-white mb-3">📋 How to Play</h3>
                     <div class="text-sm text-gray-300 space-y-2">
-                        <p>• <strong>Scoring:</strong> +10 points for correct answers, +5 for skipped questions</p>
-                        <p>• <strong>Time Limit:</strong> Each question has a time limit set above</p>
-                        <p>• <strong>Auto-advance:</strong> Game can automatically move to next question after all players answer or time expires</p>
-                        <p>• <strong>Categories:</strong> Game covers 6 different categories with equal number of questions</p>
-                        <p>• <strong>Players:</strong> Up to 12 players can join using the room code</p>
+                        <p>• Create a room, choose language and difficulty, then set time per question and questions per category.</p>
+                        <p>• Choose or generate 6 categories (required); you can add a theme to influence generated questions.</p>
+                        <p>• Share the room code, join link or QR so players can join on their phones.</p>
+                        <p>• During the game, control the timer, regenerate questions, and reveal explanations when you decide.</p>
+                        <p>• Use auto-advance if you want questions to move forward automatically after a short delay.</p>
                     </div>
                 </div>
             </div>
