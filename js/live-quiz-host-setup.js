@@ -10,17 +10,24 @@ window.LiveQuizHostSetup = (function(Common) {
             const questionModels = await Common.apiCall('/api/models/questions');
             console.log('Question models loaded:', questionModels);
             
-            // Populate question models
+            // Populate question models (without "Auto" option)
             const questionModelSelect = document.getElementById('question-model');
             if (questionModelSelect) {
-                questionModelSelect.innerHTML = '<option value="auto" selected>Auto</option>';
-                if (Array.isArray(questionModels)) {
-                    questionModels.forEach(model => {
+                questionModelSelect.innerHTML = ''; // Clear existing options
+                if (Array.isArray(questionModels) && questionModels.length > 0) {
+                    // Set the first model as selected by default
+                    questionModels.forEach((model, index) => {
                         const option = document.createElement('option');
                         option.value = model.id;
                         option.textContent = model.name;
+                        if (index === 0) {
+                            option.selected = true;
+                        }
                         questionModelSelect.appendChild(option);
                     });
+                } else {
+                    // Fallback if no models available
+                    questionModelSelect.innerHTML = '<option value="default">Default Model</option>';
                 }
             }
             
@@ -28,6 +35,11 @@ window.LiveQuizHostSetup = (function(Common) {
         } catch (error) {
             console.error('Failed to load models:', error);
             console.log('Using default model options');
+            // Set default model
+            const questionModelSelect = document.getElementById('question-model');
+            if (questionModelSelect) {
+                questionModelSelect.innerHTML = '<option value="default">Default Model</option>';
+            }
         }
     }
 
@@ -40,7 +52,8 @@ window.LiveQuizHostSetup = (function(Common) {
         // Add auto-save to all form elements
         const formElements = [
             'knowledge-level', 'language', 'theme',
-            'include-theme', 'question-model', 'questions-per-category'
+            'include-theme', 'question-model', 'questions-per-category',
+            'answer-time', 'auto-advance-time'
         ];
         formElements.forEach(id => {
             const element = document.getElementById(id);

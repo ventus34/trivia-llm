@@ -556,6 +556,7 @@
                 gameState.gameId = response.game_id;
                 gameState.playerId = response.player_id;
                 gameState.roomCode = roomCode;
+                gameState.hostId = response.host_id;
                 
                 // Update lobby screen
                 document.getElementById('display-room-code').textContent = roomCode;
@@ -862,9 +863,12 @@
             // Get final score for this player
             const finalScore = data.final_scores[gameState.playerId] || 0;
             
-            // Calculate position
-            const allScores = Object.values(data.final_scores);
-            const sortedScores = allScores.sort((a, b) => b - a);
+            // Calculate position (exclude host from calculation)
+            const nonHostScores = Object.entries(data.final_scores)
+                .filter(([playerId, score]) => playerId !== gameState.hostId)
+                .map(([playerId, score]) => score);
+            
+            const sortedScores = nonHostScores.sort((a, b) => b - a);
             const position = sortedScores.indexOf(finalScore) + 1;
             const totalPlayers = sortedScores.length;
             

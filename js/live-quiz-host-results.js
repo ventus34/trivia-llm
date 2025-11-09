@@ -38,8 +38,12 @@ window.LiveQuizHostResults = (function(Common) {
         Common.showScreen('results-screen');
         
         const finalScores = document.getElementById('final-scores');
+        const winnerHighlight = document.getElementById('winner-highlight');
+        const winnerName = document.getElementById('winner-name');
+        
         if (!finalScores) return;
         
+        // Clear previous content
         finalScores.innerHTML = '';
         
         // Filter out host from final results
@@ -54,39 +58,36 @@ window.LiveQuizHostResults = (function(Common) {
             })
             .sort((a, b) => b.score - a.score);
         
-        // Add winner (if there are any non-host players)
+        // Add results to table
         if (nonHostScores.length > 0) {
-            const winner = nonHostScores[0];
-            const winnerElement = document.createElement('div');
-            winnerElement.className = 'bg-yellow-600 rounded-lg p-4 mb-4';
-            winnerElement.innerHTML = `
-                <h2 class="text-2xl font-bold text-white">🏆 Winner: ${winner.name}</h2>
-                <p class="text-yellow-200">Final Score: ${winner.score} points</p>
-            `;
-            finalScores.appendChild(winnerElement);
-            
-            // Add all scores
             nonHostScores.forEach((player, index) => {
-                if (index === 0) return; // Skip winner, already added
-                
-                const playerElement = document.createElement('div');
-                playerElement.className = 'flex items-center justify-between p-3 bg-gray-700 rounded';
-                playerElement.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg font-semibold text-gray-400">${index + 1}.</span>
-                        <span class="text-white">${player.name}</span>
-                    </div>
-                    <span class="text-white font-semibold">${player.score}</span>
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-600';
+                const positionColor = index === 0 ? 'bg-yellow-600' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-orange-600' : 'bg-gray-600';
+                row.innerHTML = `
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${positionColor} text-white">${index + 1}</span>
+                    </td>
+                    <td class="py-3 px-4 text-white">${player.name}</td>
+                    <td class="py-3 px-4 text-white">${player.score}</td>
                 `;
-                finalScores.appendChild(playerElement);
+                finalScores.appendChild(row);
             });
+            
+            // Show winner highlight
+            const winner = nonHostScores[0];
+            if (winnerHighlight && winnerName) {
+                winnerName.textContent = `${winner.name} (${winner.score} points)`;
+                winnerHighlight.classList.remove('hidden');
+            }
         } else {
             // No non-host players played
-            const noPlayersElement = document.createElement('div');
-            noPlayersElement.className = 'bg-gray-700 rounded-lg p-4 mb-4 text-center';
+            const noPlayersElement = document.createElement('tr');
             noPlayersElement.innerHTML = `
-                <h2 class="text-xl font-bold text-white">No Players Participated</h2>
-                <p class="text-gray-300">No non-host players joined the game</p>
+                <td colspan="3" class="py-6 px-4 text-center text-gray-400">
+                    <h2 class="text-xl font-bold text-white mb-2">No Players Participated</h2>
+                    <p>No non-host players joined the game</p>
+                </td>
             `;
             finalScores.appendChild(noPlayersElement);
         }

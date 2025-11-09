@@ -27,36 +27,48 @@ window.LiveQuizHostUI = (function(Common) {
                             <option value="en">English</option>
                         </select>
                     </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Answer Time (seconds)</label>
+                        <select id="answer-time" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="30">30 seconds</option>
+                            <option value="45">45 seconds</option>
+                            <option value="60" selected>60 seconds</option>
+                            <option value="90">90 seconds</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Auto-advance Time (seconds)</label>
+                        <select id="auto-advance-time" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="5">5 seconds</option>
+                            <option value="10">10 seconds</option>
+                            <option value="15" selected>15 seconds</option>
+                            <option value="20">20 seconds</option>
+                            <option value="30">30 seconds</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <!-- Category & Theme Settings -->
+                <!-- Model & Category Settings -->
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Theme (Optional)</label>
-                        <input type="text" id="theme" placeholder="e.g., Lord of the Rings" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-                    
-                    <div class="flex items-center">
-                        <input type="checkbox" id="include-theme" checked class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
-                        <label for="include-theme" class="ml-2 text-sm text-gray-300">Include theme in questions</label>
-                    </div>
-                    
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Question Model</label>
                         <select id="question-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="auto" selected>Auto</option>
+                            <!-- Auto option will be removed by setup script -->
                         </select>
                     </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Questions per Category</label>
-                        <select id="questions-per-category" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="2">2 questions</option>
-                            <option value="3" selected>3 questions</option>
-                            <option value="4">4 questions</option>
-                            <option value="5">5 questions</option>
-                            <option value="6">6 questions</option>
-                        </select>
+                        <div class="space-y-2">
+                            <input type="range" id="questions-per-category" min="1" max="10" value="3" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                            <div class="flex justify-between text-sm text-gray-400">
+                                <span>1</span>
+                                <span id="questions-slider-value" class="text-white font-semibold">3</span>
+                                <span>10</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -73,9 +85,23 @@ window.LiveQuizHostUI = (function(Common) {
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-between mb-4">
-                    <label class="block text-sm font-medium text-gray-300">Categories (6 required)</label>
-                    <button id="generate-categories" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Generate Categories</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Theme (Optional)</label>
+                        <input type="text" id="theme" placeholder="e.g., Lord of the Rings" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="generate-categories" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">🎲 Generate Categories</button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="include-theme" checked class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                    <label for="include-theme" class="ml-2 text-sm text-gray-300">Include theme in questions</label>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Categories (6 required)</label>
                 </div>
                 <div id="categories-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <input type="text" placeholder="Category 1" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -89,8 +115,32 @@ window.LiveQuizHostUI = (function(Common) {
             
             <div class="mt-8">
                 <button id="create-room" class="w-full py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">🎮 Create Room</button>
+                
+                <!-- Game Rules Section -->
+                <div class="mt-6 p-4 bg-gray-700 rounded-lg">
+                    <h3 class="text-lg font-semibold text-white mb-3">📋 How to Play</h3>
+                    <div class="text-sm text-gray-300 space-y-2">
+                        <p>• <strong>Scoring:</strong> +10 points for correct answers, +5 for skipped questions</p>
+                        <p>• <strong>Time Limit:</strong> Each question has a time limit set above</p>
+                        <p>• <strong>Auto-advance:</strong> Game can automatically move to next question after all players answer or time expires</p>
+                        <p>• <strong>Categories:</strong> Game covers 6 different categories with equal number of questions</p>
+                        <p>• <strong>Players:</strong> Up to 12 players can join using the room code</p>
+                    </div>
+                </div>
             </div>
         `;
+        
+        // Add slider functionality
+        setTimeout(() => {
+            const slider = document.getElementById('questions-per-category');
+            const sliderValue = document.getElementById('questions-slider-value');
+            if (slider && sliderValue) {
+                slider.addEventListener('input', (e) => {
+                    sliderValue.textContent = e.target.value;
+                });
+            }
+        }, 100);
+        
         return container;
     }
 

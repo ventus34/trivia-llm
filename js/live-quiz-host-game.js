@@ -25,6 +25,10 @@ window.LiveQuizHostGame = (function(Common) {
         document.getElementById('toggle-results')?.addEventListener('click', toggleResults);
         document.getElementById('fullscreen-toggle-results')?.addEventListener('click', toggleFullscreenResults);
         
+        // Auto-advance toggle
+        document.getElementById('auto-advance-toggle')?.addEventListener('change', syncAutoAdvanceToggle);
+        document.getElementById('fullscreen-auto-advance-toggle')?.addEventListener('change', syncFullscreenAutoAdvanceToggle);
+        
         // Game controls
         document.getElementById('pause-timer')?.addEventListener('click', () => hostControl('pause_timer'));
         document.getElementById('resume-timer')?.addEventListener('click', () => hostControl('resume_timer'));
@@ -60,13 +64,13 @@ window.LiveQuizHostGame = (function(Common) {
         // Reset results toggle button text
         const toggleResultsBtn = document.getElementById('toggle-results');
         if (toggleResultsBtn) {
-            toggleResultsBtn.textContent = '📋 Show Results';
+            toggleResultsBtn.textContent = '📋 Show Explanation';
         }
         
         // Reset fullscreen results toggle button text
         const fullscreenToggleResultsBtn = document.getElementById('fullscreen-toggle-results');
         if (fullscreenToggleResultsBtn) {
-            fullscreenToggleResultsBtn.textContent = '📋 Show Results';
+            fullscreenToggleResultsBtn.textContent = '📋 Show Explanation';
         }
         
         // Remove any previous answer highlighting
@@ -273,10 +277,10 @@ window.LiveQuizHostGame = (function(Common) {
         if (questionResults && toggleBtn) {
             if (questionResults.classList.contains('hidden')) {
                 questionResults.classList.remove('hidden');
-                toggleBtn.textContent = '📋 Hide Results';
+                toggleBtn.textContent = '📋 Hide Explanation';
             } else {
                 questionResults.classList.add('hidden');
-                toggleBtn.textContent = '📋 Show Results';
+                toggleBtn.textContent = '📋 Show Explanation';
             }
         }
     }
@@ -289,11 +293,30 @@ window.LiveQuizHostGame = (function(Common) {
         if (questionResults && toggleBtn) {
             if (questionResults.classList.contains('hidden')) {
                 questionResults.classList.remove('hidden');
-                toggleBtn.textContent = '📋 Hide Results';
+                toggleBtn.textContent = '📋 Hide Explanation';
             } else {
                 questionResults.classList.add('hidden');
-                toggleBtn.textContent = '📋 Show Results';
+                toggleBtn.textContent = '📋 Show Explanation';
             }
+        }
+    }
+    
+    // Sync auto-advance toggle between regular and fullscreen
+    function syncAutoAdvanceToggle() {
+        const regularToggle = document.getElementById('auto-advance-toggle');
+        const fullscreenToggle = document.getElementById('fullscreen-auto-advance-toggle');
+        
+        if (regularToggle && fullscreenToggle) {
+            fullscreenToggle.checked = regularToggle.checked;
+        }
+    }
+    
+    function syncFullscreenAutoAdvanceToggle() {
+        const regularToggle = document.getElementById('auto-advance-toggle');
+        const fullscreenToggle = document.getElementById('fullscreen-auto-advance-toggle');
+        
+        if (regularToggle && fullscreenToggle) {
+            regularToggle.checked = fullscreenToggle.checked;
         }
     }
     
@@ -414,13 +437,30 @@ window.LiveQuizHostGame = (function(Common) {
         const correctCount = Object.values(data.answers).filter(a => a.is_correct).length;
         Common.showNotification(`Question ${data.question_number} results: ${correctCount}/${Object.keys(data.answers).length} correct`, 'info');
         
-        // Auto-advance to next question after 10 seconds (host can skip)
-        setTimeout(() => {
-            const gameScreen = document.getElementById('game-screen');
-            if (gameScreen && !gameScreen.classList.contains('hidden')) {
-                Common.showNotification('Ready for next question. Click "Next Question" to continue.', 'info');
-            }
-        }, 10000);
+        // Auto-advance to next question based on toggle setting
+        const autoAdvanceToggle = document.getElementById('auto-advance-toggle');
+        const isAutoAdvanceEnabled = autoAdvanceToggle ? autoAdvanceToggle.checked : false;
+        
+        if (isAutoAdvanceEnabled) {
+            // Auto-advance after 15 seconds (configurable from setup)
+            const autoAdvanceTime = parseInt(document.getElementById('auto-advance-time')?.value || 15) * 1000;
+            setTimeout(() => {
+                const gameScreen = document.getElementById('game-screen');
+                if (gameScreen && !gameScreen.classList.contains('hidden')) {
+                    // Auto-advance to next question
+                    hostControl('next_question');
+                    Common.showNotification('Auto-advancing to next question...', 'info');
+                }
+            }, autoAdvanceTime);
+        } else {
+            // Show manual advance notification after 10 seconds
+            setTimeout(() => {
+                const gameScreen = document.getElementById('game-screen');
+                if (gameScreen && !gameScreen.classList.contains('hidden')) {
+                    Common.showNotification('Ready for next question. Click "Next Question" to continue.', 'info');
+                }
+            }, 10000);
+        }
     }
 
     function updateScoreboard(scores) {
@@ -556,7 +596,7 @@ window.LiveQuizHostGame = (function(Common) {
             const fullscreenToggleBtn = document.getElementById('fullscreen-toggle-results');
             if (resultsVisible) {
                 fullscreenResults.classList.remove('hidden');
-                if (fullscreenToggleBtn) fullscreenToggleBtn.textContent = '📋 Hide Results';
+                if (fullscreenToggleBtn) fullscreenToggleBtn.textContent = '📋 Hide Explanation';
                 document.getElementById('fullscreen-correct-answer').textContent = document.getElementById('correct-answer').textContent;
                 document.getElementById('fullscreen-question-explanation').textContent = document.getElementById('question-explanation').textContent;
                 
@@ -573,7 +613,7 @@ window.LiveQuizHostGame = (function(Common) {
                 }
             } else {
                 fullscreenResults.classList.add('hidden');
-                if (fullscreenToggleBtn) fullscreenToggleBtn.textContent = '📋 Show Results';
+                if (fullscreenToggleBtn) fullscreenToggleBtn.textContent = '📋 Show Explanation';
             }
             
             // Update player names in fullscreen answer options
@@ -757,6 +797,8 @@ window.LiveQuizHostGame = (function(Common) {
         getOptionLetter: getOptionLetter,
         enterFullscreen: enterFullscreen,
         exitFullscreen: exitFullscreen,
+        syncAutoAdvanceToggle: syncAutoAdvanceToggle,
+        syncFullscreenAutoAdvanceToggle: syncFullscreenAutoAdvanceToggle,
         gameState: gameState
     };
 })(window.LiveQuizCommon);
