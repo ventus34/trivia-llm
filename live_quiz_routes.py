@@ -99,6 +99,17 @@ async def generate_live_quiz_question(game_state: LiveQuizGameState, category: s
         key_entities=data.get("key_entities", [])
     )
     
+    # Update generation history to track subcategories and key entities
+    # This ensures unique questions within categories across games
+    if question.subcategory and question.key_entities:
+        from utils import update_generation_history
+        update_generation_history(category, question.subcategory, question.key_entities)
+        if DEBUG_MODE:
+            print(f"Updated history for category '{category}': subcategory='{question.subcategory}', entities={question.key_entities[:3]}...")
+    else:
+        if DEBUG_MODE:
+            print(f"Warning: Missing subcategory or key_entities for question in category '{category}'")
+    
     return question
 
 def build_question_prompt(request_data: dict, category: str) -> str:
@@ -492,6 +503,16 @@ async def pregenerate_next_question(game_id: str, next_question_index: int):
             )
             game_state.questions[next_question_index] = game_question
             
+            # Update generation history for pre-generated question
+            if question.subcategory and question.key_entities:
+                from utils import update_generation_history
+                update_generation_history(category, question.subcategory, question.key_entities)
+                if DEBUG_MODE:
+                    print(f"Updated history for pre-generated question in category '{category}': subcategory='{question.subcategory}', entities={question.key_entities[:3]}...")
+            else:
+                if DEBUG_MODE:
+                    print(f"Warning: Missing subcategory or key_entities for pre-generated question in category '{category}'")
+            
             print(f"Pre-generated question {question_number} for category {category_cycle_position + 1}: {category} (round {question_number_in_category})")
             
     except Exception as e:
@@ -625,6 +646,16 @@ async def regenerate_question(game_id: str):
         # Update question
         current_question.question = new_question
         current_question.answers = {}
+        
+        # Update generation history for regenerated question to maintain uniqueness
+        if new_question.subcategory and new_question.key_entities:
+            from utils import update_generation_history
+            update_generation_history(current_question.category, new_question.subcategory, new_question.key_entities)
+            if DEBUG_MODE:
+                print(f"Updated history for regenerated question in category '{current_question.category}': subcategory='{new_question.subcategory}', entities={new_question.key_entities[:3]}...")
+        else:
+            if DEBUG_MODE:
+                print(f"Warning: Missing subcategory or key_entities for regenerated question in category '{current_question.category}'")
         
         # Reset player states (exclude host from answering requirement)
         players_only = [p for p in game_state.players if p.id != game_state.host_id]

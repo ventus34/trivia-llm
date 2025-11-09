@@ -24,6 +24,16 @@ def update_generation_history(category: str, subcategory: str, key_entities: Lis
     if key_entities:
         for entity in key_entities:
             CATEGORY_GENERATION_HISTORY[category]["entities"].append(entity)
+    
+    # Log the history update for debugging
+    if DEBUG_MODE and (subcategory or key_entities):
+        print(f"✅ HISTORY UPDATED for category '{category}':")
+        if subcategory:
+            print(f"   ➕ Added subcategory: '{subcategory}'")
+        if key_entities:
+            print(f"   ➕ Added key entities: {key_entities}")
+        print(f"   📊 Current history size: {len(CATEGORY_GENERATION_HISTORY[category]['subcategories'])} subcategories, {len(CATEGORY_GENERATION_HISTORY[category]['entities'])} entities")
+        print("-" * 80)
 
 def is_question_valid(data: Any, game_mode: str) -> (bool, str):
     if not data or not isinstance(data, dict):
@@ -72,11 +82,23 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     random.shuffle(subcategory_history)
     random.shuffle(entity_history)
 
+    # Log what's being sent to the AI for debugging
+    subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "No history."
+    entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "No history."
+    
+    print(f"🔍 LIVE-QUIZ DEBUG: Generating question for category '{category}'")
+    print(f"   📋 Previous subcategories: {subcategory_history_prompt}")
+    print(f"   🔑 Previous key entities: {entity_history_prompt}")
+    print(f"   🎯 Knowledge level: {params.get('knowledgeLevel')}")
+    print(f"   🌐 Language: {lang}")
+    print(f"   🎲 Game mode: {params.get('gameMode')}")
+    if params.get("includeCategoryTheme") and params.get("theme"):
+        print(f"   🎨 Theme context: {params.get('theme')}")
+    print("-" * 80)
+
     knowledge_prompt = PROMPTS["knowledge_prompts"][params.get("knowledgeLevel")][lang]
     game_mode_prompt = PROMPTS["game_mode_prompts"][params.get("gameMode")][lang]
     theme_context = f"The question must relate to the theme: {params.get('theme')}." if params.get("includeCategoryTheme") and params.get("theme") else "No additional theme."
-    subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "No history."
-    entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "No history."
 
     context_lines = [line.format(category=category, knowledge_prompt=knowledge_prompt, game_mode_prompt=game_mode_prompt, theme_context=theme_context) for line in prompt_struct["context_lines"]]
     rules = [rule.format(subcategory_history_prompt=subcategory_history_prompt, entity_history_prompt=entity_history_prompt) for rule in prompt_struct["rules"]]
