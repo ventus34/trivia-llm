@@ -6,6 +6,7 @@ Data models for the live quiz game system.
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+import asyncio
 
 class Player(BaseModel):
     id: str
@@ -51,6 +52,7 @@ class LiveQuizGameState(BaseModel):
     question_started_at: Optional[datetime] = None
     timer_paused: bool = False
     timer_pause_started: Optional[datetime] = None
+    current_timer_task: Optional[Any] = None  # Track current timer task
     game_mode: str = "mcq"
     knowledge_level: str = "intermediate"
     language: str = "pl"

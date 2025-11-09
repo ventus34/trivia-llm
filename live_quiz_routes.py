@@ -361,6 +361,15 @@ async def start_question(game_id: str, question_index: int):
     """Start a specific question."""
     game_state = LIVE_QUIZ_GAMES[game_id]
     
+    # Stop any existing timer for the current question
+    if hasattr(game_state, 'current_timer_task') and game_state.current_timer_task:
+        game_state.current_timer_task.cancel()
+        game_state.current_timer_task = None
+    
+    # Reset timer state
+    game_state.timer_paused = False
+    game_state.timer_pause_started = None
+    
     # Ensure questions array is large enough
     while len(game_state.questions) <= question_index:
         game_state.questions.append(None)  # Placeholder for ungenerated questions
@@ -446,7 +455,7 @@ async def start_question(game_id: str, question_index: int):
     })
     
     # Start timer
-    asyncio.create_task(question_timer(game_id, question_index))
+    game_state.current_timer_task = asyncio.create_task(question_timer(game_id, question_index))
     
     # Start pre-generating next question in background (but not the last one)
     if question_index < game_state.total_questions - 1:
@@ -596,11 +605,20 @@ async def regenerate_question(game_id: str):
     game_state = LIVE_QUIZ_GAMES[game_id]
     current_question = game_state.questions[game_state.current_question_index]
     
+    # Stop any existing timer for the current question
+    if hasattr(game_state, 'current_timer_task') and game_state.current_timer_task:
+        game_state.current_timer_task.cancel()
+        game_state.current_timer_task = None
+    
+    # Reset timer state
+    game_state.timer_paused = False
+    game_state.timer_pause_started = None
+    
     try:
         # Generate new question
         new_question = await generate_live_quiz_question(
-            game_state, 
-            current_question.category, 
+            game_state,
+            current_question.category,
             current_question.question_number
         )
         
@@ -615,10 +633,30 @@ async def regenerate_question(game_id: str):
             player.last_answer = None
             player.is_correct = None
         
+        # Reset question timing
+        current_question.started_at = datetime.now()
+        current_question.expires_at = current_question.started_at + timedelta(seconds=current_question.time_limit)
+        
+        # Broadcast the regenerated question as a new question_start event
+        # This ensures both host and player clients update their question display
+        await broadcast_to_game(game_id, "question_started", {
+            "question_number": current_question.question_number,
+            "category": current_question.category,
+            "question": new_question.question,
+            "options": new_question.options,
+            "time_limit": current_question.time_limit,
+            "expires_at": current_question.expires_at.isoformat(),
+            "regenerated": True  # Flag to indicate this is a regenerated question
+        })
+        
+        # Also send the specific regeneration event for any special handling
         await broadcast_to_game(game_id, "question_regenerated", {
             "question": new_question.question,
             "options": new_question.options
         })
+        
+        # Restart timer with new question
+        game_state.current_timer_task = asyncio.create_task(question_timer(game_id, game_state.current_question_index))
         
         return JSONResponse(content={"message": "Question regenerated"})
     except Exception as e:
