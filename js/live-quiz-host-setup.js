@@ -53,7 +53,7 @@ window.LiveQuizHostSetup = (function(Common) {
         const formElements = [
             'knowledge-level', 'language', 'theme',
             'include-theme', 'question-model', 'questions-per-category',
-            'answer-time', 'auto-advance-time'
+            'answer-time', 'auto-advance-time', 'auto-advance-slider'
         ];
         formElements.forEach(id => {
             const element = document.getElementById(id);

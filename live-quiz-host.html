@@ -59,23 +59,25 @@
                                 </select>
                             </div>
                             
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Questions per Category: <span id="questions-slider-value" class="text-blue-400 font-semibold">3</span></label>
-                                <input type="range" id="questions-per-category" min="1" max="10" value="3" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
-                                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                                    <span>1</span>
-                                    <span>5</span>
-                                    <span>10</span>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Questions per Category: <span id="questions-slider-value" class="text-blue-400 font-semibold">3</span></label>
+                                    <input type="range" id="questions-per-category" min="1" max="10" value="3" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                        <span>1</span>
+                                        <span>5</span>
+                                        <span>10</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Answer Time: <span id="answer-time-slider-value" class="text-blue-400 font-semibold">60</span> seconds</label>
-                                <input type="range" id="answer-time" min="30" max="180" value="60" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
-                                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                                    <span>30</span>
-                                    <span>105</span>
-                                    <span>180</span>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Answer Time: <span id="answer-time-slider-value" class="text-blue-400 font-semibold">60</span> seconds</label>
+                                    <input type="range" id="answer-time" min="30" max="180" value="60" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                        <span>30</span>
+                                        <span>105</span>
+                                        <span>180</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -180,14 +182,30 @@
 
     <!-- Lobby Screen -->
     <div id="lobby-screen" class="hidden container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
+        <div class="max-w-7xl mx-auto">
             <h1 class="text-3xl font-bold text-center mb-8 text-white">🏠 Game Lobby</h1>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Room Info -->
+            <!-- Top section with QR Code taking half screen -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Large QR Code Section -->
+                <div class="bg-gray-800 rounded-2xl p-6 lg:p-8">
+                    <h2 class="text-xl font-semibold mb-6 text-white text-center">📱 Join Game</h2>
+                    <div class="flex flex-col items-center justify-center h-96 lg:h-[500px]">
+                        <div id="qr-code" class="qr-code-container qr-code-large flex items-center justify-center">
+                            <div class="qr-code-inner"></div>
+                        </div>
+                        <p class="text-lg text-gray-300 mt-6 font-medium text-center">Scan QR code to join</p>
+                        <div class="mt-4 flex items-center space-x-2">
+                            <input type="text" id="join-url" readonly class="w-64 px-3 py-2 bg-gray-600 border border-gray-500 rounded text-sm text-white" value="">
+                            <button id="copy-join-url" class="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors">🔗</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Room Info and Controls -->
                 <div class="bg-gray-800 rounded-2xl p-6">
                     <h2 class="text-xl font-semibold mb-4 text-white">📋 Room Information</h2>
-                    <div class="space-y-3">
+                    <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <span class="text-gray-300">Room Code:</span>
                             <div class="flex items-center space-x-2">
@@ -207,30 +225,18 @@
                         </div>
                     </div>
                     
-                    <div class="mt-6 p-4 bg-gray-700 rounded-lg">
-                        <h3 class="text-sm font-medium text-gray-300 mb-2">Share with players:</h3>
-                        <div class="flex items-center space-x-2">
-                            <input type="text" id="join-url" readonly class="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded text-sm text-white" value="">
-                            <button id="copy-join-url" class="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors">🔗</button>
-                        </div>
-                        <div class="mt-4 text-center">
-                            <div id="qr-code" class="inline-block p-2 bg-white rounded-lg"></div>
-                            <p class="text-xs text-gray-400 mt-2">Scan QR code to join</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Players List -->
-                <div class="bg-gray-800 rounded-2xl p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-white">👥 Connected Players</h2>
-                    <div id="players-list" class="space-y-2 max-h-96 overflow-y-auto">
-                        <!-- Players will be added here -->
-                    </div>
-                    
-                    <div class="mt-6 space-y-3">
+                    <div class="mt-8 space-y-3">
                         <button id="start-game" class="w-full py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">🚀 Start Game</button>
                         <button id="back-to-setup" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">← Back to Setup</button>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Players List Section -->
+            <div class="bg-gray-800 rounded-2xl p-6">
+                <h2 class="text-xl font-semibold mb-4 text-white">👥 Connected Players</h2>
+                <div id="players-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    <!-- Players will be added here -->
                 </div>
             </div>
         </div>
@@ -486,10 +492,12 @@
             if (window.LiveQuizHost) {
                 window.LiveQuizHost.init();
             }
+            
+            // Setup slider functionality after setup is loaded
+            setupSliders();
         });
         
-        // Setup slider functionality
-        document.addEventListener('DOMContentLoaded', () => {
+        function setupSliders() {
             // Questions per category slider
             const questionsSlider = document.getElementById('questions-per-category');
             const questionsSliderValue = document.getElementById('questions-slider-value');
@@ -499,9 +507,6 @@
                 questionsSlider.addEventListener('input', (e) => {
                     questionsSliderValue.textContent = e.target.value;
                 });
-
-                // Initialize display
-                questionsSliderValue.textContent = questionsSlider.value;
             }
 
             // Answer time slider
@@ -513,9 +518,6 @@
                 answerTimeSlider.addEventListener('input', (e) => {
                     answerTimeSliderValue.textContent = e.target.value;
                 });
-
-                // Initialize display
-                answerTimeSliderValue.textContent = answerTimeSlider.value;
             }
             
             // Auto-advance sliders (both regular and fullscreen)
@@ -526,8 +528,6 @@
 
             // Initialize regular auto-advance slider
             if (autoAdvanceSlider && autoAdvanceSliderValue) {
-                autoAdvanceSliderValue.textContent = autoAdvanceSlider.value;
-                // Add input event listener for real-time updates
                 autoAdvanceSlider.addEventListener('input', (e) => {
                     autoAdvanceSliderValue.textContent = e.target.value;
                 });
@@ -535,13 +535,23 @@
 
             // Initialize fullscreen auto-advance slider
             if (fullscreenAutoAdvanceSlider && fullscreenAutoAdvanceSliderValue) {
-                fullscreenAutoAdvanceSliderValue.textContent = fullscreenAutoAdvanceSlider.value;
-                // Add input event listener for real-time updates
                 fullscreenAutoAdvanceSlider.addEventListener('input', (e) => {
                     fullscreenAutoAdvanceSliderValue.textContent = e.target.value;
                 });
             }
-        });
+            
+            // Initialize all slider displays with current values
+            if (window.LiveQuizCommon) {
+                window.LiveQuizCommon.updateSliderDisplays();
+            } else {
+                // Fallback initialization if LiveQuizCommon is not available yet
+                setTimeout(() => {
+                    if (window.LiveQuizCommon) {
+                        window.LiveQuizCommon.updateSliderDisplays();
+                    }
+                }, 100);
+            }
+        }
     </script>
 </body>
 </html>

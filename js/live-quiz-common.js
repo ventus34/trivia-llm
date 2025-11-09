@@ -218,12 +218,18 @@ window.LiveQuizCommon = (function() {
         });
     }
 
-    // QR Code Generation
+    // QR Code Generation - Large for lobby
     function generateQRCode(url) {
         const qrContainer = document.getElementById('qr-code');
         if (!qrContainer) return;
         
-        qrContainer.innerHTML = '';
+        // Clear the container
+        const innerContainer = qrContainer.querySelector('.qr-code-inner');
+        if (innerContainer) {
+            innerContainer.innerHTML = '';
+        } else {
+            qrContainer.innerHTML = '';
+        }
         
         try {
             // Generate QR code
@@ -231,25 +237,45 @@ window.LiveQuizCommon = (function() {
             qr.addData(url);
             qr.make();
             
-            // Create canvas for QR code
+            // Create much larger canvas for better visibility in half-screen display
             const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
+            canvas.width = 500; // Much larger for better visibility
+            canvas.height = 500;
             const ctx = canvas.getContext('2d');
             
-            // Draw QR code
-            const moduleSize = canvas.width / qr.getModuleCount();
+            // Set white background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw QR code (with adequate margin for scanning)
+            const margin = 40;
+            const availableSize = canvas.width - (margin * 2);
+            const moduleSize = availableSize / qr.getModuleCount();
+            
+            // Draw dark modules
+            ctx.fillStyle = '#000000';
             for (let row = 0; row < qr.getModuleCount(); row++) {
                 for (let col = 0; col < qr.getModuleCount(); col++) {
-                    ctx.fillStyle = qr.isDark(row, col) ? '#000000' : '#FFFFFF';
-                    ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+                    if (qr.isDark(row, col)) {
+                        const x = margin + (col * moduleSize);
+                        const y = margin + (row * moduleSize);
+                        ctx.fillRect(x, y, moduleSize, moduleSize);
+                    }
                 }
             }
             
-            qrContainer.appendChild(canvas);
+            // Add canvas to the appropriate container
+            if (innerContainer) {
+                innerContainer.appendChild(canvas);
+            } else {
+                qrContainer.appendChild(canvas);
+            }
+            
+            console.log('Large QR code generated successfully (500x500)');
         } catch (error) {
             console.error('QR Code generation failed:', error);
-            qrContainer.innerHTML = '<p class="text-sm text-gray-400">QR code unavailable</p>';
+            const errorContainer = innerContainer || qrContainer;
+            errorContainer.innerHTML = '<p class="text-sm text-gray-400">QR code unavailable</p>';
         }
     }
 
@@ -262,6 +288,8 @@ window.LiveQuizCommon = (function() {
             includeTheme: document.getElementById('include-theme')?.checked ?? true,
             questionModel: document.getElementById('question-model')?.value || 'auto',
             questionsPerCategory: document.getElementById('questions-per-category')?.value || '3',
+            answerTime: document.getElementById('answer-time')?.value || '60',
+            autoAdvanceTime: document.getElementById('auto-advance-slider')?.value || '15',
             categories: Array.from(document.querySelectorAll('.category-input'))
                 .map(input => input.value)
         };
@@ -291,12 +319,50 @@ window.LiveQuizCommon = (function() {
                 if (setup.questionsPerCategory && document.getElementById('questions-per-category')) {
                     document.getElementById('questions-per-category').value = setup.questionsPerCategory;
                 }
+                if (setup.answerTime && document.getElementById('answer-time')) {
+                    document.getElementById('answer-time').value = setup.answerTime;
+                }
+                if (setup.autoAdvanceTime && document.getElementById('auto-advance-slider')) {
+                    document.getElementById('auto-advance-slider').value = setup.autoAdvanceTime;
+                }
                 if (setup.categories && setup.categories.length > 0) {
                     updateCategoryInputs(setup.categories);
                 }
+                
+                // Update slider displays
+                updateSliderDisplays();
             } catch (error) {
                 console.log('Failed to load saved setup:', error);
             }
+        }
+    }
+    
+    function updateSliderDisplays() {
+        // Update questions per category slider display
+        const questionsSlider = document.getElementById('questions-per-category');
+        const questionsSliderValue = document.getElementById('questions-slider-value');
+        if (questionsSlider && questionsSliderValue) {
+            questionsSliderValue.textContent = questionsSlider.value;
+        }
+        
+        // Update answer time slider display
+        const answerTimeSlider = document.getElementById('answer-time');
+        const answerTimeSliderValue = document.getElementById('answer-time-slider-value');
+        if (answerTimeSlider && answerTimeSliderValue) {
+            answerTimeSliderValue.textContent = answerTimeSlider.value;
+        }
+        
+        // Update auto-advance slider displays
+        const autoAdvanceSlider = document.getElementById('auto-advance-slider');
+        const autoAdvanceSliderValue = document.getElementById('auto-advance-slider-value');
+        if (autoAdvanceSlider && autoAdvanceSliderValue) {
+            autoAdvanceSliderValue.textContent = autoAdvanceSlider.value;
+        }
+        
+        const fullscreenAutoAdvanceSlider = document.getElementById('fullscreen-auto-advance-slider');
+        const fullscreenAutoAdvanceSliderValue = document.getElementById('fullscreen-auto-advance-slider-value');
+        if (fullscreenAutoAdvanceSlider && fullscreenAutoAdvanceSliderValue) {
+            fullscreenAutoAdvanceSliderValue.textContent = fullscreenAutoAdvanceSlider.value;
         }
     }
 
@@ -365,6 +431,7 @@ window.LiveQuizCommon = (function() {
         generateQRCode,
         saveGameSetup,
         loadGameSetup,
+        updateSliderDisplays,
         getCategoryPresets,
         saveToSession,
         loadFromSession,
