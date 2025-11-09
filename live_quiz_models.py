@@ -63,7 +63,6 @@ class LiveQuizGameState(BaseModel):
     total_questions: int = 30
 
 class CreateRoomRequest(BaseModel):
-    host_name: str
     categories: List[str]
     game_mode: str = "mcq"
     knowledge_level: str = "intermediate"
@@ -82,7 +81,8 @@ class JoinRoomRequest(BaseModel):
 class SubmitAnswerRequest(BaseModel):
     game_id: str
     player_id: str
-    answer: str
+    answer: Optional[str] = None
+    skipped: bool = False
 
 class HostControlRequest(BaseModel):
     game_id: str

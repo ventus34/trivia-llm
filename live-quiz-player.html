@@ -148,6 +148,13 @@
             <div id="answer-status" class="text-center">
                 <div class="text-lg text-gray-400">Select your answer</div>
             </div>
+            
+            <!-- Skip Question Button -->
+            <div class="text-center mt-4">
+                <button id="skip-question" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                    ⏭️ Skip Question
+                </button>
+            </div>
         </div>
     </div>
 
@@ -241,6 +248,13 @@
         <!-- Fullscreen Answer Status -->
         <div class="p-6 bg-gray-800 text-center">
             <div id="player-fullscreen-answer-status" class="text-xl text-gray-400">Select your answer</div>
+            
+            <!-- Fullscreen Skip Question Button -->
+            <div class="mt-4">
+                <button id="player-skip-question" class="px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-lg">
+                    ⏭️ Skip Question
+                </button>
+            </div>
         </div>
     </div>
 
@@ -498,6 +512,10 @@
             // Player fullscreen controls
             document.getElementById('player-toggle-fullscreen').addEventListener('click', playerEnterFullscreen);
             document.getElementById('player-exit-fullscreen').addEventListener('click', playerExitFullscreen);
+            
+            // Skip question button
+            document.getElementById('skip-question')?.addEventListener('click', skipQuestion);
+            document.getElementById('player-skip-question')?.addEventListener('click', skipQuestion);
         }
 
         function resetGame() {
@@ -666,6 +684,20 @@
             // Reset answer status
             document.getElementById('answer-status').innerHTML = '<div class="text-lg text-gray-400">Select your answer</div>';
             
+            // Enable skip button for new question
+            const skipButton = document.getElementById('skip-question');
+            const fullscreenSkipButton = document.getElementById('player-skip-question');
+            
+            if (skipButton) {
+                skipButton.disabled = false;
+                skipButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            if (fullscreenSkipButton) {
+                fullscreenSkipButton.disabled = false;
+                fullscreenSkipButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
             showScreen('question-screen');
             
             // Sync to fullscreen if active
@@ -720,6 +752,13 @@
                 button.classList.add('opacity-50', 'cursor-not-allowed');
             });
             
+            // Also disable skip button
+            const skipButton = document.getElementById('skip-question');
+            if (skipButton) {
+                skipButton.disabled = true;
+                skipButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
             // Update status
             document.getElementById('answer-status').innerHTML = '<div class="text-sm text-green-400">✓ Answer submitted!</div>';
             
@@ -731,6 +770,56 @@
                 });
             } catch (error) {
                 showNotification('Failed to submit answer: ' + error.message, 'error');
+                gameState.hasAnswered = false;
+            }
+        }
+
+        async function skipQuestion() {
+            if (gameState.hasAnswered) return;
+            
+            gameState.hasAnswered = true;
+            
+            // Disable all answer buttons
+            document.querySelectorAll('#answer-options button').forEach(button => {
+                button.disabled = true;
+                button.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+            
+            // Hide skip button
+            const skipButton = document.getElementById('skip-question');
+            const fullscreenSkipButton = document.getElementById('player-skip-question');
+            
+            if (skipButton) {
+                skipButton.disabled = true;
+                skipButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
+            if (fullscreenSkipButton) {
+                fullscreenSkipButton.disabled = true;
+                fullscreenSkipButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // Update status for both views
+            const answerStatus = document.getElementById('answer-status');
+            const fullscreenAnswerStatus = document.getElementById('player-fullscreen-answer-status');
+            
+            if (answerStatus) {
+                answerStatus.innerHTML = '<div class="text-sm text-gray-400">⏭️ Question skipped</div>';
+            }
+            
+            if (fullscreenAnswerStatus) {
+                fullscreenAnswerStatus.innerHTML = '<div class="text-lg text-gray-400">⏭️ Question skipped</div>';
+            }
+            
+            try {
+                await apiCall('/api/live-quiz/submit-answer', 'POST', {
+                    game_id: gameState.gameId,
+                    player_id: gameState.playerId,
+                    answer: "", // Empty string for skipped questions
+                    skipped: true
+                });
+            } catch (error) {
+                showNotification('Failed to skip question: ' + error.message, 'error');
                 gameState.hasAnswered = false;
             }
         }

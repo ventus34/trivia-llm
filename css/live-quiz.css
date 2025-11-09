@@ -1,0 +1,357 @@
+/* Live Quiz Component Styles */
+
+/* Mobile-first optimizations */
+body {
+    font-size: 16px; /* Prevent zoom on iOS */
+}
+
+.answer-option {
+    min-height: 60px;
+    font-size: 1.1rem;
+}
+
+.timer-display {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.question-text {
+    font-size: 1.2rem;
+    line-height: 1.4;
+}
+
+/* Component-specific styles */
+.live-quiz-host-setup {
+    @apply bg-gray-800 rounded-2xl p-8 space-y-6;
+}
+
+.live-quiz-lobby {
+    @apply bg-gray-800 rounded-2xl p-6;
+}
+
+.live-quiz-question {
+    @apply bg-gray-800 rounded-2xl p-6 mb-6;
+}
+
+.live-quiz-results {
+    @apply bg-gray-800 rounded-2xl p-6 text-center space-y-6;
+}
+
+/* Game controls styling */
+.game-controls {
+    @apply flex flex-wrap gap-4;
+}
+
+.game-controls button {
+    @apply px-6 py-3 rounded-lg text-white font-semibold transition-colors;
+}
+
+.game-controls .btn-primary {
+    @apply bg-green-600 hover:bg-green-700;
+}
+
+.game-controls .btn-secondary {
+    @apply bg-gray-600 hover:bg-gray-700;
+}
+
+.game-controls .btn-warning {
+    @apply bg-yellow-600 hover:bg-yellow-700;
+}
+
+.game-controls .btn-info {
+    @apply bg-blue-600 hover:bg-blue-700;
+}
+
+.game-controls .btn-purple {
+    @apply bg-purple-600 hover:bg-purple-700;
+}
+
+/* Timer styling */
+.timer-danger {
+    @apply text-red-400;
+}
+
+.timer-warning {
+    @apply text-yellow-400;
+}
+
+.timer-normal {
+    @apply text-white;
+}
+
+/* Fullscreen styles */
+.fullscreen-overlay {
+    @apply fixed inset-0 bg-gray-900 z-50 flex flex-col;
+}
+
+.fullscreen-header {
+    @apply flex items-center justify-between p-8 bg-gray-800;
+}
+
+.fullscreen-content {
+    @apply flex-1 flex items-center justify-center p-8;
+}
+
+.fullscreen-controls {
+    @apply p-8 bg-gray-800;
+}
+
+/* Player list styling */
+.players-list {
+    @apply space-y-2 max-h-96 overflow-y-auto;
+}
+
+.player-item {
+    @apply flex items-center justify-between p-3 bg-gray-700 rounded-lg;
+}
+
+.player-avatar {
+    @apply w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold;
+}
+
+.player-avatar-small {
+    @apply w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs;
+}
+
+/* Scoreboard styling */
+.scoreboard {
+    @apply space-y-2 max-h-80 overflow-y-auto;
+}
+
+.scoreboard-item {
+    @apply flex items-center justify-between p-2 bg-gray-700 rounded;
+}
+
+.scoreboard-position {
+    @apply text-sm font-semibold text-gray-400;
+}
+
+/* Progress bar */
+.progress-container {
+    @apply w-full bg-gray-700 rounded-full h-3;
+}
+
+.progress-bar {
+    @apply bg-blue-600 h-3 rounded-full transition-all duration-300;
+}
+
+/* Answer options grid */
+.answer-options-grid {
+    @apply grid grid-cols-2 gap-4;
+}
+
+.answer-options-grid-host {
+    @apply grid grid-cols-2 gap-6;
+}
+
+.answer-option-button {
+    @apply w-full p-6 text-left bg-gray-700 hover:bg-gray-600 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors;
+}
+
+.answer-option-display {
+    @apply p-6 bg-gray-700 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors;
+}
+
+/* Connection status */
+.connection-status {
+    @apply fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-2 text-sm z-50;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.loading-content {
+    @apply bg-gray-800 rounded-2xl p-8 text-center;
+}
+
+/* Room info styling */
+.room-info {
+    @apply space-y-3;
+}
+
+.room-code-display {
+    @apply text-2xl font-mono font-bold text-blue-400;
+}
+
+.game-id-display {
+    @apply text-sm text-gray-400 font-mono;
+}
+
+.player-count-display {
+    @apply text-white font-semibold;
+}
+
+/* Category display */
+.category-badge {
+    @apply text-sm text-gray-300 bg-gray-600 rounded px-3 py-1;
+}
+
+.category-input {
+    @apply px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+/* Question results */
+.question-results {
+    @apply hidden mb-6;
+}
+
+.results-content {
+    @apply bg-gray-700 rounded-lg p-6;
+}
+
+.correct-answer {
+    @apply text-green-200 text-lg;
+}
+
+.correct-answer-label {
+    @apply text-lg font-semibold text-green-300 mb-2;
+}
+
+.explanation {
+    @apply text-blue-200 text-base leading-relaxed;
+}
+
+.explanation-label {
+    @apply text-lg font-semibold text-blue-300 mb-2;
+}
+
+/* Question display for TV/fullscreen */
+.fullscreen-question-text {
+    @apply text-6xl font-bold text-white leading-relaxing mb-12 min-h-[200px] flex items-center justify-center;
+}
+
+.host-question-text {
+    @apply text-3xl font-bold text-white leading-relaxing mb-8 min-h-[120px] flex items-center;
+}
+
+.player-question-text {
+    @apply text-xl font-medium leading-relaxing;
+}
+
+/* Final results */
+.final-scores {
+    @apply space-y-4 mb-8;
+}
+
+.winner-display {
+    @apply bg-yellow-600 rounded-lg p-4 mb-4;
+}
+
+.winner-title {
+    @apply text-2xl font-bold text-white;
+}
+
+.winner-score {
+    @apply text-yellow-200;
+}
+
+.final-position {
+    @apply bg-gray-700 rounded-lg p-4;
+}
+
+.final-score {
+    @apply text-3xl font-bold text-white;
+}
+
+.final-score-label {
+    @apply text-sm text-gray-400;
+}
+
+.final-rank {
+    @apply bg-blue-900 rounded-lg p-4;
+}
+
+.final-rank-text {
+    @apply text-lg font-semibold text-blue-200;
+}
+
+/* QR Code styling */
+.qr-code-container {
+    @apply inline-block p-2 bg-white rounded-lg;
+}
+
+.qr-code-label {
+    @apply text-xs text-gray-400 mt-2;
+}
+
+/* Answer status */
+.answer-status {
+    @apply text-center;
+}
+
+.answer-status-text {
+    @apply text-lg text-gray-400;
+}
+
+.answer-status-correct {
+    @apply text-sm text-green-400;
+}
+
+/* Player fullscreen styles */
+.player-fullscreen-timer {
+    @apply text-6xl font-mono font-bold text-white;
+}
+
+.player-fullscreen-question-text {
+    @apply text-5xl font-bold text-white leading-relaxing mb-12 min-h-[150px] flex items-center justify-center;
+}
+
+.player-fullscreen-answer-status {
+    @apply text-xl text-gray-400;
+}
+
+/* Host fullscreen styles */
+.host-fullscreen-timer {
+    @apply text-8xl font-mono font-bold text-white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .fullscreen-question-text {
+        @apply text-4xl;
+    }
+    
+    .host-question-text {
+        @apply text-2xl;
+    }
+    
+    .player-question-text {
+        @apply text-lg;
+    }
+    
+    .answer-options-grid {
+        @apply gap-3;
+    }
+    
+    .answer-option-button {
+        @apply p-4;
+    }
+    
+    .timer-display {
+        @apply text-2xl;
+    }
+}
+
+@media (max-width: 640px) {
+    .fullscreen-question-text {
+        @apply text-3xl;
+    }
+    
+    .host-question-text {
+        @apply text-xl;
+    }
+    
+    .player-question-text {
+        @apply text-base;
+    }
+    
+    .game-controls {
+        @apply flex-col;
+    }
+    
+    .game-controls button {
+        @apply w-full;
+    }
+}

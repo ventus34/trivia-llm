@@ -121,10 +121,10 @@ async def create_room(req: CreateRoomRequest):
     
     game_id = generate_game_id()
     
-    # Create host player
+    # Create host player (use default name since host name is not provided)
     host_player = Player(
         id=f"host_{game_id}",
-        name=req.host_name,
+        name="Host",  # Default host name
         joined_at=datetime.now()
     )
     
@@ -172,9 +172,9 @@ async def join_room(req: JoinRoomRequest):
     if len(game_state.players) >= 12:  # Max 12 players
         raise HTTPException(status_code=400, detail="Room is full")
     
-    # Check if game already started
-    if game_state.status != "waiting":
-        raise HTTPException(status_code=400, detail="Game already started")
+    # Check if game is finished
+    if game_state.status == "finished":
+        raise HTTPException(status_code=400, detail="Game has already finished")
     
     # Create new player
     player = Player(
@@ -183,17 +183,53 @@ async def join_room(req: JoinRoomRequest):
         joined_at=datetime.now()
     )
     
+    # Handle late joining - if game is in progress
+    if game_state.status == "playing":
+        # If game is in progress, initialize player state
+        player.has_answered = True  # Mark as already answered to skip current question
+        player.last_answer = "late_join"
+        player.is_correct = False
+        player.score = 0  # Late joiners start with 0 points
+        
+        # If there's an active question, we need to handle it specially
+        if game_state.current_question_index is not None and game_state.current_question_index < len(game_state.questions):
+            current_question = game_state.questions[game_state.current_question_index]
+            if current_question and current_question.is_active:
+                # Late joiner gets marked as "no answer" for current question
+                current_question.answers[player.id] = {
+                    "answer": "no_answer",
+                    "timestamp": datetime.now().isoformat(),
+                    "is_correct": False  # Late joiner doesn't get points for missed question
+                }
+        
+        print(f"Late join: Player {player.name} joined game {game_id} during active question")
+    
     game_state.players.append(player)
     
     # Broadcast to all clients
-    await broadcast_to_game(game_id, "player_joined", {
-        "player": {
-            "id": player.id,
-            "name": player.name,
-            "score": player.score
-        },
-        "player_count": len(game_state.players)
-    })
+    if game_state.status == "waiting":
+        # Normal lobby join
+        await broadcast_to_game(game_id, "player_joined", {
+            "player": {
+                "id": player.id,
+                "name": player.name,
+                "score": player.score
+            },
+            "player_count": len(game_state.players)
+        })
+    else:
+        # Late join during game - broadcast differently
+        await broadcast_to_game(game_id, "late_player_joined", {
+            "player": {
+                "id": player.id,
+                "name": player.name,
+                "score": player.score,
+                "is_late_join": True
+            },
+            "player_count": len(game_state.players),
+            "current_question": game_state.current_question_index + 1 if game_state.current_question_index is not None else None,
+            "status": game_state.status
+        })
     
     # Also send updated player list specifically to host
     players_data = [{"id": p.id, "name": p.name, "score": p.score} for p in game_state.players]
@@ -207,7 +243,10 @@ async def join_room(req: JoinRoomRequest):
         "player_id": player.id,
         "room_code": game_state.room_code,
         "host_id": game_state.host_id,
-        "categories": game_state.categories
+        "categories": game_state.categories,
+        "game_status": game_state.status,
+        "is_late_join": game_state.status == "playing",
+        "current_question": game_state.current_question_index + 1 if game_state.current_question_index is not None else None
     })
 
 async def get_room_status(game_id: str):
@@ -247,7 +286,8 @@ async def submit_answer(req: SubmitAnswerRequest):
     current_question.answers[req.player_id] = {
         "answer": req.answer,
         "timestamp": datetime.now().isoformat(),
-        "is_correct": None  # Will be set when question is scored
+        "is_correct": None,  # Will be set when question is scored
+        "skipped": req.skipped  # Track if this was a skip
     }
     
     player.has_answered = True
@@ -500,14 +540,21 @@ async def show_question_results(game_id: str):
     for player_id, answer_data in game_question.answers.items():
         player = next((p for p in game_state.players if p.id == player_id), None)
         if player:
-            is_correct = answer_data["answer"].strip().lower() == correct_answer.lower()
-            answer_data["is_correct"] = is_correct
-            player.is_correct = is_correct
-            
-            if is_correct:
-                player.score += 100
+            # Handle skipped questions (both explicit skipped flag and empty answer)
+            if answer_data.get("skipped", False) or (answer_data.get("answer", "").strip() == ""):
+                is_correct = False
+                answer_data["is_correct"] = is_correct
+                player.is_correct = is_correct
+                # No points awarded for skipped questions (0 points)
             else:
-                player.score -= 25
+                is_correct = answer_data["answer"].strip().lower() == correct_answer.lower()
+                answer_data["is_correct"] = is_correct
+                player.is_correct = is_correct
+                
+                if is_correct:
+                    player.score += 100
+                else:
+                    player.score -= 35
     
     # Broadcast results
     await broadcast_to_game(game_id, "question_results", {
@@ -517,8 +564,9 @@ async def show_question_results(game_id: str):
         "answers": {
             pid: {
                 "player_name": next(p.name for p in game_state.players if p.id == pid),
-                "answer": data["answer"],
-                "is_correct": data["is_correct"]
+                "answer": "Skipped" if (data.get("skipped", False) or data.get("answer", "").strip() == "") else data.get("answer", "No Answer"),
+                "is_correct": data["is_correct"],
+                "skipped": data.get("skipped", False) or data.get("answer", "").strip() == ""
             }
             for pid, data in game_question.answers.items()
         },
