@@ -23,96 +23,150 @@
   },
   "knowledge_prompts": {
     "basic": {
-      "pl": "Podstawowy. Pytanie powinno dotyczyć powszechnie znanych faktów.",
-      "en": "Basic. The question should be about commonly known facts."
+      "pl": "Podstawowy (Powszechnie znane fakty).",
+      "en": "Basic (Commonly known facts)."
     },
     "intermediate": {
-      "pl": "Średni. Pytanie powinno dotyczyć faktów, które są znane osobom zainteresowanym danym tematem, ale nie wymagają bardzo specjalistycznej, niszowej wiedzy. To krok powyżej wiedzy ogólnej.",
-      "en": "Intermediate. The question should cover facts known to individuals interested in the topic, but not require highly specialized, niche knowledge. It's a step above general knowledge."
+      "pl": "Średni (Dla osób zainteresowanych tematem, ale nie ekspertów).",
+      "en": "Intermediate (For interested individuals, not necessarily experts)."
     },
     "expert": {
-      "pl": "Ekspercki. Dotyczące mniej znanych faktów, dla znawców tematu.",
-      "en": "Expert. Concerning lesser-known facts, for connoisseurs of the subject."
+      "pl": "Ekspercki (Mało znane fakty, detale dla znawców).",
+      "en": "Expert (Obscure facts, details for connoisseurs)."
     }
   },
   "game_mode_prompts": {
     "mcq": {
-      "pl": "Pytanie jednokrotnego wyboru (MCQ).",
-      "en": "Single Choice Question (MCQ)."
+      "pl": "Pytanie jednokrotnego wyboru (MCQ) - 4 opcje.",
+      "en": "Single Choice Question (MCQ) - 4 options."
     },
     "short_answer": {
-      "pl": "Pytanie otwarte z krótką odpowiedzią (1-3 słowa).",
-      "en": "Open-ended question with a short answer (1-3 words)."
+      "pl": "Pytanie otwarte (krótka odpowiedź 1-3 słowa).",
+      "en": "Open-ended question (short answer 1-3 words)."
     }
   },
   "generate_question": {
     "pl": {
       "persona": "Wciel się w rolę doświadczonego mistrza teleturnieju i encyklopedysty. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego wraz z kompleksowym wyjaśnieniem.",
-      "chain_of_thought": "# PROCES MYŚLOWY (Chain of Thought):\n1.  **Analiza Kontekstu:** Rozważ podaną kategorię, motyw i poziom trudności.\n2.  **Generowanie Pytania:** Stwórz pytanie, poprawną odpowiedź i wiarygodne błędne opcje, mając na uwadze absolutny priorytet unikalności faktu.\n3.  **Tworzenie Wyjaśnienia:**\n    a.  W polu `explanation_correct` szczegółowo opisz poprawną odpowiedź w kontekście pytania.\n    b.  W polu `explanation_distractors` krótko wyjaśnij każdą z błędnych opcji.\n    c.  W polu `explanation_summary`, w jednym zdaniu, podsumuj, dlaczego to właśnie poprawna odpowiedź jest tą właściwą.\n4.  **Weryfikacja i Formatowanie:**\n    a.  Sprawdź kompletność i poprawność wszystkich pól.\n    b.  Potwierdź, że pytanie nie łamie ZASADY UNIKALNEGO FAKTU w odniesieniu do ostatnio użytych nazw własnych z `entity_history_prompt`.\n    c.  Sformatuj jako jeden obiekt JSON.",
-      "context_header": "\n# KONTEKST I REGUŁY DO ZASTOSOWANIA:",
-      "context_lines": [
-        "- Kategoria: \"{category}\"",
-        "- Poziom trudności: {knowledge_prompt}",
-        "- Tryb gry: {game_mode_prompt}",
-        "- Motyw przewodni: {theme_context}"
+      "static_instructions": [
+        "# PROCES MYŚLOWY (Chain of Thought):",
+        "1. **Analiza Danych:** Przeanalizuj kategorię i sekcję 'ZAKAZANE' w danych wejściowych.",
+        "2. **Generowanie:** Stwórz unikalne pytanie, które NIE narusza zakazanych tematów.",
+        "3. **Weryfikacja:** Sprawdź czy odpowiedź nie znajduje się w treści pytania.",
+        "4. **Formatowanie:** Zwróć wynik wyłącznie jako JSON.",
+        "",
+        "# ZASADY KLUCZOWE:",
+        "- **JĘZYK:** Cały JSON (klucze i wartości) musi być w języku polskim.",
+        "- **ZASADA UNIKALNEGO FAKTU:** Absolutny priorytet. Pytanie musi dotyczyć faktu, którego nie ma na liście 'ZAKAZANE'.",
+        "- **SUBKATEGORIA:** Zdefiniuj precyzyjną subkategorię (np. 'Starożytny Rzym').",
+        "- **BRAK SPOILERA:** Treść pytania nie może zawierać słów stanowiących odpowiedź.",
+        "- **JAKOŚĆ:** Pytanie wymaga zrozumienia kontekstu, przyczyny/skutku, a nie tylko suchej definicji.",
+        "- **OBIEKTYWIZM:** Musi istnieć jedna, bezspornie poprawna odpowiedź.",
+        "- **DYSTRAKTORY (MCQ):** Błędne opcje muszą być wiarygodne i tematyczne, nie absurdalne.",
+        "- **SUBIEKTYWNOŚĆ:** W sztuce/filozofii pytaj o fakty (np. 'kto jest autorem', 'co głosił nurt'), a nie opinie.",
+        "- **ZWIĘZŁOŚĆ:** Pytanie MAKSYMALNIE do 20 słów. Opcje odpowiedzi (MCQ) MAKSYMALNIE do 5 słów. Unikaj zbędnych ozdobników.",
+        "- **ENTITIES:** Wyciągnij kluczowe nazwy własne do pola 'key_entities'.",
+        "",
+        "# FORMAT WYJŚCIOWY (JSON):",
+        "Zwróć czysty obiekt JSON bez znaczników markdown:",
+        "{{\n  \"question\": \"Treść pytania...\",\n  \"answer\": \"Poprawna odpowiedź...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa1\", \"Nazwa2\"],\n  \"options\": [\"Opcja A\", \"Opcja B\", \"Opcja C\", \"Opcja D\"],\n  \"explanation_correct\": \"Szczegółowe wyjaśnienie poprawnej odpowiedzi.\",\n  \"explanation_distractors\": \"Wyjaśnienie dlaczego inne opcje są błędne.\",\n  \"explanation_summary\": \"Jednozdaniowe podsumowanie.\"\n}}"
       ],
-      "rules": [
-        "**JĘZYK WYJŚCIOWY:** Cała zawartość finalnego obiektu JSON (pytanie, odpowiedź, opcje, wyjaśnienie) MUSI być w języku polskim.",
-        "**DEFINIUJ SUBKATEGORIĘ:** Dla każdego pytania zdefiniuj jedno- lub dwuwyrazową, precyzyjną subkategorię (np. dla 'Historii' -> 'Starożytny Rzym').",
-        "**ZASADA UNIKALNEGO FAKTU:** Każde pytanie MUSI dotyczyć zupełnie innego faktu niż te, które mogłyby być sformułowane na podstawie ostatnio użytych nazw własnych. Twoim absolutnym priorytetem jest unikalność. Unikaj prostego odwracania relacji (np. jeśli ostatnie pytanie brzmiało 'Kto namalował Monę Lisę?', kategorycznie zabronione jest pytanie w stylu 'Jaki znany obraz namalował Leonardo da Vinci?'). Pytanie musi wprowadzać nową, unikalną informację.",
-        "**ZAKAZ POWTÓRZEŃ (SUBKATEGORIE):** Pytanie nie może dotyczyć następujących, ostatnio użytych subkategorii: {subcategory_history_prompt}.",
-        "**ZAKAZ POWTÓRZEŃ (NAZWY WŁASNE):** Aby wesprzeć ZASADĘ UNIKALNEGO FAKTU, pytanie, odpowiedź ani opcje nie mogą dotyczyć następujących ostatnio użytych nazw własnych: {entity_history_prompt}.",
-        "**ZASADA KRYTYCZNA:** Tekst pytania NIE MOŻE zawierać słów tworzących poprawną odpowiedź.",
-        "**WYODRĘBNIJ NAZWY WŁASNE:** Zidentyfikuj kluczowe nazwy własne w treści pytania, odpowiedzi i wyjaśnienia, a następnie umieść je w tablicy 'key_entities'.",
-        "**JAKOŚĆ OPCJI:** Błędne opcje (dystraktory) muszą być wiarygodne, tematycznie powiązane z pytaniem i bazować na częstych pomyłkach lub logicznych alternatywach. Nie mogą być absurdalne lub pochodzić z zupełnie innej dziedziny. Jedna opcja MUSI być poprawna.",
-        "**OBSŁUGA SUBIEKTYWNOŚCI**: Jeśli kategoria jest z natury subiektywna (np. sztuka, filozofia), sformułuj pytanie w oparciu o udokumentowane poglądy konkretnego nurtu, szkoły myślenia, krytyka lub w kontekście historycznym, aby zachować jego weryfikowalność (np. 'Według surrealistów, co było głównym źródłem twórczości?' zamiast 'Jaki jest najlepszy obraz surrealistyczny?').",
-        "**JAKOŚĆ PYTANIA**: Pytanie musi wymagać czegoś więcej niż prostej definicji lub znajomości jednej daty. Powinno sprawdzać zrozumienie kontekstu, przyczyny, skutku lub powiązań między faktami.",
-        "**OBIEKTYWIZM:** Pytanie musi być oparte na weryfikowalnych faktach i mieć jedną, bezspornie poprawną odpowiedź.",
-        "**ZASADA JEDNOZNACZNOŚCI**: Poprawna odpowiedź musi być najbardziej precyzyjnym i kompletnym sformułowaniem. Błędne opcje (dystraktory) muszą być jednoznacznie nieprawdziwe w kontekście pytania, a nie tylko 'mniej poprawne' lub bardziej ogólne.",
-        "**ZASADA PRZEJRZYSTOŚCI**: Pytanie musi być sformułowane jasno, zwięźle i bezpośrednio. Unikaj złożonych zdań oraz języka, którego celem jest zmylenie gracza. Celem jest testowanie wiedzy, a nie umiejętności czytania ze zrozumieniem.",
-        "**ZASADA GLOBALNEJ PERSPEKTYWY**: Dąż do perspektywy globalnej. O ile kategoria nie jest jawnie regionalna (np. 'Historia Polski'), pytanie i odpowiedzi powinny być zrozumiałe dla międzynarodowego odbiorcy. Unikaj ciekawostek znanych tylko w jednym kraju."
-      ],
-      "output_format": "\n# OSTATECZNY WYNIK:\nZwróć czysty obiekt JSON o strukturze:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa Własna 1\", \"Nazwa Własna 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation_correct\": \"Szczegółowe wyjaśnienie poprawnej odpowiedzi.\",\n  \"explanation_distractors\": \"Krótkie opisy pozostałych, błędnych opcji.\",\n  \"explanation_summary\": \"Jednozdaniowe podsumowanie.\"\n}}"
+      "task_template": "\n# AKTUALNE ZADANIE (DANE WEJŚCIOWE):\nWygeneruj pytanie w oparciu o poniższe parametry. Pamiętaj o omijaniu tematów z sekcji HISTORIA.\n\n- **Kategoria główna:** \"{category}\"\n- **Poziom trudności:** {knowledge_prompt}\n- **Tryb gry:** {game_mode_prompt}\n- **Motyw przewodni:** {theme_context}\n\n## HISTORIA / ZAKAZANE (TEGO NIE GENERUJ):\nTworząc pytanie, musisz unikać powtórzeń z poniższymi danymi (Zasada Unikalnego Faktu):\n- **Ostatnie subkategorie:** {subcategory_history_prompt}\n- **Ostatnie nazwy własne (Entities):** {entity_history_prompt}"
     },
     "en": {
       "persona": "Embody the role of an experienced quiz show master and encyclopedist. Your task is to create ONE high-quality, objective quiz question with a comprehensive explanation.",
-      "chain_of_thought": "# CHAIN OF THOUGHT PROCESS:\n1.  **Analyze Context:** Consider the given category, theme, and difficulty level.\n2.  **Generate Question:** Create a question, a correct answer, and plausible incorrect options, keeping the absolute priority of fact uniqueness in mind.\n3.  **Create Explanation:**\n    a.  In the `explanation_correct` field, describe the correct answer in detail within the context of the question.\n    b.  In the `explanation_distractors` field, briefly explain each of the incorrect options.\n    c.  In the `explanation_summary` field, in one sentence, summarize why the correct answer is the right one.\n4.  **Verify and Format:**\n    a.  Check all fields for completeness and correctness.\n    b.  Confirm that the question does not violate the RULE OF UNIQUE FACT in relation to the recently used proper nouns from `entity_history_prompt`.\n    c.  Format as a single JSON object.",
-      "context_header": "\n# CONTEXT AND RULES TO APPLY:",
-      "context_lines": [
-        "- Category: \"{category}\"",
-        "- Difficulty Level: {knowledge_prompt}",
-        "- Game Mode: {game_mode_prompt}",
-        "- Main Theme: {theme_context}"
+      "static_instructions": [
+        "# CHAIN OF THOUGHT:",
+        "1. **Analyze:** Review the category and the 'FORBIDDEN' section in the input.",
+        "2. **Generate:** Create a unique question that does NOT violate the forbidden topics.",
+        "3. **Verify:** Ensure the answer is not contained within the question text.",
+        "4. **Format:** Return the result strictly as JSON.",
+        "",
+        "# KEY RULES:",
+        "- **LANGUAGE:** The entire JSON content must be in English.",
+        "- **RULE OF UNIQUE FACT:** Absolute priority. The question must concern a fact NOT listed in the 'FORBIDDEN' section.",
+        "- **SUBCATEGORY:** Define a precise subcategory (e.g., 'Ancient Rome').",
+        "- **NO SPOILERS:** The question text MUST NOT contain words that make up the answer.",
+        "- **QUALITY:** Test understanding of context/cause/effect, not just dry definitions.",
+        "- **OBJECTIVITY:** There must be one indisputably correct answer.",
+        "- **DISTRACTORS (MCQ):** Incorrect options must be plausible and thematic.",
+        "- **SUBJECTIVITY:** In art/philosophy, ask about facts (authors, tenets), not opinions.",
+        "- **CONCISENESS:** The question must be MAXIMUM 20 words long. Answer options (MCQ) must be MAXIMUM 5 words long. Avoid unnecessary filler.",
+        "- **ENTITIES:** Extract key proper nouns into the 'key_entities' array.",
+        "",
+        "# OUTPUT FORMAT (JSON):",
+        "Return a clean JSON object without markdown tags:",
+        "{{\n  \"question\": \"Question text...\",\n  \"answer\": \"Correct answer...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Entity1\", \"Entity2\"],\n  \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n  \"explanation_correct\": \"Detailed explanation of the correct answer.\",\n  \"explanation_distractors\": \"Brief explanation of incorrect options.\",\n  \"explanation_summary\": \"One-sentence summary.\"\n}}"
       ],
-      "rules": [
-        "**OUTPUT LANGUAGE:** The entire content of the final JSON object (question, answer, options, explanation) MUST be in English.",
-        "**DEFINE SUBCATEGORY:** For each question, define a precise, one or two-word subcategory (e.g., for 'History' -> 'Ancient Rome').",
-        "**RULE OF UNIQUE FACT:** Each question MUST concern a completely different fact than those that could be formulated based on recently used proper nouns. Your absolute priority is uniqueness. Avoid simply inverting relationships (e.g., if a recent question was 'Who painted the Mona Lisa?', a question like 'What famous painting did Leonardo da Vinci create?' is strictly forbidden). The question must introduce new, unique information.",
-        "**NO REPETITION (SUBCATEGORIES):** The question must not be about the following, recently used subcategories: {subcategory_history_prompt}.",
-        "**NO REPETITION (PROPER NOUNS):** To support the RULE OF UNIQUE FACT, the question, answer, and options must not contain or be about the following, recently used proper nouns: {entity_history_prompt}.",
-        "**CRITICAL RULE:** The question text MUST NOT contain the words that make up the correct answer.",
-        "**EXTRACT PROPER NOUNS:** Identify key proper nouns in the question, answer, and explanation, then place them in the 'key_entities' array.",
-        "**OPTION QUALITY:** Incorrect options must be plausible, thematically related to the question, and based on common misconceptions or logical alternatives. They must not be absurd or from a completely different domain. One option MUST be correct.",
-        "**QUESTION QUALITY**: The question must require more than a simple definition or knowledge of a single date. It should test understanding of context, cause, effect, or the relationships between facts.",
-        "**HANDLING SUBJECTIVITY**: If the category is inherently subjective (e.g., art, philosophy), formulate the question around the documented views of a specific movement, school of thought, or critic, or within a historical context, to maintain its verifiability (e.g., 'According to the Surrealists, what was the primary source of creativity?' instead of 'What is the best Surrealist painting?').",
-        "**OBJECTIVITY:** The question must be based on verifiable facts and have a single, indisputably correct answer.",
-        "**RULE OF UNAMBIGUITY**: The correct answer must be the most precise and complete statement available. Incorrect options (distractors) must be factually incorrect in the context of the question, not merely less precise or more general than the correct answer.",
-        "**RULE OF CLARITY**: The question must be phrased clearly, concisely, and directly. Avoid complex sentence structures or language designed to trick the player. The goal is to test knowledge, not reading comprehension skills.",
-        "**RULE OF GLOBAL PERSPECTIVE**: Strive for a global perspective. Unless the category is explicitly regional (e.g., 'History of Poland'), the question and its potential answers should be relevant to an international audience. Avoid culturally specific trivia that would be unknown outside a particular country or region."
-      ],
-      "output_format": "\n# FINAL OUTPUT:\nReturn clean JSON object with the structure:\n{{\n  \"question\": \"...\",\n  \"answer\": \"...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Proper Noun 1\", \"Proper Noun 2\"],\n  \"options\": [\"...\", \"...\", \"...\", \"...\"],\n  \"explanation_correct\": \"Detailed explanation of the correct answer.\",\n  \"explanation_distractors\": \"Brief descriptions of the other, incorrect options.\",\n  \"explanation_summary\": \"A one-sentence summary.\"\n}}"
+      "task_template": "\n# CURRENT TASK (INPUT DATA):\nGenerate a question based on the parameters below. Strictly avoid topics in the HISTORY section.\n\n- **Main Category:** \"{category}\"\n- **Difficulty:** {knowledge_prompt}\n- **Game Mode:** {game_mode_prompt}\n- **Theme:** {theme_context}\n\n## HISTORY / FORBIDDEN (DO NOT GENERATE THESE):\nTo maintain the Unique Fact Rule, avoid overlaps with:\n- **Recent Subcategories:** {subcategory_history_prompt}\n- **Recent Entities:** {entity_history_prompt}"
     }
   },
   "generate_categories": {
-    "pl": "Jesteś kreatywnym mistrzem teleturnieju. Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich i intuicyjnych kategorii do quizu na podstawie podanego motywu: \"{theme}\". Upewnij się, że kategorie są od siebie różnorodne i pokrywają różne aspekty świata przedstawionego, takie jak: postacie, miejsca, wydarzenia, przedmioty/technologie, koncepcje/wiedza, kultura/wpływ. Zwróć odpowiedź WYŁĄCZNIE jako obiekt JSON: {{\"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]}}",
-    "en": "You are a creative quiz show master. Your task is to create ONE set of 6 broad and intuitive quiz categories based on the provided theme: \"{theme}\". Ensure the categories are diverse and cover different facets of the subject, such as: key figures/characters, places/locations, events/timeline, items/technologies, concepts/lore, and culture/impact. Return the response ONLY as a JSON object: {{\"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]}}"
+    "pl": {
+        "static_instructions": [
+            "Jesteś kreatywnym mistrzem teleturnieju.",
+            "Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich i intuicyjnych kategorii do quizu.",
+            "Kategorie muszą być różnorodne (postacie, miejsca, wydarzenia, technologie, kultura).",
+            "Zwróć odpowiedź WYŁĄCZNIE jako obiekt JSON: {{\n  \"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]\n}}"
+        ],
+        "task_template": "\n# DANE WEJŚCIOWE:\n- Motyw przewodni quizu: \"{theme}\""
+    },
+    "en": {
+        "static_instructions": [
+            "You are a creative quiz show master.",
+            "Your task is to create ONE set of 6 broad and intuitive quiz categories.",
+            "Ensure diversity (figures, places, events, technologies, culture).",
+            "Return the response ONLY as a JSON object: {{\n  \"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]\n}}"
+        ],
+        "task_template": "\n# INPUT DATA:\n- Quiz Theme: \"{theme}\""
+    }
   },
   "mutate_category": {
-      "pl": "Jesteś doświadczonym redaktorem i kuratorem treści quizowych. Twoim zadaniem jest zaproponowanie PIĘCIU logicznych i merytorycznych alternatyw dla kategorii: \"{old_category}\".\n\n# ZASADY I KONTEKST:\n1.  **ZASADA RÓWNOWAŻNOŚCI TEMATYCZNEJ**: To najważniejsza zasada. Propozycje MUSZĄ być na podobnym poziomie ogólności co kategoria oryginalna. Traktuj je jak kategorie, które mogłyby istnieć obok siebie w tym samym quizie. Unikaj tworzenia zbyt wąskich podkategorii lub zbyt abstrakcyjnych, poetyckich dygresji.\n    -   **DOBRY przykład**: Dla 'Sprzęt PC', dobre alternatywy to 'Systemy Operacyjne', 'Sieci Komputerowe', 'Konsole do gier', 'Smartfony'.\n    -   **ZŁY przykład**: Dla 'PC Hardware', złą alternatywą jest 'Alchemia Algorytmów' lub 'Krzemowe Sny'.\n2.  **RÓŻNORODNOŚĆ PERSPEKTYW**: Unikaj generowania synonimów. Każda propozycja powinna oferować unikalne, ale merytorycznie powiązane spojrzenie. Propozycje mogą być dziedzinami pokrewnymi, komplementarnymi lub historycznym kontekstem dla oryginalnej kategorii.\n3.  **DOPASOWANIE DO GRY**: Propozycje muszą być na tyle szerokie, by mogły funkcjonować jako pełnoprawne kategorie w quizie.\n4.  **KONTEKST GRY**: Ogólny motyw gry to: \"{theme}\". Unikaj generowania kategorii, które już istnieją: {existing_categories}.\n\n# FORMAT WYJŚCIOWY:\nOpis ('description') powinien krótko i rzeczowo wyjaśniać, dlaczego nowa kategoria jest dobrą alternatywą. Zwróć WYŁĄCZNIE obiekt JSON w formacie: {{\"choices\": [{{\"name\": \"Nazwa 1\", \"description\": \"Wyjaśnienie powiązania...\"}}, ...]}}",
-      "en": "You are an experienced editor and curator of quiz content. Your task is to propose FIVE logical and substantive alternatives for the category: \"{old_category}\".\n\n# RULES & CONTEXT:\n1.  **RULE OF THEMATIC EQUIVALENCE**: This is the most important rule. Suggestions MUST be at a similar level of abstraction as the original category. Treat them as categories that could exist alongside each other in the same quiz. Avoid creating overly narrow subcategories or overly abstract, poetic digressions.\n    -   **GOOD example**: For 'PC Hardware', good alternatives are 'Operating Systems', 'Computer Networks', 'Video game consoles', 'Smartphones'.\n    -   **BAD example**: For 'PC Hardware', a bad alternative is 'The Algorithmic Alchemy' or 'Silicon Dreams'.\n2.  **DIVERSITY OF PERSPECTIVES**: Avoid generating synonyms. Each suggestion should offer a unique but substantively related perspective. Suggestions can be related fields, complementary topics, or the historical context of the original category.\n3.  **GAME-FRIENDLY**: The suggestions must be broad enough to function as fully-fledged quiz categories.\n4.  **GAME CONTEXT**: The overall game theme is: \"{theme}\". Avoid generating categories that already exist: {existing_categories}.\n\n# OUTPUT FORMAT:\nThe 'description' should briefly and factually explain why the new category is a good alternative. Return ONLY a JSON object in the format: {{\"choices\": [{{\"name\": \"Name 1\", \"description\": \"Explanation of the connection...\"}}, ...]}}"
+    "pl": {
+        "static_instructions": [
+            "Jesteś doświadczonym redaktorem treści quizowych. Zaproponuj 5 alternatyw dla podanej kategorii.",
+            "# ZASADY:",
+            "1. **RÓWNOWAŻNOŚĆ:** Propozycje muszą mieć ten sam poziom ogólności co oryginał.",
+            "2. **RÓŻNORODNOŚĆ:** Unikaj synonimów. Szukaj powiązanych dziedzin lub kontekstów.",
+            "3. **FORMAT:** Zwróć TYLKO JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
+        ],
+        "task_template": "\n# DANE DO PRZETWORZENIA:\n- Kategoria oryginalna: \"{old_category}\"\n- Motyw gry: \"{theme}\"\n- Istniejące kategorie (unikaj ich): {existing_categories}"
+    },
+    "en": {
+        "static_instructions": [
+            "You are an experienced quiz content editor. Propose 5 alternatives for the given category.",
+            "# RULES:",
+            "1. **EQUIVALENCE:** Suggestions must be at the same level of abstraction as the original.",
+            "2. **DIVERSITY:** Avoid synonyms. Look for related fields or contexts.",
+            "3. **FORMAT:** Return ONLY JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
+        ],
+        "task_template": "\n# DATA TO PROCESS:\n- Original Category: \"{old_category}\"\n- Game Theme: \"{theme}\"\n- Existing Categories (Avoid these): {existing_categories}"
+    }
   },
   "explain_incorrect": {
-    "pl": "Jesteś bezstronnym i obiektywnym sędzią w teleturnieju. Twoim zadaniem jest przeanalizowanie odpowiedzi gracza w kontekście pytania i oficjalnej odpowiedzi, a następnie wydanie werdyktu.\n\n# KONTEKST:\n- Pytanie: \"{question}\"\n- Oficjalna, poprawna odpowiedź: \"{correct_answer}\"\n- Odpowiedź gracza do weryfikacji: \"{player_answer}\"\n\n# INSTRUKCJA KROK PO KROKU:\n1.  **Werdykt**: W polu `verdict_for` wskaż, kto ma rację: 'player' (gracz) czy 'game' (gra). Bądź obiektywny.\n2.  **Pewność werdyktu**: W polu `verdict_certainty` podaj liczbowo (0-100) swoją pewność co do werdyktu. 100 oznacza absolutną pewność.\n3.  **Analiza i Porównanie**: W polu `explanation` neutralnie i zwięźle porównaj odpowiedź gracza z oficjalną odpowiedzią. Wyjaśnij, czym jest każda z nich i jaki jest między nimi związek w kontekście zadanego pytania.\n\n# KRYTYCZNE ZASADY FORMATOWANIA:\n- **TYLKO JSON**: Twoja odpowiedź MUSI być wyłącznie obiektem JSON.\n- **STRUKTURA**: Obiekt JSON musi zawierać DOKŁADNIE trzy klucze: `verdict_for` (string: 'player' lub 'game'), `verdict_certainty` (integer), `explanation` (string).\n\n# PRZYKŁAD OCZEKIWANEGO FORMATU WYJŚCIOWEGO:\n```json\n{{\n  \"verdict_for\": \"game\",\n  \"verdict_certainty\": 100,\n  \"explanation\": \"Zatopienie Titanica to katastrofa morska z 1912 roku. Szturm na Bastylię to wydarzenie z 1789 roku, które rozpoczęło rewolucję francuską. Są to dwa zupełnie niezwiązane ze sobą wydarzenia historyczne.\"\n}}\n```",
-    "en": "You are an impartial and objective judge in a quiz show. Your task is to analyze the player's answer in the context of the question and the official answer, and then issue a verdict.\n\n# CONTEXT:\n- Question: \"{question}\"\n- Official correct answer: \"{correct_answer}\"\n- Player's answer for verification: \"{player_answer}\"\n\n# STEP-BY-STEP INSTRUCTIONS:\n1.  **Verdict**: In the `verdict_for` field, indicate who is correct: 'player' or 'game'. Be objective.\n2.  **Verdict Certainty**: In the `verdict_certainty` field, provide a numerical value (0-100) for your confidence in the verdict. 100 means absolute certainty.\n3.  **Analysis and Comparison**: In the `explanation` field, neutrally and concisely compare the player's answer with the official answer. Explain what each one is and their relationship within the context of the question.\n\n# CRITICAL FORMATTING RULES:\n- **JSON ONLY**: Your response MUST be only a JSON object.\n- **STRUCTURE**: The JSON object must contain EXACTLY three keys: `verdict_for` (string: 'player' or 'game'), `verdict_certainty` (integer), and `explanation` (string).\n\n# EXAMPLE OF EXPECTED OUTPUT FORMAT:\n```json\n{{\n  \"verdict_for\": \"game\",\n  \"verdict_certainty\": 100,\n  \"explanation\": \"The sinking of the Titanic was a maritime disaster in 1912. The storming of the Bastille was an event in 1789 that started the French Revolution. These are two completely unrelated historical events.\"\n}}\n```"
+    "pl": {
+        "static_instructions": [
+            "Jesteś bezstronnym sędzią w teleturnieju.",
+            "Twoim zadaniem jest ocena odpowiedzi gracza względem odpowiedzi oficjalnej.",
+            "# INSTRUKCJA:",
+            "1. Określ werdykt ('player' lub 'game').",
+            "2. Określ pewność (0-100).",
+            "3. Wyjaśnij różnicę neutralnie.",
+            "Zwróć TYLKO JSON: {{\n  \"verdict_for\": \"...\",\n  \"verdict_certainty\": 100,\n  \"explanation\": \"...\"\n}}"
+        ],
+        "task_template": "\n# SYTUACJA DO OCENY:\n- Pytanie: \"{question}\"\n- Poprawna odpowiedź: \"{correct_answer}\"\n- Odpowiedź gracza: \"{player_answer}\""
+    },
+    "en": {
+        "static_instructions": [
+            "You are an impartial quiz show judge.",
+            "Your task is to evaluate the player's answer against the official answer.",
+            "# INSTRUCTIONS:",
+            "1. Determine verdict ('player' or 'game').",
+            "2. Determine certainty (0-100).",
+            "3. Explain the difference neutrally.",
+            "Return ONLY JSON: {{\n  \"verdict_for\": \"...\",\n  \"verdict_certainty\": 100,\n  \"explanation\": \"...\"\n}}"
+        ],
+        "task_template": "\n# SITUATION TO JUDGE:\n- Question: \"{question}\"\n- Official Answer: \"{correct_answer}\"\n- Player's Answer: \"{player_answer}\""
+    }
   }
 }

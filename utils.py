@@ -72,42 +72,53 @@ def validate_model(model: str):
         raise HTTPException(status_code=400, detail=f"Model '{model}' is not supported.")
 
 def build_question_prompt(params: Dict[str, Any], category: str) -> str:
-    lang = params.get("language")
+    lang = params.get("language", "pl") # Default to PL if missing
+    
     prompt_struct = PROMPTS["generate_question"][lang]
 
     history = CATEGORY_GENERATION_HISTORY.get(category, {})
+    
     subcategory_history = list(history.get("subcategories", []))
     entity_history = list(history.get("entities", []))
-
-    random.shuffle(subcategory_history)
-    random.shuffle(entity_history)
-
-    # Log what's being sent to the AI for debugging
-    subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "No history."
-    entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "No history."
     
+    subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "Brak historii / No history."
+    entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "Brak historii / No history."
+
+    knowledge_key = params.get("knowledgeLevel", "basic")
+    game_mode_key = params.get("gameMode", "mcq")
+    
+    knowledge_prompt = PROMPTS["knowledge_prompts"][knowledge_key][lang]
+    game_mode_prompt = PROMPTS["game_mode_prompts"][game_mode_key][lang]
+    
+    theme_context = params.get("theme", "General knowledge")
+    if params.get("includeCategoryTheme") and theme_context:
+         theme_text = f"Temat: {theme_context}" if lang == 'pl' else f"Theme: {theme_context}"
+    else:
+         theme_text = "Brak dodatkowego motywu" if lang == 'pl' else "No additional theme"
+
     print(f"🔍 LIVE-QUIZ DEBUG: Generating question for category '{category}'")
-    print(f"   📋 Previous subcategories: {subcategory_history_prompt}")
-    print(f"   🔑 Previous key entities: {entity_history_prompt}")
-    print(f"   🎯 Knowledge level: {params.get('knowledgeLevel')}")
-    print(f"   🌐 Language: {lang}")
-    print(f"   🎲 Game mode: {params.get('gameMode')}")
-    if params.get("includeCategoryTheme") and params.get("theme"):
-        print(f"   🎨 Theme context: {params.get('theme')}")
     print("-" * 80)
+    
+    static_part = [
+        prompt_struct["persona"],
+        "\n".join(prompt_struct["static_instructions"]),
+        prompt_struct["output_format"]
+    ]
+    static_content = "\n\n".join(static_part)
 
-    knowledge_prompt = PROMPTS["knowledge_prompts"][params.get("knowledgeLevel")][lang]
-    game_mode_prompt = PROMPTS["game_mode_prompts"][params.get("gameMode")][lang]
-    theme_context = f"The question must relate to the theme: {params.get('theme')}." if params.get("includeCategoryTheme") and params.get("theme") else "No additional theme."
+    dynamic_content = prompt_struct["task_template"].format(
+        category=category,
+        subcategory_suggestion="", 
+        knowledge_prompt=knowledge_prompt,
+        game_mode_prompt=game_mode_prompt,
+        theme_context=theme_text,
+        subcategory_history_prompt=subcategory_history_prompt,
+        entity_history_prompt=entity_history_prompt
+    )
 
-    context_lines = [line.format(category=category, knowledge_prompt=knowledge_prompt, game_mode_prompt=game_mode_prompt, theme_context=theme_context) for line in prompt_struct["context_lines"]]
-    rules = [rule.format(subcategory_history_prompt=subcategory_history_prompt, entity_history_prompt=entity_history_prompt) for rule in prompt_struct["rules"]]
+    full_prompt = f"{static_content}\n\n{dynamic_content}"
 
-    combined_rules = context_lines + rules
-    random.shuffle(combined_rules)
-    prompt = "\n".join([prompt_struct["persona"], prompt_struct["chain_of_thought"], prompt_struct["context_header"], "\n".join(combined_rules), prompt_struct["output_format"]])
-
-    return prompt
+    return full_prompt
 
 def extract_json_from_response(text: str) -> Any:
     if not text or not isinstance(text, str):
