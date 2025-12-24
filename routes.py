@@ -81,6 +81,45 @@ async def generate_question(req: QuestionRequest):
     cached_question = database.get_and_remove_cached_question(req.category)
     if cached_question:
         if DEBUG_MODE: print(f"Serving question for '{req.category}' from DB cache.")
+        
+        # Format explanations for cached questions too, in case they were stored with old format
+        if "explanation" in cached_question and isinstance(cached_question["explanation"], str):
+            # Check if the explanation already has labels (to avoid double-formatting)
+            has_labels = any(label in cached_question["explanation"] for label in ["Wyjaśnienie poprawnej odpowiedzi:", "Explanation of correct answer:"])
+            
+            if not has_labels and all(key in cached_question for key in ["explanation_correct", "explanation_distractors", "explanation_summary"]):
+                # Get language from request to provide proper labels
+                language = req.language if hasattr(req, 'language') else 'pl'
+                
+                # Format explanation parts with clear labels
+                explanation_parts = []
+                
+                # Explanation of correct answer
+                correct_explanation = format_explanation_part(cached_question.get("explanation_correct"))
+                if correct_explanation:
+                    if language == 'pl':
+                        explanation_parts.append(f"Wyjaśnienie poprawnej odpowiedzi:\n{correct_explanation}")
+                    else:  # English
+                        explanation_parts.append(f"Explanation of correct answer:\n{correct_explanation}")
+                
+                # Explanation of distractors
+                distractors_explanation = format_explanation_part(cached_question.get("explanation_distractors"))
+                if distractors_explanation:
+                    if language == 'pl':
+                        explanation_parts.append(f"Wyjaśnienie odpowiedzi niepoprawnych:\n{distractors_explanation}")
+                    else:  # English
+                        explanation_parts.append(f"Explanation of incorrect answers:\n{distractors_explanation}")
+                
+                # Summary explanation
+                summary_explanation = format_explanation_part(cached_question.get("explanation_summary"))
+                if summary_explanation:
+                    if language == 'pl':
+                        explanation_parts.append(f"Podsumowanie:\n{summary_explanation}")
+                    else:  # English
+                        explanation_parts.append(f"Summary:\n{summary_explanation}")
+                
+                cached_question["explanation"] = "\n\n".join(explanation_parts)
+        
         return JSONResponse(content=cached_question)
 
     # If a preload is scheduled/running for this gameId, wait a short time for it to finish
