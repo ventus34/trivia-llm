@@ -676,7 +676,6 @@ function addModelSelectionToGameMenu() {
     explanationSection.innerHTML = `
         <label for="game-menu-explanation-model-select" class="block text-sm font-medium text-gray-700 mb-1">Model wyjaśnień:</label>
         <select id="game-menu-explanation-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-            <option value="auto">Automatyczny</option>
         </select>
     `;
     menuPanel.insertBefore(explanationSection, menuPanel.querySelector('.mt-auto'));
@@ -687,7 +686,6 @@ function addModelSelectionToGameMenu() {
     categorySection.innerHTML = `
         <label for="game-menu-category-model-select" class="block text-sm font-medium text-gray-700 mb-1">Model kategorii:</label>
         <select id="game-menu-category-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-            <option value="auto">Automatyczny</option>
         </select>
     `;
     menuPanel.insertBefore(categorySection, menuPanel.querySelector('.mt-auto'));
@@ -713,21 +711,6 @@ export async function populateModelSelectors() {
         selects.forEach(select => {
             if (select) {
                 select.innerHTML = '';
-
-                const randomPlOption = document.createElement('option');
-                randomPlOption.value = 'random-pl';
-                randomPlOption.textContent = 'Losowy model (PL)';
-                select.appendChild(randomPlOption);
-
-                const randomEnOption = document.createElement('option');
-                randomEnOption.value = 'random-en';
-                randomEnOption.textContent = 'Random model (ENG)';
-                select.appendChild(randomEnOption);
-
-                const separator = document.createElement('option');
-                separator.disabled = true;
-                separator.textContent = '──────────';
-                select.appendChild(separator);
 
                 models.forEach(model => {
                     const option = document.createElement('option');
