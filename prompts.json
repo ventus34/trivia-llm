@@ -23,150 +23,106 @@
   },
   "knowledge_prompts": {
     "basic": {
-      "pl": "Podstawowy (Powszechnie znane fakty).",
-      "en": "Basic (Commonly known facts)."
+      "pl": "Podstawowy (fakty powszechne)",
+      "en": "Basic (common facts)"
     },
     "intermediate": {
-      "pl": "Średni (Dla osób zainteresowanych tematem, ale nie ekspertów).",
-      "en": "Intermediate (For interested individuals, not necessarily experts)."
+      "pl": "Średni (dla zainteresowanych)",
+      "en": "Intermediate (for interested)"
     },
     "expert": {
-      "pl": "Ekspercki (Mało znane fakty, detale dla znawców).",
-      "en": "Expert (Obscure facts, details for connoisseurs)."
+      "pl": "Ekspercki (detale dla znawców)",
+      "en": "Expert (obscure details)"
     }
   },
   "game_mode_prompts": {
     "mcq": {
-      "pl": "Pytanie jednokrotnego wyboru (MCQ) - 4 opcje.",
-      "en": "Single Choice Question (MCQ) - 4 options."
+      "pl": "Wybór (4 opcje)",
+      "en": "Multiple Choice (4 options)"
     },
     "short_answer": {
-      "pl": "Pytanie otwarte (krótka odpowiedź 1-3 słowa).",
-      "en": "Open-ended question (short answer 1-3 words)."
+      "pl": "Krótka (1-3 słowa)",
+      "en": "Short answer (1-3 words)"
     }
   },
   "generate_question": {
     "pl": {
-      "persona": "Wciel się w rolę doświadczonego mistrza teleturnieju i encyklopedysty. Twoim zadaniem jest stworzenie JEDNEGO, wysokiej jakości, obiektywnego pytania quizowego wraz z kompleksowym wyjaśnieniem.",
+      "persona": "Ekspert quizowy. Generuj tylko JSON.",
       "static_instructions": [
-        "# PROCES MYŚLOWY (Chain of Thought):",
-        "1. **Analiza Danych:** Przeanalizuj kategorię i sekcję 'ZAKAZANE' w danych wejściowych.",
-        "2. **Generowanie:** Stwórz unikalne pytanie, które NIE narusza zakazanych tematów.",
-        "3. **Weryfikacja:** Sprawdź czy odpowiedź nie znajduje się w treści pytania.",
-        "4. **Formatowanie:** Zwróć wynik wyłącznie jako JSON.",
-        "",
-        "# ZASADY KLUCZOWE:",
-        "- **JĘZYK:** Cały JSON (klucze i wartości) musi być w języku polskim.",
-        "- **ZASADA UNIKALNEGO FAKTU:** Absolutny priorytet. Pytanie musi dotyczyć faktu, którego nie ma na liście 'ZAKAZANE'.",
-        "- **SUBKATEGORIA:** Zdefiniuj precyzyjną subkategorię (np. 'Starożytny Rzym').",
-        "- **BRAK SPOILERA:** Treść pytania nie może zawierać słów stanowiących odpowiedź.",
-        "- **JAKOŚĆ:** Pytanie wymaga zrozumienia kontekstu, przyczyny/skutku, a nie tylko suchej definicji.",
-        "- **OBIEKTYWIZM:** Musi istnieć jedna, bezspornie poprawna odpowiedź.",
-        "- **DYSTRAKTORY (MCQ):** Błędne opcje muszą być wiarygodne i tematyczne, nie absurdalne.",
-        "- **SUBIEKTYWNOŚĆ:** W sztuce/filozofii pytaj o fakty (np. 'kto jest autorem', 'co głosił nurt'), a nie opinie.",
-        "- **ZWIĘZŁOŚĆ:** Pytanie MAKSYMALNIE do 20 słów. Opcje odpowiedzi (MCQ) MAKSYMALNIE do 5 słów. Unikaj zbędnych ozdobników.",
-        "- **ENTITIES:** Wyciągnij kluczowe nazwy własne do pola 'key_entities'.",
-        "",
-        "# FORMAT WYJŚCIOWY (JSON):",
-        "Zwróć czysty obiekt JSON bez znaczników markdown:",
-        "{{\n  \"question\": \"Treść pytania...\",\n  \"answer\": \"Poprawna odpowiedź...\",\n  \"subcategory\": \"Precyzyjna subkategoria...\",\n  \"key_entities\": [\"Nazwa1\", \"Nazwa2\"],\n  \"options\": [\"Opcja A\", \"Opcja B\", \"Opcja C\", \"Opcja D\"],\n  \"explanation_correct\": \"Szczegółowe wyjaśnienie poprawnej odpowiedzi.\",\n  \"explanation_distractors\": \"Wyjaśnienie dlaczego inne opcje są błędne.\",\n  \"explanation_summary\": \"Jednozdaniowe podsumowanie.\"\n}}"
+        "WYMAGANIA:",
+        "1. UNIKALNOŚĆ: Sprawdź ZAKAZANE. Nie duplikuj pojęć.",
+        "2. OBIEKTYWIZM: 1 poprawna odpowiedź. Żadnych opinii.",
+        "3. ZWIĘZŁOŚĆ: Pytanie <20 słów. Opcje <5 słów. Wyjaśnienia max 1 zdanie.",
+        "4. BRAK SPOILERA: Odpowiedź nie może paść w pytaniu.",
+        "5. DYSTRAKTORY: Błędne opcje muszą być wiarygodne.",
+        "6. FORMAT JSON (bez markdown):",
+        "{{\n  \"question\": \"Treść...\",\n  \"answer\": \"Poprawna...\",\n  \"subcategory\": \"Precyzyjna podkategoria\",\n  \"key_entities\": [\"KluczoweNazwy\"],\n  \"options\": [\"A\", \"B\", \"C\", \"D\"],\n  \"explanation_correct\": \"Fakt weryfikujący.\",\n  \"explanation_distractors\": \"Dlaczego błędne.\",\n  \"explanation_summary\": \"Podsumowanie (1 zdanie).\"\n}}"
       ],
-      "task_template": "\n# AKTUALNE ZADANIE (DANE WEJŚCIOWE):\nWygeneruj pytanie w oparciu o poniższe parametry. Pamiętaj o omijaniu tematów z sekcji HISTORIA.\n\n- **Kategoria główna:** \"{category}\"\n- **Poziom trudności:** {knowledge_prompt}\n- **Tryb gry:** {game_mode_prompt}\n- **Motyw przewodni:** {theme_context}\n\n## HISTORIA / ZAKAZANE (TEGO NIE GENERUJ):\nTworząc pytanie, musisz unikać powtórzeń z poniższymi danymi (Zasada Unikalnego Faktu):\n- **Ostatnie subkategorie:** {subcategory_history_prompt}\n- **Ostatnie nazwy własne (Entities):** {entity_history_prompt}"
+      "task_template": "ZADANIE:\nKat: \"{category}\"\nTrudność: {knowledge_prompt}\nTryb: {game_mode_prompt}\nMotyw: {theme_context}\n\nZAKAZANE (Unikaj tych haseł):\n- Podkategorie: {subcategory_history_prompt}\n- Nazwy: {entity_history_prompt}"
     },
     "en": {
-      "persona": "Embody the role of an experienced quiz show master and encyclopedist. Your task is to create ONE high-quality, objective quiz question with a comprehensive explanation.",
+      "persona": "Quiz expert. Generate JSON only.",
       "static_instructions": [
-        "# CHAIN OF THOUGHT:",
-        "1. **Analyze:** Review the category and the 'FORBIDDEN' section in the input.",
-        "2. **Generate:** Create a unique question that does NOT violate the forbidden topics.",
-        "3. **Verify:** Ensure the answer is not contained within the question text.",
-        "4. **Format:** Return the result strictly as JSON.",
-        "",
-        "# KEY RULES:",
-        "- **LANGUAGE:** The entire JSON content must be in English.",
-        "- **RULE OF UNIQUE FACT:** Absolute priority. The question must concern a fact NOT listed in the 'FORBIDDEN' section.",
-        "- **SUBCATEGORY:** Define a precise subcategory (e.g., 'Ancient Rome').",
-        "- **NO SPOILERS:** The question text MUST NOT contain words that make up the answer.",
-        "- **QUALITY:** Test understanding of context/cause/effect, not just dry definitions.",
-        "- **OBJECTIVITY:** There must be one indisputably correct answer.",
-        "- **DISTRACTORS (MCQ):** Incorrect options must be plausible and thematic.",
-        "- **SUBJECTIVITY:** In art/philosophy, ask about facts (authors, tenets), not opinions.",
-        "- **CONCISENESS:** The question must be MAXIMUM 20 words long. Answer options (MCQ) must be MAXIMUM 5 words long. Avoid unnecessary filler.",
-        "- **ENTITIES:** Extract key proper nouns into the 'key_entities' array.",
-        "",
-        "# OUTPUT FORMAT (JSON):",
-        "Return a clean JSON object without markdown tags:",
-        "{{\n  \"question\": \"Question text...\",\n  \"answer\": \"Correct answer...\",\n  \"subcategory\": \"Precise subcategory...\",\n  \"key_entities\": [\"Entity1\", \"Entity2\"],\n  \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n  \"explanation_correct\": \"Detailed explanation of the correct answer.\",\n  \"explanation_distractors\": \"Brief explanation of incorrect options.\",\n  \"explanation_summary\": \"One-sentence summary.\"\n}}"
+        "REQUIREMENTS:",
+        "1. UNIQUE FACT: Check FORBIDDEN. Do not duplicate.",
+        "2. OBJECTIVITY: 1 correct answer. No opinions.",
+        "3. CONCISE: Question <20 words. Options <5 words. Explanations max 1 sentence.",
+        "4. NO SPOILERS: Answer not in question text.",
+        "5. DISTRACTORS: Plausible incorrect options.",
+        "6. JSON FORMAT (no markdown):",
+        "{{\n  \"question\": \"Text...\",\n  \"answer\": \"Correct...\",\n  \"subcategory\": \"Precise subcategory\",\n  \"key_entities\": [\"KeyEntities\"],\n  \"options\": [\"A\", \"B\", \"C\", \"D\"],\n  \"explanation_correct\": \"Verification fact.\",\n  \"explanation_distractors\": \"Why incorrect.\",\n  \"explanation_summary\": \"Summary (1 sentence).\"\n}}"
       ],
-      "task_template": "\n# CURRENT TASK (INPUT DATA):\nGenerate a question based on the parameters below. Strictly avoid topics in the HISTORY section.\n\n- **Main Category:** \"{category}\"\n- **Difficulty:** {knowledge_prompt}\n- **Game Mode:** {game_mode_prompt}\n- **Theme:** {theme_context}\n\n## HISTORY / FORBIDDEN (DO NOT GENERATE THESE):\nTo maintain the Unique Fact Rule, avoid overlaps with:\n- **Recent Subcategories:** {subcategory_history_prompt}\n- **Recent Entities:** {entity_history_prompt}"
+      "task_template": "TASK:\nCat: \"{category}\"\nDiff: {knowledge_prompt}\nMode: {game_mode_prompt}\nTheme: {theme_context}\n\nFORBIDDEN (Avoid these):\n- Subcats: {subcategory_history_prompt}\n- Entities: {entity_history_prompt}"
     }
   },
   "generate_categories": {
     "pl": {
-        "static_instructions": [
-            "Jesteś kreatywnym mistrzem teleturnieju.",
-            "Twoim zadaniem jest stworzenie JEDNEGO zestawu 6 szerokich i intuicyjnych kategorii do quizu.",
-            "Kategorie muszą być różnorodne (postacie, miejsca, wydarzenia, technologie, kultura).",
-            "Zwróć odpowiedź WYŁĄCZNIE jako obiekt JSON: {{\n  \"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]\n}}"
-        ],
-        "task_template": "\n# DANE WEJŚCIOWE:\n- Motyw przewodni quizu: \"{theme}\""
+      "static_instructions": [
+        "Generuj 6 szerokich, różnorodnych (ludzie, miejsca, wydarzenia) kategorii.",
+        "Zwróć JSON: {{\n  \"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]\n}}"
+      ],
+      "task_template": "Motyw: \"{theme}\""
     },
     "en": {
-        "static_instructions": [
-            "You are a creative quiz show master.",
-            "Your task is to create ONE set of 6 broad and intuitive quiz categories.",
-            "Ensure diversity (figures, places, events, technologies, culture).",
-            "Return the response ONLY as a JSON object: {{\n  \"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]\n}}"
-        ],
-        "task_template": "\n# INPUT DATA:\n- Quiz Theme: \"{theme}\""
+      "static_instructions": [
+        "Generate 6 broad, diverse (people, places, events) categories.",
+        "Return JSON: {{\n  \"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]\n}}"
+      ],
+      "task_template": "Theme: \"{theme}\""
     }
   },
   "mutate_category": {
     "pl": {
-        "static_instructions": [
-            "Jesteś doświadczonym redaktorem treści quizowych. Zaproponuj 5 alternatyw dla podanej kategorii.",
-            "# ZASADY:",
-            "1. **RÓWNOWAŻNOŚĆ:** Propozycje muszą mieć ten sam poziom ogólności co oryginał.",
-            "2. **RÓŻNORODNOŚĆ:** Unikaj synonimów. Szukaj powiązanych dziedzin lub kontekstów.",
-            "3. **FORMAT:** Zwróć TYLKO JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
-        ],
-        "task_template": "\n# DANE DO PRZETWORZENIA:\n- Kategoria oryginalna: \"{old_category}\"\n- Motyw gry: \"{theme}\"\n- Istniejące kategorie (unikaj ich): {existing_categories}"
+      "static_instructions": [
+        "Zaproponuj 5 alternatywnych kategorii (ten sam poziom, inny kontekst, bez synonimów).",
+        "Zwróć JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
+      ],
+      "task_template": "Oryginał: \"{old_category}\"\nMotyw: \"{theme}\"\nUnikaj: {existing_categories}"
     },
     "en": {
-        "static_instructions": [
-            "You are an experienced quiz content editor. Propose 5 alternatives for the given category.",
-            "# RULES:",
-            "1. **EQUIVALENCE:** Suggestions must be at the same level of abstraction as the original.",
-            "2. **DIVERSITY:** Avoid synonyms. Look for related fields or contexts.",
-            "3. **FORMAT:** Return ONLY JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
-        ],
-        "task_template": "\n# DATA TO PROCESS:\n- Original Category: \"{old_category}\"\n- Game Theme: \"{theme}\"\n- Existing Categories (Avoid these): {existing_categories}"
+      "static_instructions": [
+        "Propose 5 alternative categories (same level, different context, no synonyms).",
+        "Return JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
+      ],
+      "task_template": "Original: \"{old_category}\"\nTheme: \"{theme}\"\nAvoid: {existing_categories}"
     }
   },
   "explain_incorrect": {
     "pl": {
-        "static_instructions": [
-            "Jesteś bezstronnym sędzią w teleturnieju.",
-            "Twoim zadaniem jest ocena odpowiedzi gracza względem odpowiedzi oficjalnej.",
-            "# INSTRUKCJA:",
-            "1. Określ werdykt ('player' lub 'game').",
-            "2. Określ pewność (0-100).",
-            "3. Wyjaśnij różnicę neutralnie.",
-            "Zwróć TYLKO JSON: {{\n  \"verdict_for\": \"...\",\n  \"verdict_certainty\": 100,\n  \"explanation\": \"...\"\n}}"
-        ],
-        "task_template": "\n# SYTUACJA DO OCENY:\n- Pytanie: \"{question}\"\n- Poprawna odpowiedź: \"{correct_answer}\"\n- Odpowiedź gracza: \"{player_answer}\""
+      "static_instructions": [
+        "Oceń odpowiedź. Werdykt: 'player' (uznana) lub 'game' (odrzucona).",
+        "Wyjaśnienie: krótkie, neutralne.",
+        "Zwróć JSON: {{\n  \"verdict_for\": \"...\",\n  \"verdict_certainty\": 0-100,\n  \"explanation\": \"...\"\n}}"
+      ],
+      "task_template": "Pytanie: \"{question}\"\nPoprawna: \"{correct_answer}\"\nGracz: \"{player_answer}\""
     },
     "en": {
-        "static_instructions": [
-            "You are an impartial quiz show judge.",
-            "Your task is to evaluate the player's answer against the official answer.",
-            "# INSTRUCTIONS:",
-            "1. Determine verdict ('player' or 'game').",
-            "2. Determine certainty (0-100).",
-            "3. Explain the difference neutrally.",
-            "Return ONLY JSON: {{\n  \"verdict_for\": \"...\",\n  \"verdict_certainty\": 100,\n  \"explanation\": \"...\"\n}}"
-        ],
-        "task_template": "\n# SITUATION TO JUDGE:\n- Question: \"{question}\"\n- Official Answer: \"{correct_answer}\"\n- Player's Answer: \"{player_answer}\""
+      "static_instructions": [
+        "Judge answer. Verdict: 'player' (accepted) or 'game' (rejected).",
+        "Explanation: short, neutral.",
+        "Return JSON: {{\n  \"verdict_for\": \"...\",\n  \"verdict_certainty\": 0-100,\n  \"explanation\": \"...\"\n}}"
+      ],
+      "task_template": "Q: \"{question}\"\nCorrect: \"{correct_answer}\"\nPlayer: \"{player_answer}\""
     }
   }
 }
