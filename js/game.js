@@ -54,9 +54,9 @@ export function initializeGame() {
         categoryTopicHistory: JSON.parse(localStorage.getItem('globalQuizHistory')) || {},
         possiblePaths: {},
         // Store model selections
-        selectedQuestionModel: UI.modelSelect ? UI.modelSelect.value : 'random-pl',
-        selectedExplanationModel: UI.explanationModelSelect ? UI.explanationModelSelect.value : 'auto',
-        selectedCategoryModel: UI.categoryModelSelect ? UI.categoryModelSelect.value : 'auto',
+        selectedQuestionModel: UI.modelSelect ? UI.modelSelect.value : 'OR:.google/gemini-3-flash-preview',
+        selectedExplanationModel: UI.explanationModelSelect ? UI.explanationModelSelect.value : 'OR:.google/gemini-3-flash-preview',
+        selectedCategoryModel: UI.categoryModelSelect ? UI.categoryModelSelect.value : 'OR:.google/gemini-3-flash-preview',
     });
 
     gameState.categories.forEach(cat => {
