@@ -78,14 +78,16 @@
   "generate_categories": {
     "pl": {
       "static_instructions": [
-        "Generuj 6 szerokich, różnorodnych (ludzie, miejsca, wydarzenia) kategorii.",
+        "Generuj 6 szerokich kategorii PASUJĄCYCH DO MOTYWU.",
+        "Zachowaj różnorodność (ludzie, miejsca, wydarzenia, kultura).",
         "Zwróć JSON: {{\n  \"categories\": [\"K1\", \"K2\", \"K3\", \"K4\", \"K5\", \"K6\"]\n}}"
       ],
       "task_template": "Motyw: \"{theme}\""
     },
     "en": {
       "static_instructions": [
-        "Generate 6 broad, diverse (people, places, events) categories.",
+        "Generate 6 broad categories MATCHING THE THEME.",
+        "Ensure diversity (people, places, events, culture).",
         "Return JSON: {{\n  \"categories\": [\"C1\", \"C2\", \"C3\", \"C4\", \"C5\", \"C6\"]\n}}"
       ],
       "task_template": "Theme: \"{theme}\""
@@ -94,17 +96,19 @@
   "mutate_category": {
     "pl": {
       "static_instructions": [
-        "Zaproponuj 5 alternatywnych kategorii (ten sam poziom, inny kontekst, bez synonimów).",
+        "Zaproponuj 5 alternatyw dla kategorii PASUJĄCYCH DO MOTYWU.",
+        "Zasady: Ten sam poziom ogólności, inny kontekst, bez synonimów.",
         "Zwróć JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
       ],
-      "task_template": "Oryginał: \"{old_category}\"\nMotyw: \"{theme}\"\nUnikaj: {existing_categories}"
+      "task_template": "Kategoria: \"{old_category}\"\nMotyw: \"{theme}\"\nUnikaj: {existing_categories}"
     },
     "en": {
       "static_instructions": [
-        "Propose 5 alternative categories (same level, different context, no synonyms).",
+        "Propose 5 alternatives for the category MATCHING THE THEME.",
+        "Rules: Same level, different context, no synonyms.",
         "Return JSON: {{\n  \"choices\": [\n    {{\"name\": \"...\", \"description\": \"...\"}}\n  ]\n}}"
       ],
-      "task_template": "Original: \"{old_category}\"\nTheme: \"{theme}\"\nAvoid: {existing_categories}"
+      "task_template": "Category: \"{old_category}\"\nTheme: \"{theme}\"\nAvoid: {existing_categories}"
     }
   },
   "explain_incorrect": {

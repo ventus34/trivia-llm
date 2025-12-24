@@ -165,3 +165,15 @@ def format_explanation_part(part: Any) -> str:
     if isinstance(part, list): return "\n".join(str(item) for item in part if item)
     if isinstance(part, dict): return "\n".join(f"- {key}: {value}" for key, value in part.items())
     return ""
+
+def build_categories_prompt(language: str, theme: str) -> str:
+    """Build a prompt for generating categories, similar to build_question_prompt but for categories."""
+    prompt_struct = PROMPTS["generate_categories"][language]
+    
+    # Combine static instructions and task template
+    static_instructions = "\n".join(prompt_struct["static_instructions"])
+    task_template = prompt_struct["task_template"].format(theme=theme)
+    
+    full_prompt = f"{static_instructions}\n\n{task_template}"
+    
+    return full_prompt

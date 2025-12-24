@@ -139,7 +139,10 @@ async def generate_categories(req: GenerateCategoriesRequest):
             import random
             # Use the provided model or fall back to a random one if not available
             model_to_use = req.model if req.model and req.model != 'auto' else (random.choice(CATEGORY_MODELS)['id'] if CATEGORY_MODELS else FALLBACK_MODEL)
-            prompt = PROMPTS["generate_categories"][req.language].format(theme=req.theme)
+            
+            # Use the helper function to build the prompt properly
+            from utils import build_categories_prompt
+            prompt = build_categories_prompt(req.language, req.theme)
             response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
             if response_data and isinstance(response_data, dict):
                 return JSONResponse(content=response_data)
