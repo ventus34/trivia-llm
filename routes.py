@@ -109,8 +109,37 @@ async def generate_question(req: QuestionRequest):
             raw_response_last = raw_response
             is_valid, error_message = is_question_valid(data, req.gameMode)
             if is_valid:
-                explanation_parts = [format_explanation_part(data.get(key)) for key in ["explanation_correct", "explanation_distractors", "explanation_summary"]]
-                data["explanation"] = "\n\n".join(filter(None, explanation_parts))
+                # Get language from request to provide proper labels
+                language = req.language if hasattr(req, 'language') else 'pl'
+                
+                # Format explanation parts with clear labels
+                explanation_parts = []
+                
+                # Explanation of correct answer
+                correct_explanation = format_explanation_part(data.get("explanation_correct"))
+                if correct_explanation:
+                    if language == 'pl':
+                        explanation_parts.append(f"Wyjaśnienie poprawnej odpowiedzi:\n{correct_explanation}")
+                    else:  # English
+                        explanation_parts.append(f"Explanation of correct answer:\n{correct_explanation}")
+                
+                # Explanation of distractors
+                distractors_explanation = format_explanation_part(data.get("explanation_distractors"))
+                if distractors_explanation:
+                    if language == 'pl':
+                        explanation_parts.append(f"Wyjaśnienie odpowiedzi niepoprawnych:\n{distractors_explanation}")
+                    else:  # English
+                        explanation_parts.append(f"Explanation of incorrect answers:\n{distractors_explanation}")
+                
+                # Summary explanation
+                summary_explanation = format_explanation_part(data.get("explanation_summary"))
+                if summary_explanation:
+                    if language == 'pl':
+                        explanation_parts.append(f"Podsumowanie:\n{summary_explanation}")
+                    else:  # English
+                        explanation_parts.append(f"Summary:\n{summary_explanation}")
+                
+                data["explanation"] = "\n\n".join(explanation_parts)
                 database.add_question(data, req.model_dump())
                 update_generation_history(req.category, data.get("subcategory"), data.get("key_entities"))
                 return JSONResponse(content=data)

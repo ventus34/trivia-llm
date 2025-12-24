@@ -75,6 +75,12 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     lang = params.get("language", "pl") # Default to PL if missing
     
     prompt_struct = PROMPTS["generate_question"][lang]
+    
+    # Validate that the prompt structure has required fields
+    required_fields = ["persona", "static_instructions", "task_template"]
+    for field in required_fields:
+        if field not in prompt_struct:
+            raise ValueError(f"Missing required field '{field}' in prompt structure for language '{lang}'")
 
     history = CATEGORY_GENERATION_HISTORY.get(category, {})
     
@@ -101,8 +107,7 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     
     static_part = [
         prompt_struct["persona"],
-        "\n".join(prompt_struct["static_instructions"]),
-        prompt_struct["output_format"]
+        "\n".join(prompt_struct["static_instructions"])
     ]
     static_content = "\n\n".join(static_part)
 
@@ -157,7 +162,13 @@ def extract_json_from_response(text: str) -> Any:
                 except (json.JSONDecodeError, ValueError):
                     break
 
-    print(f"ERROR: JSON parsing failed after all attempts. Raw snippet: {text[:200]}...")
+    error_msg = f"ERROR: JSON parsing failed after all attempts. Raw snippet: {text[:200]}..."
+    print(error_msg)
+    import database
+    try:
+        database.log_error_db("json_parsing_failed", {"raw_response_snippet": text[:500], "error": "Unable to parse JSON from response"})
+    except:
+        pass  # Don't fail if database logging fails
     return {"error": "Unable to parse JSON from response. Check model output format."}
 
 def format_explanation_part(part: Any) -> str:
