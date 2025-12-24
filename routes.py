@@ -162,8 +162,15 @@ async def get_category_mutation(req: MutationRequest):
     try:
         import random
         # Use the provided model or fall back to a random one if not available
-        model_to_use = req.model if req.model and req.model != 'auto' else (random.choice(CATEGORY_MODELS)['id'] if CATEGORY_MODELS else FALLBACK_MODEL)
-        prompt = PROMPTS["mutate_category"][req.language].format(old_category=req.old_category, theme=req.theme or "general", existing_categories=req.existing_categories)
+        model_to_use = req.model if hasattr(req, 'model') and req.model and req.model != 'auto' else (random.choice(CATEGORY_MODELS)['id'] if CATEGORY_MODELS else FALLBACK_MODEL)
+        prompt_struct = PROMPTS["mutate_category"][req.language]
+        prompt = prompt_struct["task_template"].format(old_category=req.old_category, theme=req.theme or "general", existing_categories=req.existing_categories)
+        
+        # Combine with static instructions if available
+        if "static_instructions" in prompt_struct:
+            static_content = "\n".join(prompt_struct["static_instructions"])
+            prompt = f"{static_content}\n\n{prompt}"
+            
         response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
         return JSONResponse(content=response_data) if isinstance(response_data, dict) else {"error": "Invalid response", "raw_snippet": raw_response[:300]}
     except Exception as e:
@@ -176,8 +183,15 @@ async def get_incorrect_explanation(req: ExplanationRequest):
     try:
         import random
         # Use the provided model or fall back to a random one if not available
-        model_to_use = req.model if req.model and req.model != 'auto' else (random.choice(EXPLANATION_MODELS)['id'] if EXPLANATION_MODELS else FALLBACK_MODEL)
-        prompt = PROMPTS["explain_incorrect"][req.language].format(question=req.question, correct_answer=req.correct_answer, player_answer=req.player_answer)
+        model_to_use = req.model if hasattr(req, 'model') and req.model and req.model != 'auto' else (random.choice(EXPLANATION_MODELS)['id'] if EXPLANATION_MODELS else FALLBACK_MODEL)
+        prompt_struct = PROMPTS["explain_incorrect"][req.language]
+        prompt = prompt_struct["task_template"].format(question=req.question, correct_answer=req.correct_answer, player_answer=req.player_answer)
+        
+        # Combine with static instructions if available
+        if "static_instructions" in prompt_struct:
+            static_content = "\n".join(prompt_struct["static_instructions"])
+            prompt = f"{static_content}\n\n{prompt}"
+            
         response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
         if isinstance(response_data, str):
             response_data = {"explanation": response_data}
