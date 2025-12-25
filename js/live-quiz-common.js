@@ -286,7 +286,6 @@ window.LiveQuizCommon = (function() {
             language: document.getElementById('language')?.value || 'pl',
             theme: document.getElementById('theme')?.value || '',
             includeTheme: document.getElementById('include-theme')?.checked ?? true,
-            questionModel: document.getElementById('question-model')?.value || 'auto',
             questionsPerCategory: document.getElementById('questions-per-category')?.value || '3',
             answerTime: document.getElementById('answer-time')?.value || '60',
             autoAdvanceTime: document.getElementById('auto-advance-slider')?.value || '15',
@@ -312,9 +311,6 @@ window.LiveQuizCommon = (function() {
                 }
                 if (setup.includeTheme !== undefined && document.getElementById('include-theme')) {
                     document.getElementById('include-theme').checked = setup.includeTheme;
-                }
-                if (setup.questionModel && document.getElementById('question-model')) {
-                    document.getElementById('question-model').value = setup.questionModel;
                 }
                 if (setup.questionsPerCategory && document.getElementById('questions-per-category')) {
                     document.getElementById('questions-per-category').value = setup.questionsPerCategory;

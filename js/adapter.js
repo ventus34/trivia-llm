@@ -42,12 +42,12 @@ const backendApiAdapter = {
 
     _resolveExplanationModel() {
         // Use stored game state first, fallback to UI
-        return gameState.selectedExplanationModel || (UI.explanationModelSelect ? UI.explanationModelSelect.value : 'auto');
+        return gameState.selectedExplanationModel || (UI.explanationModelSelect ? UI.explanationModelSelect.value : 'OR:.google/gemini-3-flash-preview');
     },
 
     _resolveCategoryModel() {
         // Use stored game state first, fallback to UI
-        return gameState.selectedCategoryModel || (UI.categoryModelSelect ? UI.categoryModelSelect.value : 'auto');
+        return gameState.selectedCategoryModel || (UI.categoryModelSelect ? UI.categoryModelSelect.value : 'OR:.google/gemini-3-flash-preview');
     },
 
     loadSettings() {

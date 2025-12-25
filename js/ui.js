@@ -25,34 +25,6 @@ export function autoResizeTextarea(textarea) {
     textarea.style.height = `${textarea.scrollHeight}px`; // Set height to content height
 }
 
-export function updateModelSelection(selectedValue, type = 'question') {
-    switch(type) {
-        case 'question':
-            if (UI.modelSelect && UI.modelSelect.value !== selectedValue) {
-                UI.modelSelect.value = selectedValue;
-            }
-            if (UI.gameMenuModelSelect && UI.gameMenuModelSelect.value !== selectedValue) {
-                UI.gameMenuModelSelect.value = selectedValue;
-            }
-            break;
-        case 'explanation':
-            if (UI.explanationModelSelect && UI.explanationModelSelect.value !== selectedValue) {
-                UI.explanationModelSelect.value = selectedValue;
-            }
-            if (UI.gameMenuExplanationModelSelect && UI.gameMenuExplanationModelSelect.value !== selectedValue) {
-                UI.gameMenuExplanationModelSelect.value = selectedValue;
-            }
-            break;
-        case 'category':
-            if (UI.categoryModelSelect && UI.categoryModelSelect.value !== selectedValue) {
-                UI.categoryModelSelect.value = selectedValue;
-            }
-            if (UI.gameMenuCategoryModelSelect && UI.gameMenuCategoryModelSelect.value !== selectedValue) {
-                UI.gameMenuCategoryModelSelect.value = selectedValue;
-            }
-            break;
-    }
-}
 
 /**
  * Populates the category preset selector dropdown and adds an event listener.
@@ -612,6 +584,21 @@ export function renderPromptHistory() {
     UI.historyContent.appendChild(fragment);
 }
 
+/**
+ * Updates the model selection in the game state.
+ * @param {string} modelId - The ID of the selected model.
+ * @param {string} type - The type of model ('question', 'explanation', or 'category').
+ */
+export function updateModelSelection(modelId, type) {
+    if (type === 'question') {
+        gameState.selectedQuestionModel = modelId;
+    } else if (type === 'explanation') {
+        gameState.selectedExplanationModel = modelId;
+    } else if (type === 'category') {
+        gameState.selectedCategoryModel = modelId;
+    }
+}
+
 /** Shows the prompt history modal. */
 export function showHistoryModal() {
     UI.historyModalTitle.textContent = translations.history_modal_title[gameState.currentLanguage];
@@ -650,211 +637,5 @@ export function setupGameMenu() {
             closeMenu();
             showHistoryModal();
         });
-    }
-
-    // Add model selection sections to the game menu
-    addModelSelectionToGameMenu();
-}
-
-/**
- * Adds model selection options to the game menu for different task types.
- */
-function addModelSelectionToGameMenu() {
-    const menuPanel = UI.gameMenuPanel;
-    if (!menuPanel) return;
-
-    // Check if sections already exist to avoid duplicates
-    if (document.getElementById('game-menu-explanation-model-select')) {
-        populateExplanationModelSelectors();
-        populateCategoryModelSelectors();
-        return;
-    }
-
-    // Add explanation model selector
-    const explanationSection = document.createElement('div');
-    explanationSection.className = 'p-2 border-b border-gray-200';
-    explanationSection.innerHTML = `
-        <label for="game-menu-explanation-model-select" class="block text-sm font-medium text-gray-700 mb-1">Model wyjaśnień:</label>
-        <select id="game-menu-explanation-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-        </select>
-    `;
-    menuPanel.insertBefore(explanationSection, menuPanel.querySelector('.mt-auto'));
-
-    // Add category model selector
-    const categorySection = document.createElement('div');
-    categorySection.className = 'p-2 border-b border-gray-200';
-    categorySection.innerHTML = `
-        <label for="game-menu-category-model-select" class="block text-sm font-medium text-gray-700 mb-1">Model kategorii:</label>
-        <select id="game-menu-category-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-        </select>
-    `;
-    menuPanel.insertBefore(categorySection, menuPanel.querySelector('.mt-auto'));
-
-    // Populate the selectors when models are loaded
-    populateExplanationModelSelectors();
-    populateCategoryModelSelectors();
-}
-
-/**
- * Fetches the available models from the backend and populates the select elements.
- */
-export async function populateModelSelectors() {
-    try {
-        const response = await fetch('/api/models/questions');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const models = await response.json();
-        gameState.availableModels = models;
-
-        const selects = [UI.modelSelect, UI.gameMenuModelSelect];
-        selects.forEach(select => {
-            if (select) {
-                select.innerHTML = '';
-
-                models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.id;
-                    option.textContent = model.name;
-                    select.appendChild(option);
-                });
-
-                select.value = gameState.currentLanguage === 'pl' ? 'random-pl' : 'random-en';
-            }
-        });
-
-        UI.modelSelect.dispatchEvent(new Event('change'));
-
-    } catch (error) {
-        console.error("Could not fetch or populate models:", error);
-        showNotification({ title: "Error", body: "Could not load language models." }, 'error');
-    }
-}
-
-/**
- * Populates the explanation and category model selectors in the setup screen.
- */
-export async function populateSetupModelSelectors() {
-    try {
-        // Get explanation models
-        const explanationResponse = await fetch('/api/models/explanations');
-        if (explanationResponse.ok) {
-            const explanationModels = await explanationResponse.json();
-
-            // Populate explanation models
-            const explanationSelect = document.getElementById('explanation-model-select');
-            if (explanationSelect) {
-                // Clear existing options except the first one
-                while (explanationSelect.children.length > 1) {
-                    explanationSelect.removeChild(explanationSelect.lastChild);
-                }
-
-                explanationModels.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.id;
-                    option.textContent = model.name;
-                    explanationSelect.appendChild(option);
-                });
-            }
-        }
-
-        // Get category models
-        const categoryResponse = await fetch('/api/models/categories');
-        if (categoryResponse.ok) {
-            const categoryModels = await categoryResponse.json();
-
-            // Populate category models
-            const categorySelect = document.getElementById('category-model-select');
-            if (categorySelect) {
-                // Clear existing options except the first one
-                while (categorySelect.children.length > 1) {
-                    categorySelect.removeChild(categorySelect.lastChild);
-                }
-
-                categoryModels.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.id;
-                    option.textContent = model.name;
-                    categorySelect.appendChild(option);
-                });
-            }
-        }
-
-    } catch (error) {
-        console.error("Could not fetch setup model selectors:", error);
-    }
-}
-
-/**
- * Fetches the available explanation models from the backend and populates the select elements.
- */
-export async function populateExplanationModelSelectors() {
-    try {
-        const response = await fetch('/api/models/explanations');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const models = await response.json();
-        gameState.availableExplanationModels = models;
-
-        const select = document.getElementById('game-menu-explanation-model-select');
-        if (select) {
-            // Clear existing options except the first one
-            while (select.children.length > 1) {
-                select.removeChild(select.lastChild);
-            }
-
-            models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = model.name;
-                select.appendChild(option);
-            });
-
-            // Sync with setup select
-            if (UI.explanationModelSelect) {
-                select.value = UI.explanationModelSelect.value;
-            }
-        }
-
-    } catch (error) {
-        console.error("Could not fetch explanation models:", error);
-    }
-}
-
-/**
- * Fetches the available category models from the backend and populates the select elements.
- */
-export async function populateCategoryModelSelectors() {
-    try {
-        const response = await fetch('/api/models/categories');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const models = await response.json();
-        gameState.availableCategoryModels = models;
-
-        const select = document.getElementById('game-menu-category-model-select');
-        if (select) {
-            // Clear existing options except the first one
-            while (select.children.length > 1) {
-                select.removeChild(select.lastChild);
-            }
-
-            models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model.id;
-                option.textContent = model.name;
-                select.appendChild(option);
-            });
-
-            // Sync with setup select
-            if (UI.categoryModelSelect) {
-                select.value = UI.categoryModelSelect.value;
-            }
-        }
-
-    } catch (error) {
-        console.error("Could not fetch category models:", error);
     }
 }

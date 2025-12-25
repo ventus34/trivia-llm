@@ -43,7 +43,7 @@ def is_question_valid(data: Any, game_mode: str) -> (bool, str):
         return False, "Response is missing a valid 'question' string."
     if not (10 < len(question) < 500):
         return False, f"Question length ({len(question)}) is outside the optimal range (10-500 chars)."
-    if not data.get("explanation_correct") or not data.get("explanation_summary"):
+    if not data.get("explanation_correct"):
         return False, "Response is missing one or more required explanation fields."
     if not data.get("subcategory") or not data.get("key_entities"):
         return False, "Response is missing 'subcategory' or 'key_entities' metadata."

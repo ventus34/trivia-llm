@@ -45,14 +45,13 @@ window.LiveQuizHostSetup = (function(Common) {
 
     // Setup screen event listeners
     function setupEventListeners() {
-        // Load models and saved setup
-        loadModels();
+        // Load saved setup
         Common.loadGameSetup();
         
         // Add auto-save to all form elements
         const formElements = [
             'knowledge-level', 'language', 'theme',
-            'include-theme', 'question-model', 'questions-per-category',
+            'include-theme', 'questions-per-category',
             'answer-time', 'auto-advance-time', 'auto-advance-slider'
         ];
         formElements.forEach(id => {
@@ -92,7 +91,7 @@ window.LiveQuizHostSetup = (function(Common) {
             Common.showLoading('Generating categories...');
             try {
                 const response = await Common.apiCall('/api/generate-categories', 'POST', {
-                    model: 'auto', // Use default model
+                    model: 'OR:.google/gemini-3-flash-preview', // Use default model
                     theme: theme,
                     language: document.getElementById('language').value
                 });
@@ -164,9 +163,9 @@ window.LiveQuizHostSetup = (function(Common) {
                 language: document.getElementById('language').value,
                 theme: document.getElementById('theme').value.trim() || null,
                 include_category_theme: document.getElementById('include-theme').checked,
-                selected_question_model: document.getElementById('question-model').value,
-                selected_explanation_model: 'auto', // Default value
-                selected_category_model: 'auto', // Default value
+                selected_question_model: "trivia",
+                selected_explanation_model: 'OR:.google/gemini-3-flash-preview', // Default value
+                selected_category_model: 'OR:.google/gemini-3-flash-preview', // Default value
                 questions_per_category: questionsPerCategory,
                 answer_time: parseInt(document.getElementById('answer-time').value)
             });

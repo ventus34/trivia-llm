@@ -47,6 +47,13 @@ with open('models.json', 'r', encoding='utf-8') as f:
     STATIC_CATEGORY_MODELS = STATIC_MODELS_CONFIG.get("category_models", [])
     STATIC_FALLBACK_MODEL = STATIC_MODELS_CONFIG.get("fallback_model")
 
+# Add the "trivia" router model as the primary model
+TRIVIA_ROUTER_MODEL = {
+    "id": "trivia",
+    "name": "Trivia Router",
+    "languages": ["pl", "en"]
+}
+
 # Dynamic models (to be populated on startup)
 DYNAMIC_MODELS = None
 QUESTION_MODELS = STATIC_QUESTION_MODELS
@@ -90,6 +97,12 @@ def initialize_models(dynamic_models=None):
         if STATIC_FALLBACK_MODEL and STATIC_FALLBACK_MODEL not in all_static_models:
             all_static_models.append(STATIC_FALLBACK_MODEL)
         FALLBACK_MODEL = random.choice(all_static_models) if all_static_models else STATIC_FALLBACK_MODEL
+
+    # Override all model lists to use only the "trivia" router model
+    QUESTION_MODELS = [TRIVIA_ROUTER_MODEL]
+    EXPLANATION_MODELS = [TRIVIA_ROUTER_MODEL]
+    CATEGORY_MODELS = [TRIVIA_ROUTER_MODEL]
+    FALLBACK_MODEL = TRIVIA_ROUTER_MODEL["id"]
 
     MODELS_BY_LANGUAGE = {"pl": [], "en": []}
     for model in QUESTION_MODELS:

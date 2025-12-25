@@ -56,7 +56,7 @@
         "4. BRAK SPOILERA: Odpowiedź nie może paść w pytaniu.",
         "5. DYSTRAKTORY: Błędne opcje muszą być wiarygodne.",
         "6. FORMAT JSON (bez markdown):",
-        "{{\n  \"question\": \"Treść...\",\n  \"answer\": \"Poprawna...\",\n  \"subcategory\": \"Precyzyjna podkategoria\",\n  \"key_entities\": [\"KluczoweNazwy\"],\n  \"options\": [\"A\", \"B\", \"C\", \"D\"],\n  \"explanation_correct\": \"Fakt weryfikujący.\",\n  \"explanation_distractors\": \"Dlaczego błędne.\",\n  \"explanation_summary\": \"Podsumowanie (1 zdanie).\"\n}}"
+        "{{\n  \"question\": \"Treść...\",\n  \"answer\": \"Poprawna...\",\n  \"subcategory\": \"Precyzyjna podkategoria\",\n  \"key_entities\": [\"KluczoweNazwy\"],\n  \"options\": [\"A\", \"B\", \"C\", \"D\"],\n  \"explanation_correct\": \"Fakt weryfikujący.\",\n  \"explanation_distractors\": \"Dlaczego błędne.\"\n}}"
       ],
       "task_template": "ZADANIE:\nKat: \"{category}\"\nTrudność: {knowledge_prompt}\nTryb: {game_mode_prompt}\nMotyw: {theme_context}\n\nZAKAZANE (Unikaj tych haseł):\n- Podkategorie: {subcategory_history_prompt}\n- Nazwy: {entity_history_prompt}"
     },
@@ -70,7 +70,7 @@
         "4. NO SPOILERS: Answer not in question text.",
         "5. DISTRACTORS: Plausible incorrect options.",
         "6. JSON FORMAT (no markdown):",
-        "{{\n  \"question\": \"Text...\",\n  \"answer\": \"Correct...\",\n  \"subcategory\": \"Precise subcategory\",\n  \"key_entities\": [\"KeyEntities\"],\n  \"options\": [\"A\", \"B\", \"C\", \"D\"],\n  \"explanation_correct\": \"Verification fact.\",\n  \"explanation_distractors\": \"Why incorrect.\",\n  \"explanation_summary\": \"Summary (1 sentence).\"\n}}"
+        "{{\n  \"question\": \"Text...\",\n  \"answer\": \"Correct...\",\n  \"subcategory\": \"Precise subcategory\",\n  \"key_entities\": [\"KeyEntities\"],\n  \"options\": [\"A\", \"B\", \"C\", \"D\"],\n  \"explanation_correct\": \"Verification fact.\",\n  \"explanation_distractors\": \"Why incorrect.\"\n}}"
       ],
       "task_template": "TASK:\nCat: \"{category}\"\nDiff: {knowledge_prompt}\nMode: {game_mode_prompt}\nTheme: {theme_context}\n\nFORBIDDEN (Avoid these):\n- Subcats: {subcategory_history_prompt}\n- Entities: {entity_history_prompt}"
     }

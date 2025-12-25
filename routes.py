@@ -43,6 +43,9 @@ async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTas
     if len(req.categories) > MAX_PRELOAD_CATEGORIES:
         raise HTTPException(status_code=400, detail=f"Too many categories requested. Max allowed: {MAX_PRELOAD_CATEGORIES}")
 
+    # Hardcode model to "trivia" router
+    req.model = "trivia"
+
     # signature for deduplication
     req_signature = json.dumps(req.model_dump(), sort_keys=True)
 
@@ -74,10 +77,13 @@ async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTas
         }
 
         # schedule background task
-        background_tasks.add_task(_preload_task, req.gameId, req.model, req)
+        background_tasks.add_task(_preload_task, req.gameId, "trivia", req)
         return JSONResponse(content={"message": "Preloading started."}, status_code=202)
 
 async def generate_question(req: QuestionRequest):
+    # Hardcode model to "trivia" router
+    req.model = "trivia"
+    
     cached_question = database.get_and_remove_cached_question(req.category)
     if cached_question:
         if DEBUG_MODE: print(f"Serving question for '{req.category}' from DB cache.")
@@ -86,14 +92,14 @@ async def generate_question(req: QuestionRequest):
         if "explanation" in cached_question and isinstance(cached_question["explanation"], str):
             # Check if the explanation already has labels (to avoid double-formatting)
             has_labels = any(label in cached_question["explanation"] for label in ["Wyjaśnienie poprawnej odpowiedzi:", "Explanation of correct answer:"])
-            
-            if not has_labels and all(key in cached_question for key in ["explanation_correct", "explanation_distractors", "explanation_summary"]):
+             
+            if not has_labels and all(key in cached_question for key in ["explanation_correct", "explanation_distractors"]):
                 # Get language from request to provide proper labels
                 language = req.language if hasattr(req, 'language') else 'pl'
-                
+                 
                 # Format explanation parts with clear labels
                 explanation_parts = []
-                
+                 
                 # Explanation of correct answer
                 correct_explanation = format_explanation_part(cached_question.get("explanation_correct"))
                 if correct_explanation:
@@ -101,7 +107,7 @@ async def generate_question(req: QuestionRequest):
                         explanation_parts.append(f"Wyjaśnienie poprawnej odpowiedzi:\n{correct_explanation}")
                     else:  # English
                         explanation_parts.append(f"Explanation of correct answer:\n{correct_explanation}")
-                
+                 
                 # Explanation of distractors
                 distractors_explanation = format_explanation_part(cached_question.get("explanation_distractors"))
                 if distractors_explanation:
@@ -109,17 +115,10 @@ async def generate_question(req: QuestionRequest):
                         explanation_parts.append(f"Wyjaśnienie odpowiedzi niepoprawnych:\n{distractors_explanation}")
                     else:  # English
                         explanation_parts.append(f"Explanation of incorrect answers:\n{distractors_explanation}")
-                
-                # Summary explanation
-                summary_explanation = format_explanation_part(cached_question.get("explanation_summary"))
-                if summary_explanation:
-                    if language == 'pl':
-                        explanation_parts.append(f"Podsumowanie:\n{summary_explanation}")
-                    else:  # English
-                        explanation_parts.append(f"Summary:\n{summary_explanation}")
-                
+                 
+                 
                 cached_question["explanation"] = "\n\n".join(explanation_parts)
-        
+         
         return JSONResponse(content=cached_question)
 
     # If a preload is scheduled/running for this gameId, wait a short time for it to finish
@@ -144,16 +143,16 @@ async def generate_question(req: QuestionRequest):
                 req.includeCategoryTheme = not req.includeCategoryTheme  # Toggle theme inclusion for variation
 
             prompt = build_question_prompt(req.model_dump(), req.category)
-            data, raw_response = await call_generative_model(prompt, req.model, return_raw=True)
+            data, raw_response = await call_generative_model(prompt, "trivia", return_raw=True)
             raw_response_last = raw_response
             is_valid, error_message = is_question_valid(data, req.gameMode)
             if is_valid:
                 # Get language from request to provide proper labels
                 language = req.language if hasattr(req, 'language') else 'pl'
-                
+                 
                 # Format explanation parts with clear labels
                 explanation_parts = []
-                
+                 
                 # Explanation of correct answer
                 correct_explanation = format_explanation_part(data.get("explanation_correct"))
                 if correct_explanation:
@@ -161,7 +160,7 @@ async def generate_question(req: QuestionRequest):
                         explanation_parts.append(f"Wyjaśnienie poprawnej odpowiedzi:\n{correct_explanation}")
                     else:  # English
                         explanation_parts.append(f"Explanation of correct answer:\n{correct_explanation}")
-                
+                 
                 # Explanation of distractors
                 distractors_explanation = format_explanation_part(data.get("explanation_distractors"))
                 if distractors_explanation:
@@ -169,15 +168,8 @@ async def generate_question(req: QuestionRequest):
                         explanation_parts.append(f"Wyjaśnienie odpowiedzi niepoprawnych:\n{distractors_explanation}")
                     else:  # English
                         explanation_parts.append(f"Explanation of incorrect answers:\n{distractors_explanation}")
-                
-                # Summary explanation
-                summary_explanation = format_explanation_part(data.get("explanation_summary"))
-                if summary_explanation:
-                    if language == 'pl':
-                        explanation_parts.append(f"Podsumowanie:\n{summary_explanation}")
-                    else:  # English
-                        explanation_parts.append(f"Summary:\n{summary_explanation}")
-                
+                 
+                 
                 data["explanation"] = "\n\n".join(explanation_parts)
                 database.add_question(data, req.model_dump())
                 update_generation_history(req.category, data.get("subcategory"), data.get("key_entities"))
@@ -204,10 +196,9 @@ async def generate_categories(req: GenerateCategoriesRequest):
     MAX_RETRIES = 2
     for attempt in range(MAX_RETRIES + 1):
         try:
-            import random
-            # Use the provided model or fall back to a random one if not available
-            model_to_use = req.model if req.model and req.model != 'auto' else (random.choice(CATEGORY_MODELS)['id'] if CATEGORY_MODELS else FALLBACK_MODEL)
-            
+            # Hardcode model to "trivia" router
+            model_to_use = "trivia"
+             
             # Use the helper function to build the prompt properly
             from utils import build_categories_prompt
             prompt = build_categories_prompt(req.language, req.theme)
@@ -228,17 +219,16 @@ async def generate_categories(req: GenerateCategoriesRequest):
 
 async def get_category_mutation(req: MutationRequest):
     try:
-        import random
-        # Use the provided model or fall back to a random one if not available
-        model_to_use = req.model if hasattr(req, 'model') and req.model and req.model != 'auto' else (random.choice(CATEGORY_MODELS)['id'] if CATEGORY_MODELS else FALLBACK_MODEL)
+        # Hardcode model to "trivia" router
+        model_to_use = "trivia"
         prompt_struct = PROMPTS["mutate_category"][req.language]
         prompt = prompt_struct["task_template"].format(old_category=req.old_category, theme=req.theme or "general", existing_categories=req.existing_categories)
-        
+         
         # Combine with static instructions if available
         if "static_instructions" in prompt_struct:
             static_content = "\n".join(prompt_struct["static_instructions"])
             prompt = f"{static_content}\n\n{prompt}"
-            
+             
         response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
         return JSONResponse(content=response_data) if isinstance(response_data, dict) else {"error": "Invalid response", "raw_snippet": raw_response[:300]}
     except Exception as e:
@@ -249,17 +239,16 @@ async def get_category_mutation(req: MutationRequest):
 
 async def get_incorrect_explanation(req: ExplanationRequest):
     try:
-        import random
-        # Use the provided model or fall back to a random one if not available
-        model_to_use = req.model if hasattr(req, 'model') and req.model and req.model != 'auto' else (random.choice(EXPLANATION_MODELS)['id'] if EXPLANATION_MODELS else FALLBACK_MODEL)
+        # Hardcode model to "trivia" router
+        model_to_use = "trivia"
         prompt_struct = PROMPTS["explain_incorrect"][req.language]
         prompt = prompt_struct["task_template"].format(question=req.question, correct_answer=req.correct_answer, player_answer=req.player_answer)
-        
+         
         # Combine with static instructions if available
         if "static_instructions" in prompt_struct:
             static_content = "\n".join(prompt_struct["static_instructions"])
             prompt = f"{static_content}\n\n{prompt}"
-            
+         
         response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
         if isinstance(response_data, str):
             response_data = {"explanation": response_data}

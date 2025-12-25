@@ -38,30 +38,6 @@
         <div class="flex flex-col lg:flex-row gap-8">
             <div class="flex-1 space-y-6">
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label for="model-select" data-lang-key="model_label" class="block text-sm font-medium text-gray-700">Model Językowy:</label>
-                        <div class="flex items-end gap-2">
-                            <select id="model-select" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="explanation-model-select" class="block text-sm font-medium text-gray-700">Model wyjaśnień:</label>
-                        <div class="flex items-end gap-2">
-                            <select id="explanation-model-select" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="category-model-select" class="block text-sm font-medium text-gray-700">Model generacji kategorii:</label>
-                        <div class="flex items-end gap-2">
-                            <select id="category-model-select" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="game-mode" data-lang-key="game_mode_label" class="block text-sm font-medium text-gray-700">Tryb Gry:</label>
@@ -305,10 +281,6 @@
     <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg space-y-4 text-center">
         <h3 id="model-choice-title" data-lang-key="rate_limit_title" class="text-2xl font-bold"></h3>
         <p data-lang-key="rate_limit_desc" class="text-gray-600"></p>
-        <div class="mt-4">
-            <label for="modal-model-select" data-lang-key="model_label" class="block text-sm font-medium text-gray-700 text-left mb-1"></label>
-            <select id="modal-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"></select>
-        </div>
         <button id="confirm-model-choice-btn" data-lang-key="confirm_choice_btn" class="mt-4 w-full py-2 px-4 rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 themed-button"></button>
     </div>
 </div>
@@ -338,23 +310,6 @@
 <div id="game-menu-panel" class="fixed top-0 right-0 bottom-0 w-64 bg-white shadow-xl z-50 p-4 transform translate-x-full flex flex-col gap-3">
     <h3 class="text-lg font-bold mb-2" data-lang-key="game_menu_title">Menu Gry</h3>
 
-    <div class="p-2 border-b border-gray-200">
-        <label for="game-menu-model-select" data-lang-key="model_label" class="block text-sm font-medium text-gray-700 mb-1">Model Językowy:</label>
-        <select id="game-menu-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-        </select>
-    </div>
-
-    <div class="p-2 border-b border-gray-200">
-        <label for="game-menu-explanation-model-select" class="block text-sm font-medium text-gray-700 mb-1">Model wyjaśnień:</label>
-        <select id="game-menu-explanation-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-        </select>
-    </div>
-
-    <div class="p-2 border-b border-gray-200">
-        <label for="game-menu-category-model-select" class="block text-sm font-medium text-gray-700 mb-1">Model kategorii:</label>
-        <select id="game-menu-category-model-select" class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-        </select>
-    </div>
     <button id="show-history-btn" data-lang-key="show_history_btn" class="w-full text-left p-2 rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v10"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z"/></svg>
         Pokaż historię promptów

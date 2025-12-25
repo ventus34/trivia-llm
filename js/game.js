@@ -53,10 +53,10 @@ export function initializeGame() {
         currentQuestionData: null,
         categoryTopicHistory: JSON.parse(localStorage.getItem('globalQuizHistory')) || {},
         possiblePaths: {},
-        // Store model selections
-        selectedQuestionModel: UI.modelSelect ? UI.modelSelect.value : 'OR:.google/gemini-3-flash-preview',
-        selectedExplanationModel: UI.explanationModelSelect ? UI.explanationModelSelect.value : 'OR:.google/gemini-3-flash-preview',
-        selectedCategoryModel: UI.categoryModelSelect ? UI.categoryModelSelect.value : 'OR:.google/gemini-3-flash-preview',
+        // Hardcode all models to "trivia" router
+        selectedQuestionModel: 'trivia',
+        selectedExplanationModel: 'trivia',
+        selectedCategoryModel: 'trivia',
     });
 
     gameState.categories.forEach(cat => {
@@ -169,11 +169,6 @@ export async function generateCategories() {
     const originalBtnText = UI.generateCategoriesBtn.textContent;
     UI.generateCategoriesBtn.textContent = translations.generating_categories[gameState.currentLanguage];
     UI.generateCategoriesBtn.disabled = true;
-
-    // Update the stored category model from the current UI selection
-    if (UI.categoryModelSelect) {
-        gameState.selectedCategoryModel = UI.categoryModelSelect.value;
-    }
 
     try {
         const generatedCats = await gameState.api.generateCategories(theme);
