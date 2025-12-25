@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trivia-llm-cache-v1';
+const CACHE_NAME = 'trivia-llm-cache-v2';
 const urlsToCache = [
   '/',
   '/trivia.html',
