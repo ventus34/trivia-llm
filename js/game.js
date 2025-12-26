@@ -422,10 +422,6 @@ export async function handleManualVerification(isCorrect) {
     UI.explanationContainer.classList.remove('hidden');
     UI.explanationText.innerHTML = (gameState.currentQuestionData.explanation || "").replace(/\n/g, '<br>');
 
-    if(!isCorrect){
-        UI.incorrectExplanationContainer.classList.remove('hidden');
-        UI.verifyAnswerBtn.classList.remove('hidden');
-    }
 }
 
 export async function verifyIncorrectAnswer() {

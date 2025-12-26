@@ -208,7 +208,18 @@ textarea.category-input {
 #incorrect-explanation-text,
 #explanation-text {
     overflow-wrap: break-word;
-    width: 100%; 
+    width: 100%;
+}
+
+/* Answer verification modal background colors */
+#player-answer-text.bg-green-100 {
+    background-color: #dcfce7;
+    border: 1px solid #166534;
+}
+
+#player-answer-text.bg-red-100 {
+    background-color: #fee2e2;
+    border: 1px solid #991b1b;
 }
 
 #answer-popup.opacity-0 {
@@ -571,6 +582,20 @@ html.dark #player-answer-text,
 html.oled #player-answer-text {
     color: #FFFFFF;
 }
+html.dark #player-answer-text.bg-green-100,
+html.oled #player-answer-text.bg-green-100 {
+    background-color: #14532d;
+    color: #dcfce7;
+    border: 1px solid #166534;
+}
+
+html.dark #player-answer-text.bg-red-100,
+html.oled #player-answer-text.bg-red-100 {
+    background-color: #7f1d1d;
+    color: #fee2e2;
+    border: 1px solid #991b1b;
+}
+
 html.dark #correct-answer-text,
 html.oled #correct-answer-text {
     background-color: #14532d;

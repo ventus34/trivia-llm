@@ -422,6 +422,22 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
     UI.explanationContainer.classList.remove('hidden');
     UI.explanationText.innerHTML = (gameState.currentQuestionData.explanation || "").replace(/\n/g, '<br>');
 
+    // Compare player's answer with the correct answer
+    const answersMatch = playerAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+
+    if (answersMatch) {
+        // Both answers are the same, set green background
+        UI.playerAnswerText.classList.remove('bg-gray-100', 'bg-red-100');
+        UI.playerAnswerText.classList.add('bg-green-100');
+        UI.correctAnswerText.classList.remove('bg-green-100', 'bg-red-100');
+        UI.correctAnswerText.classList.add('bg-green-100');
+    } else {
+        // Answers are different, set red background
+        UI.playerAnswerText.classList.remove('bg-gray-100', 'bg-green-100');
+        UI.playerAnswerText.classList.add('bg-red-100');
+        UI.correctAnswerText.classList.remove('bg-green-100', 'bg-red-100');
+        UI.correctAnswerText.classList.add('bg-red-100');
+    }
 
     showAnswerPopup();
 }
