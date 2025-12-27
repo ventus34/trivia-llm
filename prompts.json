@@ -58,7 +58,8 @@
         "6. DYSTRAKTORY: Błędne opcje muszą być wiarygodne.",
         "7. FORMAT JSON (bez markdown):",
         "{{\n  \"question\": \"Treść...\",\n  \"answer\": \"Poprawna...\",\n  \"subcategory\": \"Precyzyjna podkategoria\",\n  \"key_entities\": [\"KluczoweNazwy\"]\n  \"options\": [\"A\", \"B\", \"C\", \"D\"]\n  \"explanation_correct\": \"Fakt weryfikujący.\",\n  \"explanation_distractors\": \"Dlaczego błędne.\"\n}}"
-      ]
+      ],
+      "task_template": "ZADANIE:\nKat: \"{category}\"\nTrudność: {knowledge_prompt}\nTryb: {game_mode_prompt}\nMotyw: {theme_context}\n\nZAKAZANE (Unikaj tych haseł):\n- Podkategorie: {subcategory_history_prompt}\n- Nazwy: {entity_history_prompt}"
     },
     "en": {
       "persona": "Quiz expert. Generate JSON only.",
@@ -72,7 +73,8 @@
         "6. DISTRACTORS: Plausible incorrect options.",
         "7. JSON FORMAT (no markdown):",
         "{{\n  \"question\": \"Text...\",\n  \"answer\": \"Correct...\",\n  \"subcategory\": \"Precise subcategory\",\n  \"key_entities\": [\"KeyEntities\"]\n  \"options\": [\"A\", \"B\", \"C\", \"D\"]\n  \"explanation_correct\": \"Verification fact.\",\n  \"explanation_distractors\": \"Why incorrect.\"\n}}"
-      ]
+      ],
+      "task_template": "TASK:\nCat: \"{category}\"\nDiff: {knowledge_prompt}\nMode: {game_mode_prompt}\nTheme: {theme_context}\n\nFORBIDDEN (Avoid these):\n- Subcats: {subcategory_history_prompt}\n- Entities: {entity_history_prompt}"
     }
   },
   "generate_categories": {
@@ -182,7 +184,7 @@
       "task_template": "Kategoria: \"{category}\"\nSZKIC:\n- Podkategoria: {subcategory}\n- Typ pytania: {modifier}\n- Odpowiedź: {target_answer}\n\nTrudność: {knowledge_level}"
     },
     "en": {
-      "persona": "Quiz uestion generator. Encyclopedic and concise style.",
+      "persona": "Trivial Pursuit question generator. Encyclopedic and concise style.",
       "static_instructions": [
         "Create a question based on the BLUEPRINT.",
         "CRITICAL LENGTH CONSTRAINTS:",

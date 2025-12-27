@@ -138,7 +138,7 @@ async def ensure_blueprints_exist(category: str, language: str, theme: str, mode
         "\n".join(prompt_struct[instructions_key])
     ]
     static_content = "\n\n".join(static_part)
-    dynamic_content = ""
+    dynamic_content = prompt_struct["task_template"].format(category=category, theme=theme)
     full_prompt = f"{static_content}\n\n{dynamic_content}"
 
     try:

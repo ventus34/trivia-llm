@@ -156,7 +156,14 @@ async def generate_question(req: QuestionRequest):
         knowledge_prompt = PROMPTS["knowledge_prompts"][knowledge_key][language]
         game_mode_key = req.gameMode if hasattr(req, 'gameMode') else 'mcq'
         game_mode_prompt = PROMPTS["game_mode_prompts"][game_mode_key][language]
-        dynamic_content = ""
+        dynamic_content = prompt_struct["task_template"].format(
+            category=req.category,
+            subcategory=blueprint['subcategory'],
+            modifier=blueprint['modifier'] or '',
+            target_answer=blueprint['target_answer'],
+            knowledge_level=knowledge_prompt,
+            game_mode=game_mode_prompt
+        )
         full_prompt = f"{static_content}\n\n{dynamic_content}"
         
         MAX_RETRIES = 2
@@ -298,7 +305,7 @@ async def get_category_mutation(req: MutationRequest):
         # Hardcode model to "trivia" router
         model_to_use = "trivia"
         prompt_struct = PROMPTS["mutate_category"][req.language]
-        prompt = ""
+        prompt = prompt_struct["task_template"].format(old_category=req.old_category, theme=req.theme or "general", existing_categories=req.existing_categories)
          
         # Combine with static instructions if available
         if "static_instructions" in prompt_struct:
@@ -318,7 +325,7 @@ async def get_incorrect_explanation(req: ExplanationRequest):
         # Hardcode model to "trivia" router
         model_to_use = "trivia"
         prompt_struct = PROMPTS["explain_incorrect"][req.language]
-        prompt = ""
+        prompt = prompt_struct["task_template"].format(question=req.question, correct_answer=req.correct_answer, player_answer=req.player_answer)
          
         # Combine with static instructions if available
         if "static_instructions" in prompt_struct:

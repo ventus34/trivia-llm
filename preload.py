@@ -59,7 +59,14 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
                 knowledge_prompt = PROMPTS["knowledge_prompts"][knowledge_key][language]
                 game_mode_key = params.get("gameMode", "mcq")
                 game_mode_prompt = PROMPTS["game_mode_prompts"][game_mode_key][language]
-                dynamic_content = ""
+                dynamic_content = prompt_struct["task_template"].format(
+                    category=category,
+                    subcategory=blueprint['subcategory'],
+                    modifier=blueprint['modifier'] or '',
+                    target_answer=blueprint['target_answer'],
+                    knowledge_level=knowledge_prompt,
+                    game_mode=game_mode_prompt
+                )
                 prompt = f"{static_content}\n\n{dynamic_content}"
             else:
                 # Fallback to old prompt
