@@ -122,10 +122,28 @@ def build_question_prompt(params: Dict[str, Any], category: str, blueprint: Opti
 
     if blueprint:
         # Format blueprint-specific template
-        dynamic_content = ""
+        dynamic_content = prompt_struct["task_template"].format(
+            category=category,
+            subcategory=blueprint.get("subcategory", ""),
+            modifier=blueprint.get("modifier", ""),
+            target_answer=blueprint.get("target_answer", ""),
+            knowledge_prompt=knowledge_prompt,
+            game_mode_prompt=game_mode_prompt,
+            theme_context=theme_text,
+            subcategory_history_prompt=subcategory_history_prompt,
+            entity_history_prompt=entity_history_prompt
+        )
     else:
         # Default template (legacy)
-        dynamic_content = ""
+        dynamic_content = prompt_struct["task_template"].format(
+            category=category,
+            subcategory_suggestion="",
+            knowledge_prompt=knowledge_prompt,
+            game_mode_prompt=game_mode_prompt,
+            theme_context=theme_text,
+            subcategory_history_prompt=subcategory_history_prompt,
+            entity_history_prompt=entity_history_prompt
+        )
 
     full_prompt = f"{static_content}\n\n{dynamic_content}"
 
@@ -189,7 +207,7 @@ def build_categories_prompt(language: str, theme: str) -> str:
     
     # Combine static instructions and task template
     static_instructions = "\n".join(prompt_struct["static_instructions"])
-    task_template = ""
+    task_template = prompt_struct["task_template"].format(theme=theme)
     
     full_prompt = f"{static_instructions}\n\n{task_template}"
     

@@ -38,10 +38,8 @@ async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTas
     # Basic validation
     if not req.gameId:
         raise HTTPException(status_code=400, detail="gameId is required")
-    if not req.categories:
-        raise HTTPException(status_code=400, detail="categories list is required")
-    if len(req.categories) > MAX_PRELOAD_CATEGORIES:
-        raise HTTPException(status_code=400, detail=f"Too many categories requested. Max allowed: {MAX_PRELOAD_CATEGORIES}")
+    if not req.category:
+        raise HTTPException(status_code=400, detail="category is required")
 
     # Hardcode model to "trivia" router
     req.model = "trivia"

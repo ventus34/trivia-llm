@@ -33,7 +33,7 @@ class MutationRequest(BaseModel):
     existing_categories: List[str]
 
 class PreloadRequest(BaseModelWithModel):
-    categories: List[str]
+    category: str
     gameMode: str
     knowledgeLevel: str
     language: str

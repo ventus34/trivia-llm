@@ -105,17 +105,10 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
             sem_ctx = sem
 
         async with sem_ctx:
-            while True:
-                # compute categories that still need caching
-                categories_to_process = [cat for cat in request_data.categories if database.get_cache_count_for_category(cat) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE]
-                if not categories_to_process:
-                    break
-                categories_to_process.sort(key=lambda cat: database.get_cache_count_for_category(cat))
-
-                for cat in categories_to_process:
-                    await generate_one_for_category(cat)
-                    # modest delay between requests to avoid burst (additional to call_generative_model limiter)
-                    await asyncio.sleep(0.2)
+            # check if the category still needs caching
+            category = request_data.category
+            if database.get_cache_count_for_category(category) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE:
+                await generate_one_for_category(category)
 
     finally:
         # mark finished and notify waiters

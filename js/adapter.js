@@ -86,10 +86,20 @@ const backendApiAdapter = {
     async preloadQuestions() {
         if (!gameState.gameId) return; // Don't do anything if the game hasn't started
 
+        // Get current category based on current player's position
+        if (!gameState.players || gameState.players.length === 0) return; // Game not started
+        const player = gameState.players[gameState.currentPlayerIndex];
+        if (!player || !gameState.board) return;
+        const square = gameState.board.find(s => s.id === player.position);
+        if (!square || square.categoryIndex === null || square.categoryIndex === undefined) return; // No category to preload
+
+        const category = gameState.categories[square.categoryIndex];
+        if (!category || category.trim() === '') return; // Invalid category
+
         const payload = {
             model: this._resolveQuestionModel(),
             gameId: gameState.gameId,
-            categories: gameState.categories,
+            category: category,
             gameMode: gameState.gameMode,
             knowledgeLevel: gameState.knowledgeLevel,
             language: gameState.currentLanguage,
@@ -104,7 +114,7 @@ const backendApiAdapter = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            console.log('Preload request sent with model selection:', payload.model);
+            console.log('Preload request sent for category:', category, 'with model selection:', payload.model);
         } catch (error) {
             console.error('Failed to send preload request:', error);
         }
