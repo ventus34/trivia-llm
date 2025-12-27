@@ -135,11 +135,11 @@
     "pl": {
       "system": "Jesteś redaktorem bazy danych do gry typu quiz. Twoim celem jest precyzyjna kategoryzacja faktów.",
       "instruction": [
-        "Dla podanej KATEGORII wygeneruj listę 20 zestawów danych (faktów) do pytań.",
+        "Dla podanej KATEGORII wygeneruj listę 50 zestawów danych (faktów) do pytań.",
         "ZASADY:",
         "1. KONKRET: Każdy zestaw musi dotyczyć jednego, weryfikowalnego faktu (data, nazwisko, wzór, nazwa geograficzna).",
         "2. ATOMOWOŚĆ: Jeden temat = jeden fakt.",
-        "3. FORMAT JSON: Zwróć obiekt z kluczem 'topics' zawierającym tablicę 20 obiektów, każdy z polami: subcategory (string), modifier (string), target_answer (string).",
+        "3. FORMAT JSON: Zwróć obiekt z kluczem 'topics' zawierającym tablicę 50 obiektów, każdy z polami: subcategory (string), modifier (string), target_answer (string).",
         "4. 'modifier' określa typ pytania, np. 'Rok wydarzenia', 'Autor dzieła', 'Stolica kraju', 'Symbol chemiczny'.",
         "5. Używaj tylko polskiego języka w odpowiedziach."
       ],
@@ -148,11 +148,11 @@
     "en": {
       "system": "You are a database editor for a quiz game. Your goal is precise fact categorization.",
       "instruction": [
-        "For the given CATEGORY, generate a list of 20 data sets (facts) for questions.",
+        "For the given CATEGORY, generate a list of 50 data sets (facts) for questions.",
         "RULES:",
         "1. CONCRETE: Each set must concern one verifiable fact (date, name, formula, geographical name).",
         "2. ATOMIC: One topic = one fact.",
-        "3. JSON FORMAT: Return an object with 'topics' key containing an array of 20 objects, each with fields: subcategory (string), modifier (string), target_answer (string).",
+        "3. JSON FORMAT: Return an object with 'topics' key containing an array of 50 objects, each with fields: subcategory (string), modifier (string), target_answer (string).",
         "4. 'modifier' specifies question type, e.g. 'Year of event', 'Author of work', 'Capital of country', 'Chemical symbol'.",
         "5. Use only English language in answers."
       ],
