@@ -4,9 +4,9 @@ from datetime import datetime
 from typing import Dict, Any
 
 import database
-from config import MODELS_BY_LANGUAGE, DEBUG_MODE
+from config import MODELS_BY_LANGUAGE, DEBUG_MODE, PROMPTS
 from state import PRELOAD_CONCURRENCY_SEMAPHORE, MAX_QUESTIONS_PER_CATEGORY_IN_CACHE
-from generative import call_generative_model
+from generative import call_generative_model, ensure_blueprints_exist
 from utils import build_question_prompt, is_question_valid, format_explanation_part, update_generation_history
 from models import PreloadRequest
 
@@ -36,7 +36,35 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
             print(f"[{game_id}] Preloading for '{category}' using model '{model_to_use}'...")
         try:
             params = request_data.model_dump()
-            prompt = build_question_prompt(params, category)
+            language = params.get("language", "pl")
+            theme = params.get("theme", "General knowledge")
+            # Ensure blueprints exist
+            try:
+                await ensure_blueprints_exist(category, language, theme, model_to_use)
+            except Exception as e:
+                print(f"Warning: Could not ensure blueprints for '{category}': {e}. Falling back to old generation.")
+            
+            blueprint = database.get_unused_blueprint(category)
+            if blueprint:
+                if DEBUG_MODE:
+                    print(f"Using blueprint for preload '{category}': subcategory={blueprint['subcategory']}, modifier={blueprint['modifier']}")
+                # Build prompt from blueprint
+                prompt_struct = PROMPTS["generate_question_from_blueprint"][language]
+                static_part = [
+                    prompt_struct["persona"],
+                    "\n".join(prompt_struct["static_instructions"])
+                ]
+                static_content = "\n\n".join(static_part)
+                knowledge_key = params.get("knowledgeLevel", "basic")
+                knowledge_prompt = PROMPTS["knowledge_prompts"][knowledge_key][language]
+                game_mode_key = params.get("gameMode", "mcq")
+                game_mode_prompt = PROMPTS["game_mode_prompts"][game_mode_key][language]
+                dynamic_content = ""
+                prompt = f"{static_content}\n\n{dynamic_content}"
+            else:
+                # Fallback to old prompt
+                prompt = build_question_prompt(params, category)
+            
             # call with timeout to avoid long blocking
             data, raw_response = await asyncio.wait_for(call_generative_model(prompt, model_to_use, return_raw=True), timeout=30.0)
             is_valid, error_msg = is_question_valid(data, params.get("gameMode"))

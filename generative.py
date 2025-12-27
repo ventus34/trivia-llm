@@ -1,11 +1,11 @@
 import asyncio
 import time
 import random
-from typing import Any, Tuple
+from typing import Any, Tuple, List, Dict, Optional
 from datetime import datetime
 
 import database
-from config import client, DEBUG_MODE, GEN_CALL_MAX_ATTEMPTS, FALLBACK_MODEL, generative_api_limiter, GENERATIVE_CONCURRENCY_SEMAPHORE
+from config import client, DEBUG_MODE, GEN_CALL_MAX_ATTEMPTS, FALLBACK_MODEL, generative_api_limiter, GENERATIVE_CONCURRENCY_SEMAPHORE, PROMPTS
 from utils import extract_json_from_response, validate_model
 
 # Rate-limit / retry aware call to generative model
@@ -111,3 +111,47 @@ async def call_generative_model(prompt: str, model_name: str, return_raw=False) 
         pass
     database.log_error_db("call_generative_model", {"model": current_model, "error": str(last_exception), "raw_response_snippet": raw_response[:200] if raw_response else "None"})
     raise last_exception if last_exception else Exception("Unknown error in call_generative_model")
+
+
+async def ensure_blueprints_exist(category: str, language: str, theme: str, model: str = "trivia") -> None:
+    """
+    Ensure there are enough unused blueprints for the given category.
+    If the count is less than 5, generate a batch of 20 blueprints and save them.
+    """
+    count = database.get_blueprint_count(category)
+    if count >= 5:
+        if DEBUG_MODE:
+            print(f"Sufficient blueprints for '{category}' ({count} available).")
+        return
+
+    print(f"Generating new blueprints for category: {category}")
+    prompt_struct = PROMPTS["generate_blueprints"][language]
+    # Build prompt - handle different key names for generate_blueprints
+    if "persona" in prompt_struct:
+        persona = prompt_struct["persona"]
+        instructions_key = "static_instructions"
+    else:
+        persona = prompt_struct.get("system", "")
+        instructions_key = "instruction"
+    static_part = [
+        persona,
+        "\n".join(prompt_struct[instructions_key])
+    ]
+    static_content = "\n\n".join(static_part)
+    dynamic_content = ""
+    full_prompt = f"{static_content}\n\n{dynamic_content}"
+
+    try:
+        response_json = await call_generative_model(full_prompt, model)
+        # Expect response_json to be a list of objects or a dict with a key "topics"
+        blueprints = response_json.get("topics", []) if isinstance(response_json, dict) else response_json
+        if not isinstance(blueprints, list):
+            blueprints = []
+        if blueprints:
+            database.save_blueprints_batch(category, blueprints)
+            print(f"Saved {len(blueprints)} blueprints for category '{category}'.")
+        else:
+            print(f"Warning: No blueprints generated for '{category}'.")
+    except Exception as e:
+        print(f"Error generating blueprints for '{category}': {e}")
+        database.log_error_db("ensure_blueprints_exist", {"category": category, "error": str(e)})

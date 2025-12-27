@@ -62,8 +62,75 @@ def init_db():
                 raw_response TEXT
             )
         """)
+        
+        # Table for storing question blueprints
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS question_blueprints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT NOT NULL,
+                subcategory TEXT NOT NULL,
+                modifier TEXT,
+                target_answer TEXT NOT NULL,
+                is_used BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Index for quick lookup of unused blueprints
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_blueprints_cat_used ON question_blueprints(category, is_used)")
+        
         conn.commit()
     print("SQLite database and all tables initialized successfully.")
+
+def save_blueprints_batch(category: str, blueprints: List[Dict[str, str]]):
+    """Saves a batch of generated blueprints to the database."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        data_to_insert = [
+            (category, b['subcategory'], b.get('modifier', ''), b['target_answer'])
+            for b in blueprints
+        ]
+        cursor.executemany("""
+            INSERT INTO question_blueprints (category, subcategory, modifier, target_answer)
+            VALUES (?, ?, ?, ?)
+        """, data_to_insert)
+        conn.commit()
+
+def get_unused_blueprint(category: str) -> Optional[Dict[str, Any]]:
+    """Retrieves one unused blueprint and marks it as used (atomically)."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        try:
+            # Get one random unused blueprint
+            cursor.execute("""
+                SELECT id, subcategory, modifier, target_answer
+                FROM question_blueprints
+                WHERE category = ? AND is_used = 0
+                ORDER BY RANDOM() LIMIT 1
+            """, (category,))
+            
+            row = cursor.fetchone()
+            if row:
+                blueprint = dict(row)
+                # Mark as used
+                cursor.execute("UPDATE question_blueprints SET is_used = 1 WHERE id = ?", (blueprint['id'],))
+                conn.commit()
+                return blueprint
+            return None
+        except Exception as e:
+            print(f"Error getting blueprint: {e}")
+            conn.rollback()
+            return None
+
+def get_blueprint_count(category: str) -> int:
+    """Counts how many unused blueprints are available for a category."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) FROM question_blueprints
+            WHERE category = ? AND is_used = 0
+        """, (category,))
+        return cursor.fetchone()[0]
 
 def add_question(question_data: Dict[str, Any], inputs: Dict[str, Any]):
     """Adds a new, generated question to the permanent storage table."""

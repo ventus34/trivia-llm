@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse
 import database
 from config import CATEGORY_MODELS, EXPLANATION_MODELS, FALLBACK_MODEL, PROMPTS, MAX_PRELOAD_CATEGORIES, MIN_PRELOAD_INTERVAL, DEBUG_MODE
 from state import PRELOAD_STATUS_LOCK, PRELOAD_TASK_STATUS
-from generative import call_generative_model
+from generative import call_generative_model, ensure_blueprints_exist
 from preload import _preload_task
 from utils import build_question_prompt, is_question_valid, format_explanation_part, update_generation_history
 from models import GenerateCategoriesRequest, QuestionRequest, ExplanationRequest, MutationRequest, PreloadRequest
@@ -132,12 +132,88 @@ async def generate_question(req: QuestionRequest):
         except asyncio.TimeoutError:
             if DEBUG_MODE: print(f"[{req.gameId}] Preload wait timed out for '{req.category}'. Generating on the fly.")
 
+    # Ensure we have blueprints for this category
+    language = req.language if hasattr(req, 'language') else 'pl'
+    theme = req.theme if hasattr(req, 'theme') else 'General knowledge'
+    try:
+        await ensure_blueprints_exist(req.category, language, theme, "trivia")
+    except Exception as e:
+        print(f"Warning: Could not ensure blueprints for '{req.category}': {e}. Falling back to old generation.")
+        # Continue with old method
+
+    blueprint = database.get_unused_blueprint(req.category)
+    if blueprint:
+        if DEBUG_MODE:
+            print(f"Using blueprint for '{req.category}': subcategory={blueprint['subcategory']}, modifier={blueprint['modifier']}, target_answer={blueprint['target_answer']}")
+        # Build prompt from blueprint
+        prompt_struct = PROMPTS["generate_question_from_blueprint"][language]
+        static_part = [
+            prompt_struct["persona"],
+            "\n".join(prompt_struct["static_instructions"])
+        ]
+        static_content = "\n\n".join(static_part)
+        knowledge_key = req.knowledgeLevel if hasattr(req, 'knowledgeLevel') else 'basic'
+        knowledge_prompt = PROMPTS["knowledge_prompts"][knowledge_key][language]
+        game_mode_key = req.gameMode if hasattr(req, 'gameMode') else 'mcq'
+        game_mode_prompt = PROMPTS["game_mode_prompts"][game_mode_key][language]
+        dynamic_content = ""
+        full_prompt = f"{static_content}\n\n{dynamic_content}"
+        
+        MAX_RETRIES = 2
+        last_error = None
+        raw_response_last = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                if DEBUG_MODE: print(f"--- Blueprint-based generation attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}' ---")
+                data, raw_response = await call_generative_model(full_prompt, "trivia", return_raw=True)
+                raw_response_last = raw_response
+                is_valid, error_message = is_question_valid(data, req.gameMode)
+                if is_valid:
+                    # Ensure the answer matches the target_answer (optional check)
+                    if data.get("answer") != blueprint['target_answer']:
+                        print(f"Warning: Generated answer '{data.get('answer')}' does not match target '{blueprint['target_answer']}'. Still accepting.")
+                    # Format explanations
+                    explanation_parts = []
+                    correct_explanation = format_explanation_part(data.get("explanation_correct"))
+                    if correct_explanation:
+                        if language == 'pl':
+                            explanation_parts.append(f"Wyjaśnienie poprawnej odpowiedzi:\n{correct_explanation}")
+                        else:
+                            explanation_parts.append(f"Explanation of correct answer:\n{correct_explanation}")
+                    distractors_explanation = format_explanation_part(data.get("explanation_distractors"))
+                    if distractors_explanation:
+                        if language == 'pl':
+                            explanation_parts.append(f"Wyjaśnienie odpowiedzi niepoprawnych:\n{distractors_explanation}")
+                        else:
+                            explanation_parts.append(f"Explanation of incorrect answers:\n{distractors_explanation}")
+                    data["explanation"] = "\n\n".join(explanation_parts)
+                    database.add_question(data, req.model_dump())
+                    update_generation_history(req.category, data.get("subcategory"), data.get("key_entities"))
+                    return JSONResponse(content=data)
+                else:
+                    last_error = ValueError(error_message)
+                    print(f"WARNING: Validation failed on attempt {attempt + 1}: {error_message}. Raw response snippet: '{raw_response[:300]}...'")
+                    database.log_error_db("generate_question_validation", {"request": req.model_dump(), "error": error_message, "raw_response_snippet": raw_response[:300]})
+            except Exception as e:
+                last_error = e
+                raw_response_last = raw_response_last or "No raw response captured."
+                print(f"Exception on attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}': {e}. Raw response snippet: '{raw_response_last[:300]}...'")
+                database.log_error_db("generate_question_exception", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response_last[:300]})
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(1)
+        # If we reach here, blueprint generation failed
+        print(f"Blueprint generation failed for '{req.category}'. Falling back to old method.")
+        # Mark blueprint as unused? We'll keep it used for now.
+    else:
+        print(f"No blueprint available for '{req.category}'. Falling back to old method.")
+
+    # Fallback to old generation method (without blueprints)
     MAX_RETRIES = 2
     last_error = None
     raw_response_last = None
     for attempt in range(MAX_RETRIES):
         try:
-            if DEBUG_MODE: print(f"--- On-the-fly generation attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}' ---")
+            if DEBUG_MODE: print(f"--- Fallback generation attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}' ---")
 
             if attempt > 0:
                 req.includeCategoryTheme = not req.includeCategoryTheme  # Toggle theme inclusion for variation
@@ -149,10 +225,10 @@ async def generate_question(req: QuestionRequest):
             if is_valid:
                 # Get language from request to provide proper labels
                 language = req.language if hasattr(req, 'language') else 'pl'
-                 
+                  
                 # Format explanation parts with clear labels
                 explanation_parts = []
-                 
+                  
                 # Explanation of correct answer
                 correct_explanation = format_explanation_part(data.get("explanation_correct"))
                 if correct_explanation:
@@ -160,7 +236,7 @@ async def generate_question(req: QuestionRequest):
                         explanation_parts.append(f"Wyjaśnienie poprawnej odpowiedzi:\n{correct_explanation}")
                     else:  # English
                         explanation_parts.append(f"Explanation of correct answer:\n{correct_explanation}")
-                 
+                  
                 # Explanation of distractors
                 distractors_explanation = format_explanation_part(data.get("explanation_distractors"))
                 if distractors_explanation:
@@ -168,8 +244,8 @@ async def generate_question(req: QuestionRequest):
                         explanation_parts.append(f"Wyjaśnienie odpowiedzi niepoprawnych:\n{distractors_explanation}")
                     else:  # English
                         explanation_parts.append(f"Explanation of incorrect answers:\n{distractors_explanation}")
-                 
-                 
+                  
+                  
                 data["explanation"] = "\n\n".join(explanation_parts)
                 database.add_question(data, req.model_dump())
                 update_generation_history(req.category, data.get("subcategory"), data.get("key_entities"))
@@ -222,7 +298,7 @@ async def get_category_mutation(req: MutationRequest):
         # Hardcode model to "trivia" router
         model_to_use = "trivia"
         prompt_struct = PROMPTS["mutate_category"][req.language]
-        prompt = prompt_struct["task_template"].format(old_category=req.old_category, theme=req.theme or "general", existing_categories=req.existing_categories)
+        prompt = ""
          
         # Combine with static instructions if available
         if "static_instructions" in prompt_struct:
@@ -242,7 +318,7 @@ async def get_incorrect_explanation(req: ExplanationRequest):
         # Hardcode model to "trivia" router
         model_to_use = "trivia"
         prompt_struct = PROMPTS["explain_incorrect"][req.language]
-        prompt = prompt_struct["task_template"].format(question=req.question, correct_answer=req.correct_answer, player_answer=req.player_answer)
+        prompt = ""
          
         # Combine with static instructions if available
         if "static_instructions" in prompt_struct:

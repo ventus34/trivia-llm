@@ -418,13 +418,10 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
     UI.postVerificationButtons.classList.add('hidden');
     UI.answerPopupTitle.textContent = translations.answer_evaluation[gameState.currentLanguage];
 
-    // Always show the pre-generated explanation
-    UI.explanationContainer.classList.remove('hidden');
-    UI.explanationText.innerHTML = (gameState.currentQuestionData.explanation || "").replace(/\n/g, '<br>');
-
     // Compare player's answer with the correct answer
     const answersMatch = playerAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
 
+    // Set background colors based on whether answers match
     if (answersMatch) {
         // Both answers are the same, set green background
         UI.playerAnswerText.classList.remove('bg-gray-100', 'bg-red-100');
@@ -437,6 +434,57 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
         UI.playerAnswerText.classList.add('bg-red-100');
         UI.correctAnswerText.classList.remove('bg-green-100', 'bg-red-100');
         UI.correctAnswerText.classList.add('bg-red-100');
+    }
+
+    // Handle explanation display
+    const lang = gameState.currentLanguage;
+    let explanationContent = '';
+    
+    // Always show both correct and incorrect explanations with proper prefixes
+    const explanationParts = [];
+    
+    // Add correct answer explanation
+    if (gameState.currentQuestionData.explanation_correct) {
+        const correctLabelPl = 'Wyjaśnienie poprawnej odpowiedzi:';
+        const correctLabelEn = 'Explanation of correct answer:';
+        const correctLabel = lang === 'pl' ? correctLabelPl : correctLabelEn;
+        explanationParts.push(`${correctLabel}\n${gameState.currentQuestionData.explanation_correct}`);
+    } else if (gameState.currentQuestionData.explanation) {
+        // Fallback for combined explanation field
+        const correctLabelPl = 'Wyjaśnienie poprawnej odpowiedzi:';
+        const correctLabelEn = 'Explanation of correct answer:';
+        const correctLabel = lang === 'pl' ? correctLabelPl : correctLabelEn;
+        explanationParts.push(`${correctLabel}\n${gameState.currentQuestionData.explanation}`);
+    }
+    
+    // Add incorrect answer explanation (check for both possible field names)
+    const incorrectExplanation = gameState.currentQuestionData.explanation_distractors || gameState.currentQuestionData.explanation_incorrect;
+    if (incorrectExplanation) {
+        const incorrectLabelPl = 'Wyjaśnienie odpowiedzi niepoprawnych:';
+        const incorrectLabelEn = 'Explanation of incorrect answers:';
+        const incorrectLabel = lang === 'pl' ? incorrectLabelPl : incorrectLabelEn;
+        explanationParts.push(`${incorrectLabel}\n${incorrectExplanation}`);
+    }
+    
+    // If we have any explanations, join them with double newlines
+    if (explanationParts.length > 0) {
+        explanationContent = explanationParts.join('\n\n');
+    } else {
+        // Fallback if no explanations are available
+        explanationContent = lang === 'pl' ? 'Brak dostępnych wyjaśnień.' : 'No explanations available.';
+    }
+
+    // Always show the explanation container
+    UI.explanationContainer.classList.remove('hidden');
+    UI.explanationText.innerHTML = explanationContent.replace(/\n/g, '<br>');
+    
+    // Set the explanation background color based on whether the answer was correct
+    if (answersMatch) {
+        UI.explanationText.classList.remove('bg-yellow-100', 'bg-red-100');
+        UI.explanationText.classList.add('bg-green-100');
+    } else {
+        UI.explanationText.classList.remove('bg-yellow-100', 'bg-green-100');
+        UI.explanationText.classList.add('bg-red-100');
     }
 
     showAnswerPopup();

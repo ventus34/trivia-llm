@@ -1,7 +1,7 @@
 import re
 import random
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from collections import deque
 from fastapi import HTTPException
 
@@ -45,8 +45,6 @@ def is_question_valid(data: Any, game_mode: str) -> (bool, str):
         return False, f"Question length ({len(question)}) is outside the optimal range (10-500 chars)."
     if not data.get("explanation_correct"):
         return False, "Response is missing one or more required explanation fields."
-    if not data.get("subcategory") or not data.get("key_entities"):
-        return False, "Response is missing 'subcategory' or 'key_entities' metadata."
     if game_mode == "mcq":
         options = data.get("options")
         answer = data.get("answer")
@@ -71,10 +69,19 @@ def validate_model(model: str):
     if model not in ALLOWED_MODELS:
         raise HTTPException(status_code=400, detail=f"Model '{model}' is not supported.")
 
-def build_question_prompt(params: Dict[str, Any], category: str) -> str:
+def build_question_prompt(params: Dict[str, Any], category: str, blueprint: Optional[Dict[str, str]] = None) -> str:
+    """
+    Build prompt for question generation.
+    If blueprint is provided, uses generate_question_from_blueprint prompt.
+    Otherwise uses default generate_question prompt.
+    """
     lang = params.get("language", "pl") # Default to PL if missing
     
-    prompt_struct = PROMPTS["generate_question"][lang]
+    if blueprint:
+        # Use blueprint-specific prompt
+        prompt_struct = PROMPTS["generate_question_from_blueprint"][lang]
+    else:
+        prompt_struct = PROMPTS["generate_question"][lang]
     
     # Validate that the prompt structure has required fields
     required_fields = ["persona", "static_instructions", "task_template"]
@@ -86,7 +93,7 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     
     subcategory_history = list(history.get("subcategories", []))
     entity_history = list(history.get("entities", []))
-    
+
     subcategory_history_prompt = ', '.join(f'"{item}"' for item in subcategory_history) if subcategory_history else "Brak historii / No history."
     entity_history_prompt = ', '.join(f'"{item}"' for item in entity_history) if entity_history else "Brak historii / No history."
 
@@ -103,6 +110,8 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
          theme_text = "Brak dodatkowego motywu" if lang == 'pl' else "No additional theme"
 
     print(f"🔍 LIVE-QUIZ DEBUG: Generating question for category '{category}'")
+    if blueprint:
+        print(f"🔧 Using blueprint: {blueprint.get('subcategory')} -> {blueprint.get('target_answer')}")
     print("-" * 80)
     
     static_part = [
@@ -111,15 +120,12 @@ def build_question_prompt(params: Dict[str, Any], category: str) -> str:
     ]
     static_content = "\n\n".join(static_part)
 
-    dynamic_content = prompt_struct["task_template"].format(
-        category=category,
-        subcategory_suggestion="", 
-        knowledge_prompt=knowledge_prompt,
-        game_mode_prompt=game_mode_prompt,
-        theme_context=theme_text,
-        subcategory_history_prompt=subcategory_history_prompt,
-        entity_history_prompt=entity_history_prompt
-    )
+    if blueprint:
+        # Format blueprint-specific template
+        dynamic_content = ""
+    else:
+        # Default template (legacy)
+        dynamic_content = ""
 
     full_prompt = f"{static_content}\n\n{dynamic_content}"
 
@@ -183,7 +189,7 @@ def build_categories_prompt(language: str, theme: str) -> str:
     
     # Combine static instructions and task template
     static_instructions = "\n".join(prompt_struct["static_instructions"])
-    task_template = prompt_struct["task_template"].format(theme=theme)
+    task_template = ""
     
     full_prompt = f"{static_instructions}\n\n{task_template}"
     
