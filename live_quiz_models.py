@@ -3,10 +3,11 @@
 Data models for the live quiz game system.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import asyncio
+import re
 
 class Player(BaseModel):
     id: str
@@ -111,7 +112,3 @@ class SSEEvent(BaseModel):
     type: str  # room_created, player_joined, question_started, timer_update, answer_submitted, results_shown, game_finished
     data: Dict[str, Any]
     timestamp: datetime
-
-# For storing active games in memory
-LIVE_QUIZ_GAMES: Dict[str, LiveQuizGameState] = {}
-ROOM_CODES: Dict[str, str] = {}  # room_code -> game_id mapping

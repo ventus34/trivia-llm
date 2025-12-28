@@ -190,7 +190,10 @@ def extract_json_from_response(text: str) -> Any:
     print(error_msg)
     import database
     try:
-        database.log_error_db("json_parsing_failed", {"raw_response_snippet": text[:500], "error": "Unable to parse JSON from response"})
+        # database.log_error_db is now async, but this is a sync function.
+        # We'll skip logging here or use a background task if needed.
+        # For now, just print.
+        print(f"JSON parsing failed: {text[:200]}")
     except:
         pass  # Don't fail if database logging fails
     return {"error": "Unable to parse JSON from response. Check model output format."}

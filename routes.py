@@ -14,13 +14,13 @@ from models import GenerateCategoriesRequest, QuestionRequest, ExplanationReques
 
 # --- API Endpoints ---
 async def get_db_stats():
-    return JSONResponse(content=database.get_all_stats())
+    return JSONResponse(content=await database.get_all_stats())
 
 async def get_db_prompts():
-    return JSONResponse(content=database.get_prompt_history())
+    return JSONResponse(content=await database.get_prompt_history())
 
 async def get_db_errors():
-    return JSONResponse(content=database.get_error_logs())
+    return JSONResponse(content=await database.get_error_logs())
 
 async def get_question_models():
     from config import QUESTION_MODELS
@@ -82,7 +82,7 @@ async def generate_question(req: QuestionRequest):
     # Hardcode model to "trivia" router
     req.model = "trivia"
     
-    cached_question = database.get_and_remove_cached_question(req.category)
+    cached_question = await database.get_and_remove_cached_question(req.category)
     if cached_question:
         if DEBUG_MODE: print(f"Serving question for '{req.category}' from DB cache.")
         
@@ -123,7 +123,7 @@ async def generate_question(req: QuestionRequest):
     if status := PRELOAD_TASK_STATUS.get(req.gameId):
         try:
             await asyncio.wait_for(status["event"].wait(), timeout=30.0)
-            cached_question = database.get_and_remove_cached_question(req.category)
+            cached_question = await database.get_and_remove_cached_question(req.category)
             if cached_question:
                 if DEBUG_MODE: print(f"Serving question for '{req.category}' from cache after waiting.")
                 return JSONResponse(content=cached_question)
@@ -139,7 +139,7 @@ async def generate_question(req: QuestionRequest):
         print(f"Warning: Could not ensure blueprints for '{req.category}': {e}. Falling back to old generation.")
         # Continue with old method
 
-    blueprint = database.get_unused_blueprint(req.category)
+    blueprint = await database.get_unused_blueprint(req.category)
     if blueprint:
         if DEBUG_MODE:
             print(f"Using blueprint for '{req.category}': subcategory={blueprint['subcategory']}, modifier={blueprint['modifier']}, target_answer={blueprint['target_answer']}")
@@ -192,18 +192,18 @@ async def generate_question(req: QuestionRequest):
                         else:
                             explanation_parts.append(f"Explanation of incorrect answers:\n{distractors_explanation}")
                     data["explanation"] = "\n\n".join(explanation_parts)
-                    database.add_question(data, req.model_dump())
+                    await database.add_question(data, req.model_dump())
                     update_generation_history(req.category, data.get("subcategory"), data.get("key_entities"))
                     return JSONResponse(content=data)
                 else:
                     last_error = ValueError(error_message)
                     print(f"WARNING: Validation failed on attempt {attempt + 1}: {error_message}. Raw response snippet: '{raw_response[:300]}...'")
-                    database.log_error_db("generate_question_validation", {"request": req.model_dump(), "error": error_message, "raw_response_snippet": raw_response[:300]})
+                    await database.log_error_db("generate_question_validation", {"request": req.model_dump(), "error": error_message, "raw_response_snippet": raw_response[:300]})
             except Exception as e:
                 last_error = e
                 raw_response_last = raw_response_last or "No raw response captured."
                 print(f"Exception on attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}': {e}. Raw response snippet: '{raw_response_last[:300]}...'")
-                database.log_error_db("generate_question_exception", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response_last[:300]})
+                await database.log_error_db("generate_question_exception", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response_last[:300]})
                 if attempt < MAX_RETRIES - 1:
                     await asyncio.sleep(1)
         # If we reach here, blueprint generation failed
@@ -252,24 +252,24 @@ async def generate_question(req: QuestionRequest):
                   
                   
                 data["explanation"] = "\n\n".join(explanation_parts)
-                database.add_question(data, req.model_dump())
+                await database.add_question(data, req.model_dump())
                 update_generation_history(req.category, data.get("subcategory"), data.get("key_entities"))
                 return JSONResponse(content=data)
             else:
                 last_error = ValueError(error_message)
                 print(f"WARNING: Validation failed on attempt {attempt + 1}: {error_message}. Raw response snippet: '{raw_response[:300]}...'")
-                database.log_error_db("generate_question_validation", {"request": req.model_dump(), "error": error_message, "raw_response_snippet": raw_response[:300]})
+                await database.log_error_db("generate_question_validation", {"request": req.model_dump(), "error": error_message, "raw_response_snippet": raw_response[:300]})
         except Exception as e:
             last_error = e
             raw_response_last = raw_response_last or "No raw response captured."
             print(f"Exception on attempt {attempt + 1}/{MAX_RETRIES} for '{req.category}': {e}. Raw response snippet: '{raw_response_last[:300]}...'")
-            database.log_error_db("generate_question_exception", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response_last[:300]})
+            await database.log_error_db("generate_question_exception", {"request": req.model_dump(), "error": str(e), "raw_response_snippet": raw_response_last[:300]})
             if attempt < MAX_RETRIES - 1:
                 await asyncio.sleep(1)
 
     error_message = f"Failed to generate a valid question for category '{req.category}' after {MAX_RETRIES} attempts. Final error: {last_error}"
     print(f"{error_message}. Last raw response snippet: '{raw_response_last[:300]}...'")
-    database.log_error_db("generate_question", {"request": req.model_dump(), "error": str(last_error), "raw_response_snippet": raw_response_last[:300]})
+    await database.log_error_db("generate_question", {"request": req.model_dump(), "error": str(last_error), "raw_response_snippet": raw_response_last[:300]})
     fallback_response = {"question": "Wystąpił błąd podczas generowania pytania.", "options": [], "answer": "", "explanation": "Błąd serwera.", "subcategory": "Błąd", "key_entities": []}
     return JSONResponse(content=fallback_response, status_code=500)
 
@@ -289,11 +289,11 @@ async def generate_categories(req: GenerateCategoriesRequest):
             else:
                 if isinstance(response_data, dict) and response_data.get("error"):
                     print(f"Attempt {attempt + 1} failed: {response_data['error']}. Raw snippet: '{raw_response[:300]}...'")
-                    database.log_error_db("generate_categories_error", {"request": req.__dict__, "error": response_data['error'], "raw_response_snippet": raw_response[:300]})
+                    await database.log_error_db("generate_categories_error", {"request": req.__dict__, "error": response_data['error'], "raw_response_snippet": raw_response[:300]})
         except Exception as e:
             raw_response = raw_response if 'raw_response' in locals() else "No response captured."
             print(f"Attempt {attempt + 1} failed for generate-categories: {e}. Raw snippet: '{raw_response[:300]}...'")
-            database.log_error_db("generate_categories_exception", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
+            await database.log_error_db("generate_categories_exception", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
             if attempt == MAX_RETRIES:
                 raise HTTPException(status_code=500, detail=f"Failed to generate categories: {e}")
             await asyncio.sleep(1)
@@ -315,7 +315,7 @@ async def get_category_mutation(req: MutationRequest):
     except Exception as e:
         raw_response = raw_response if 'raw_response' in locals() else "No response captured."
         print(f"ERROR in mutate-category: {e}. Raw snippet: '{raw_response[:300]}...'")
-        database.log_error_db("mutate_category", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
+        await database.log_error_db("mutate_category", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
         raise HTTPException(status_code=500, detail=f"Failed to mutate category: {e}")
 
 async def get_incorrect_explanation(req: ExplanationRequest):
@@ -341,12 +341,8 @@ async def get_incorrect_explanation(req: ExplanationRequest):
     except Exception as e:
         raw_response = raw_response if 'raw_response' in locals() else "No response captured."
         print(f"ERROR in explain-incorrect: {e}. Raw snippet: '{raw_response[:300]}...'")
-        database.log_error_db("explain_incorrect", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
+        await database.log_error_db("explain_incorrect", {"request": req.__dict__, "error": str(e), "raw_response_snippet": raw_response[:300]})
         raise HTTPException(status_code=500, detail=f"Failed to get explanation: {e}")
 
 # --- Static Files ---
 async def root(): return FileResponse('trivia.html')
-
-async def manifest(): return FileResponse('manifest.json')
-
-async def service_worker(): return FileResponse('service-worker.js', media_type='application/javascript')

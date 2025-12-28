@@ -5,20 +5,21 @@ Routes and handlers for the live quiz game system using SSE.
 
 import json
 import asyncio
-import random
-import string
 from datetime import datetime, timedelta
 from typing import Dict, List
-from fastapi import Request, HTTPException, BackgroundTasks
+from fastapi import Request, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from live_quiz_models import (
-    LiveQuizGameState, Player, GameQuestion, Question,
+    LiveQuizGameState, Player,
     CreateRoomRequest, JoinRoomRequest, SubmitAnswerRequest, HostControlRequest,
-    RoomStatus, SSEEvent, LIVE_QUIZ_GAMES, ROOM_CODES
+    RoomStatus
 )
-from generative import call_generative_model
-from config import PROMPTS, DEBUG_MODE
+from state import LIVE_QUIZ_GAMES, ROOM_CODES
+from services.live_game_service import (
+    broadcast_to_game, generate_room_code, generate_player_id, generate_game_id,
+    start_question, show_question_results
+)
 
 # --- SSE CONNECTION MANAGEMENT ---
 # Store active SSE connections with their queues
@@ -34,25 +35,13 @@ async def cleanup_stale_games():
         try:
             current_time = datetime.now()
             stale_games = []
-            stale_connections = []
 
-            # Check for stale games (no activity for 2 hours)
-            for game_id, game_state in LIVE_QUIZ_GAMES.items():
+            # Check for stale games (no activity for 24 hours)
+            for game_id, game_state in list(LIVE_QUIZ_GAMES.items()):
                 if game_state.last_activity:
                     inactivity_duration = current_time - game_state.last_activity
-                    if inactivity_duration.total_seconds() > 7200:  # 2 hours
+                    if inactivity_duration.total_seconds() > 86400:  # 24 hours
                         stale_games.append(game_id)
-                        print(f"Marking game {game_id} as stale (inactive for {inactivity_duration.total_seconds() / 3600:.1f} hours)")
-
-            # Check for games with no active connections for 30 minutes
-            for game_id, queues in ACTIVE_SSE_QUEUES.items():
-                if len(queues) == 0 and game_id in LIVE_QUIZ_GAMES:
-                    game_state = LIVE_QUIZ_GAMES[game_id]
-                    if game_state.last_activity:
-                        no_connection_duration = current_time - game_state.last_activity
-                        if no_connection_duration.total_seconds() > 1800:  # 30 minutes
-                            stale_connections.append(game_id)
-                            print(f"Marking game {game_id} as stale (no connections for {no_connection_duration.total_seconds() / 60:.1f} minutes)")
 
             # Clean up stale games
             for game_id in stale_games:
@@ -67,12 +56,12 @@ async def cleanup_stale_games():
                         except Exception as e:
                             print(f"Error cancelling timer task for game {game_id}: {e}")
 
-                    # Notify any remaining connected clients about game cleanup
+                    # Notify any remaining connected clients
                     try:
                         await broadcast_to_game(game_id, "game_expired", {
                             "message": "This game has been automatically closed due to inactivity.",
                             "reason": "inactive"
-                        })
+                        }, ACTIVE_SSE_QUEUES)
                     except Exception as e:
                         print(f"Error broadcasting game expiration for {game_id}: {e}")
 
@@ -86,12 +75,6 @@ async def cleanup_stale_games():
                         del ACTIVE_SSE_QUEUES[game_id]
 
                     print(f"Cleaned up stale game: {game_id} (room: {room_code})")
-
-            # Clean up stale connections (games with no connections but not yet stale)
-            for game_id in stale_connections:
-                if game_id in ACTIVE_SSE_QUEUES:
-                    del ACTIVE_SSE_QUEUES[game_id]
-                    print(f"Cleaned up SSE queues for game: {game_id}")
 
             # Clean up empty SSE queue entries
             empty_queues = [game_id for game_id, queues in ACTIVE_SSE_QUEUES.items() if len(queues) == 0]
@@ -118,102 +101,28 @@ def stop_cleanup_task():
         cleanup_task.cancel()
         print("Stopped background cleanup task")
 
-def generate_room_code() -> str:
-    """Generate a 6-digit room code."""
-    return ''.join(random.choices(string.digits, k=6))
-
-def generate_player_id() -> str:
-    """Generate a unique player ID."""
-    return f"player_{datetime.now().timestamp()}_{random.randint(1000, 9999)}"
-
-def generate_game_id() -> str:
-    """Generate a unique game ID."""
-    return f"game_{datetime.now().timestamp()}_{random.randint(1000, 9999)}"
-
-# Store active SSE connections with their queues
-ACTIVE_SSE_QUEUES: Dict[str, List[asyncio.Queue]] = {}
-
-async def broadcast_to_game(game_id: str, event_type: str, data: dict):
-    """Broadcast an SSE event to all connected clients in a game."""
-    if game_id not in ACTIVE_SSE_QUEUES:
+async def question_timer(game_id: str, question_index: int):
+    """Handle question timer."""
+    if game_id not in LIVE_QUIZ_GAMES:
         return
-
-    # Update last activity timestamp for the game
-    if game_id in LIVE_QUIZ_GAMES:
-        LIVE_QUIZ_GAMES[game_id].last_activity = datetime.now()
-
-    event = {
-        "type": event_type,
-        "data": data,
-        "timestamp": datetime.now().isoformat()
-    }
-
-    message = f"data: {json.dumps(event)}\n\n"
-    dead_queues = []
-
-    for queue in ACTIVE_SSE_QUEUES[game_id]:
-        try:
-            await queue.put(message)
-        except Exception as e:
-            print(f"Failed to send SSE message: {e}")
-            dead_queues.append(queue)
-
-    # Remove dead queues
-    for dead_queue in dead_queues:
-        ACTIVE_SSE_QUEUES[game_id].remove(dead_queue)
-
-async def generate_live_quiz_question(game_state: LiveQuizGameState, category: str, question_number: int):
-    """Generate a question using the existing AI system."""
-    from models import QuestionRequest
+    game_state = LIVE_QUIZ_GAMES[game_id]
+    if question_index >= len(game_state.questions):
+        return
+    game_question = game_state.questions[question_index]
     
-    # Create request for the existing question generation system
-    req = QuestionRequest(
-        model=game_state.selected_question_model,
-        gameId=game_state.game_id,
-        category=category,
-        gameMode=game_state.game_mode,
-        knowledgeLevel=game_state.knowledge_level,
-        language=game_state.language,
-        theme=game_state.theme,
-        includeCategoryTheme=game_state.include_category_theme
-    )
+    while game_question.is_active and datetime.now() < game_question.expires_at:
+        if not game_state.timer_paused:
+            remaining = int((game_question.expires_at - datetime.now()).total_seconds())
+            await broadcast_to_game(game_id, "timer_update", {
+                "question_number": game_question.question_number,
+                "remaining_seconds": remaining
+            }, ACTIVE_SSE_QUEUES)
+        
+        await asyncio.sleep(1)
     
-    # Use the existing generation logic
-    prompt = build_question_prompt(req.model_dump(), category)
-    data, raw_response = await call_generative_model(prompt, req.model, return_raw=True)
-    
-    if not data or not isinstance(data, dict) or not data.get('question'):
-        raise ValueError("Failed to generate valid question")
-    
-    # Create Question object
-    question = Question(
-        id=f"q_{question_number}_{datetime.now().timestamp()}",
-        question=data.get("question", ""),
-        options=data.get("options", []),
-        answer=data.get("answer", ""),
-        explanation=data.get("explanation_correct", data.get("explanation", "")),
-        category=category,
-        subcategory=data.get("subcategory"),
-        key_entities=data.get("key_entities", [])
-    )
-    
-    # Update generation history to track subcategories and key entities
-    # This ensures unique questions within categories across games
-    if question.subcategory and question.key_entities:
-        from utils import update_generation_history
-        update_generation_history(category, question.subcategory, question.key_entities)
-        if DEBUG_MODE:
-            print(f"Updated history for category '{category}': subcategory='{question.subcategory}', entities={question.key_entities[:3]}...")
-    else:
-        if DEBUG_MODE:
-            print(f"Warning: Missing subcategory or key_entities for question in category '{category}'")
-    
-    return question
-
-def build_question_prompt(request_data: dict, category: str) -> str:
-    """Build question prompt for live quiz (simplified version)."""
-    from utils import build_question_prompt as build_prompt
-    return build_prompt(request_data, category)
+    # Time's up
+    if game_question.is_active:
+        await show_question_results(game_id, ACTIVE_SSE_QUEUES)
 
 # --- API ENDPOINTS ---
 
@@ -222,22 +131,18 @@ async def create_room(req: CreateRoomRequest):
     if len(req.categories) != 6:
         raise HTTPException(status_code=400, detail="Exactly 6 categories are required")
 
-    # Generate room code and game ID
     while True:
         room_code = generate_room_code()
         if room_code not in ROOM_CODES:
             break
 
     game_id = generate_game_id()
-
-    # Create host player (use default name since host name is not provided)
     host_player = Player(
         id=f"host_{game_id}",
-        name="Host",  # Default host name
+        name="Host",
         joined_at=datetime.now()
     )
 
-    # Create game state
     total_questions = len(req.categories) * req.questions_per_category
     game_state = LiveQuizGameState(
         game_id=game_id,
@@ -245,10 +150,10 @@ async def create_room(req: CreateRoomRequest):
         host_id=host_player.id,
         categories=req.categories,
         players=[host_player],
-        questions=[],  # Will be generated when game starts
+        questions=[],
         status="waiting",
         created_at=datetime.now(),
-        last_activity=datetime.now(),  # Initialize last activity
+        last_activity=datetime.now(),
         game_mode=req.game_mode,
         knowledge_level=req.knowledge_level,
         language=req.language,
@@ -261,11 +166,8 @@ async def create_room(req: CreateRoomRequest):
         total_questions=total_questions
     )
 
-    # Store game
     LIVE_QUIZ_GAMES[game_id] = game_state
     ROOM_CODES[room_code] = game_id
-
-    print(f"Created new game room: {game_id} (room code: {room_code})")
 
     return JSONResponse(content={
         "game_id": game_id,
@@ -281,55 +183,20 @@ async def join_room(req: JoinRoomRequest):
     game_id = ROOM_CODES[req.room_code]
     game_state = LIVE_QUIZ_GAMES[game_id]
 
-    # Check if game is finished
     if game_state.status == "finished":
         raise HTTPException(status_code=400, detail="Game has already finished")
 
-    # Check for existing player with same name (reconnection)
-    existing_player = None
-    for player in game_state.players:
-        if player.name == req.player_name and player.id != game_state.host_id:
-            existing_player = player
-            break
-
+    # Reconnection logic
+    existing_player = next((p for p in game_state.players if p.name == req.player_name and p.id != game_state.host_id), None)
     if existing_player:
-        # Handle reconnection
-        print(f"Player {req.player_name} reconnecting to game {game_id}")
-
-        # Update player state for reconnection
         existing_player.connected = True
         existing_player.last_seen = datetime.now()
         existing_player.reconnect_count += 1
-
-        # If game is in progress and player hasn't answered current question, reset their state
-        if game_state.status == "playing" and game_state.current_question_index is not None:
-            current_question = game_state.questions[game_state.current_question_index]
-            if current_question and current_question.is_active:
-                # Check if player has already answered this question
-                if existing_player.id not in current_question.answers:
-                    # Player hasn't answered current question, allow them to participate
-                    existing_player.has_answered = False
-                    existing_player.last_answer = None
-                    existing_player.is_correct = None
-                # If they have answered, keep their existing state
-
-        # Broadcast reconnection
+        
         await broadcast_to_game(game_id, "player_reconnected", {
-            "player": {
-                "id": existing_player.id,
-                "name": existing_player.name,
-                "score": existing_player.score,
-                "reconnect_count": existing_player.reconnect_count
-            },
+            "player": {"id": existing_player.id, "name": existing_player.name, "score": existing_player.score},
             "player_count": len(game_state.players)
-        })
-
-        # Send updated player list to host
-        players_data = [{"id": p.id, "name": p.name, "score": p.score, "connected": p.connected} for p in game_state.players]
-        await broadcast_to_game(game_id, "players_update", {
-            "player_count": len(game_state.players),
-            "players": players_data
-        })
+        }, ACTIVE_SSE_QUEUES)
 
         return JSONResponse(content={
             "game_id": game_id,
@@ -340,15 +207,12 @@ async def join_room(req: JoinRoomRequest):
             "game_status": game_state.status,
             "is_reconnection": True,
             "current_question": game_state.current_question_index + 1 if game_state.current_question_index is not None else None,
-            "player_score": existing_player.score,
-            "has_answered_current": existing_player.has_answered if game_state.status == "playing" else False
+            "player_score": existing_player.score
         })
 
-    # New player join (not a reconnection)
-    if len(game_state.players) >= 12:  # Max 12 players
+    if len(game_state.players) >= 12:
         raise HTTPException(status_code=400, detail="Room is full")
 
-    # Create new player
     player = Player(
         id=generate_player_id(),
         name=req.player_name,
@@ -356,61 +220,17 @@ async def join_room(req: JoinRoomRequest):
         last_seen=datetime.now()
     )
 
-    # Handle late joining - if game is in progress
     if game_state.status == "playing":
-        # If game is in progress, initialize player state
-        player.has_answered = True  # Mark as already answered to skip current question
+        player.has_answered = True
         player.last_answer = "late_join"
         player.is_correct = False
-        player.score = 0  # Late joiners start with 0 points
-
-        # If there's an active question, we need to handle it specially
-        if game_state.current_question_index is not None and game_state.current_question_index < len(game_state.questions):
-            current_question = game_state.questions[game_state.current_question_index]
-            if current_question and current_question.is_active:
-                # Late joiner gets marked as "skipped" for current question (same as skip button)
-                current_question.answers[player.id] = {
-                    "answer": "",  # Empty answer for skipped questions
-                    "timestamp": datetime.now().isoformat(),
-                    "is_correct": False,  # Late joiner doesn't get points for missed question
-                    "skipped": True  # Mark as skipped to avoid penalty points
-                }
-
-        print(f"Late join: Player {player.name} joined game {game_id} during active question")
 
     game_state.players.append(player)
 
-    # Broadcast to all clients
-    if game_state.status == "waiting":
-        # Normal lobby join
-        await broadcast_to_game(game_id, "player_joined", {
-            "player": {
-                "id": player.id,
-                "name": player.name,
-                "score": player.score
-            },
-            "player_count": len(game_state.players)
-        })
-    else:
-        # Late join during game - broadcast differently
-        await broadcast_to_game(game_id, "late_player_joined", {
-            "player": {
-                "id": player.id,
-                "name": player.name,
-                "score": player.score,
-                "is_late_join": True
-            },
-            "player_count": len(game_state.players),
-            "current_question": game_state.current_question_index + 1 if game_state.current_question_index is not None else None,
-            "status": game_state.status
-        })
-
-    # Also send updated player list specifically to host
-    players_data = [{"id": p.id, "name": p.name, "score": p.score, "connected": p.connected} for p in game_state.players]
-    await broadcast_to_game(game_id, "players_update", {
-        "player_count": len(game_state.players),
-        "players": players_data
-    })
+    await broadcast_to_game(game_id, "player_joined", {
+        "player": {"id": player.id, "name": player.name, "score": player.score},
+        "player_count": len(game_state.players)
+    }, ACTIVE_SSE_QUEUES)
 
     return JSONResponse(content={
         "game_id": game_id,
@@ -441,7 +261,7 @@ async def get_room_status(game_id: str):
         current_question=game_state.current_question_index + 1 if game_state.status == "playing" else None,
         total_questions=game_state.total_questions,
         created_at=game_state.created_at
-    ))
+    ).model_dump())
 
 async def submit_answer(req: SubmitAnswerRequest):
     """Submit an answer for the current question."""
@@ -451,47 +271,35 @@ async def submit_answer(req: SubmitAnswerRequest):
     game_state = LIVE_QUIZ_GAMES[req.game_id]
     current_question = game_state.questions[game_state.current_question_index]
 
-    # Find player
     player = next((p for p in game_state.players if p.id == req.player_id), None)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
 
-    # Update player activity
     player.last_seen = datetime.now()
-
-    # Record answer
     current_question.answers[req.player_id] = {
         "answer": req.answer,
         "timestamp": datetime.now().isoformat(),
-        "is_correct": None,  # Will be set when question is scored
-        "skipped": req.skipped  # Track if this was a skip
+        "is_correct": None,
+        "skipped": req.skipped
     }
 
     player.has_answered = True
     player.last_answer = req.answer
 
-    # Check if all players have answered (excluding host)
     players_only = [p for p in game_state.players if p.id != game_state.host_id]
     all_answered = all(p.has_answered for p in players_only)
     no_time_left = datetime.now() >= current_question.expires_at if current_question.expires_at else False
-
-    # Count only non-host players who have actually submitted answers to this question
-    players_only = [p for p in game_state.players if p.id != game_state.host_id]
-    answered_count = len(current_question.answers)
 
     await broadcast_to_game(req.game_id, "answer_submitted", {
         "player_id": req.player_id,
         "player_name": player.name,
         "has_answered": True,
         "total_players": len(players_only),
-        "answered_count": answered_count,
-        "current_question_players": len(players_only),  # All players who could potentially answer this question
-        "all_players": [{"id": p.id, "name": p.name, "score": p.score} for p in players_only]  # Include all players for UI updates
-    })
+        "answered_count": len(current_question.answers)
+    }, ACTIVE_SSE_QUEUES)
 
-    # If all answered or time's up, show results
     if all_answered or no_time_left:
-        await show_question_results(req.game_id)
+        await show_question_results(req.game_id, ACTIVE_SSE_QUEUES)
 
     return JSONResponse(content={"message": "Answer submitted"})
 
@@ -503,372 +311,52 @@ async def host_control(req: HostControlRequest):
     game_state = LIVE_QUIZ_GAMES[req.game_id]
     
     if req.action == "start_game":
-        return await start_game(req.game_id)
-    elif req.action == "pause_timer":
-        return await pause_timer(req.game_id)
-    elif req.action == "resume_timer":
-        return await resume_timer(req.game_id)
+        game_state.status = "playing"
+        game_state.started_at = datetime.now()
+        game_state.questions = []
+        await start_question(req.game_id, 0, ACTIVE_SSE_QUEUES)
+        await broadcast_to_game(req.game_id, "game_started", {
+            "total_questions": game_state.total_questions,
+            "categories": game_state.categories
+        }, ACTIVE_SSE_QUEUES)
+        return JSONResponse(content={"message": "Game started"})
+    
     elif req.action == "next_question":
-        return await next_question(req.game_id)
-    elif req.action == "regenerate_question":
-        return await regenerate_question(req.game_id)
-    else:
-        raise HTTPException(status_code=400, detail="Unknown action")
-
-# --- GAME FLOW FUNCTIONS ---
-
-async def start_game(game_id: str):
-    """Start the live quiz game."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    game_state.status = "playing"
-    game_state.started_at = datetime.now()
+        next_index = game_state.current_question_index + 1
+        if next_index >= game_state.total_questions:
+            game_state.status = "finished"
+            await broadcast_to_game(req.game_id, "game_finished", {
+                "final_scores": {p.id: p.score for p in game_state.players},
+                "winner": max(game_state.players, key=lambda p: p.score).name
+            }, ACTIVE_SSE_QUEUES)
+            return JSONResponse(content={"message": "Game finished"})
+        await start_question(req.game_id, next_index, ACTIVE_SSE_QUEUES)
+        return JSONResponse(content={"message": "Next question started"})
     
-    # Initialize questions array (will be generated on-demand)
-    game_state.questions = []
-    
-    # Start first question (generate only the first one)
-    await start_question(game_id, 0)
-    
-    await broadcast_to_game(game_id, "game_started", {
-        "total_questions": game_state.total_questions,
-        "categories": game_state.categories
-    })
-    
-    return JSONResponse(content={"message": "Game started"})
-
-async def start_question(game_id: str, question_index: int):
-    """Start a specific question."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    
-    # Stop any existing timer for the current question
-    if hasattr(game_state, 'current_timer_task') and game_state.current_timer_task:
-        game_state.current_timer_task.cancel()
-        game_state.current_timer_task = None
-    
-    # Reset timer state
-    game_state.timer_paused = False
-    game_state.timer_pause_started = None
-    
-    # Ensure questions array is large enough
-    while len(game_state.questions) <= question_index:
-        game_state.questions.append(None)  # Placeholder for ungenerated questions
-    
-    # Generate question if it doesn't exist
-    if game_state.questions[question_index] is None:
-        try:
-            # Calculate category using 6-category cycling system
-            # Questions cycle through categories: 1,2,3,4,5,6,1,2,3,4,5,6...
-            category_cycle_position = question_index % 6
-            category_index = category_cycle_position  # Direct mapping: 0->Cat1, 1->Cat2, etc.
-            category = game_state.categories[category_index]
-            
-            # Calculate question number within the category
-            questions_per_round = len(game_state.categories)  # 6 questions per full cycle
-            questions_in_current_round = question_index // questions_per_round
-            question_number_in_category = questions_in_current_round + 1
-            
-            # Calculate overall question number (1-based)
-            question_number = question_index + 1
-            
-            # Generate the question
-            question = await generate_live_quiz_question(game_state, category, question_number)
-            game_question = GameQuestion(
-                question=question,
-                category=category,
-                question_number=question_number,
-                time_limit=60
-            )
-            game_state.questions[question_index] = game_question
-            
-            print(f"Generated question {question_number} for category {category_cycle_position + 1}: {category} (round {question_number_in_category})")
-            
-        except Exception as e:
-            print(f"Failed to generate question {question_index + 1}: {e}")
-            # Add a fallback question
-            category_cycle_position = question_index % 6
-            category_index = category_cycle_position
-            category = game_state.categories[category_index]
-            question_number = question_index + 1
-            
-            fallback_question = GameQuestion(
-                question=Question(
-                    id=f"fallback_{question_number}",
-                    question=f"Error generating question {question_number}",
-                    options=["Option A", "Option B", "Option C", "Option D"],
-                    answer="Option A",
-                    explanation="This is a fallback question due to generation error.",
-                    category=category
-                ),
-                category=category,
-                question_number=question_number,
-                time_limit=60
-            )
-            game_state.questions[question_index] = fallback_question
-    
-    game_question = game_state.questions[question_index]
-    
-    # Reset player states (exclude host from answering requirement)
-    # For late joiners, they should be able to participate in future questions
-    players_only = [p for p in game_state.players if p.id != game_state.host_id]
-    for player in players_only:
-        player.has_answered = False
-        player.last_answer = None
-        player.is_correct = None
-    
-    # Set question as active
-    game_question.is_active = True
-    game_question.started_at = datetime.now()
-    game_question.expires_at = game_question.started_at + timedelta(seconds=game_question.time_limit)
-    game_question.answers = {}
-    
-    game_state.current_question_index = question_index
-    game_state.question_started_at = game_question.started_at
-    
-    # Broadcast question start
-    await broadcast_to_game(game_id, "question_started", {
-        "question_number": game_question.question_number,
-        "category": game_question.category,
-        "question": game_question.question.question,
-        "options": game_question.question.options,
-        "time_limit": game_question.time_limit,
-        "expires_at": game_question.expires_at.isoformat()
-    })
-    
-    # Start timer
-    game_state.current_timer_task = asyncio.create_task(question_timer(game_id, question_index))
-    
-    # Start pre-generating next question in background (but not the last one)
-    if question_index < game_state.total_questions - 1:
-        asyncio.create_task(pregenerate_next_question(game_id, question_index + 1))
-
-async def pregenerate_next_question(game_id: str, next_question_index: int):
-    """Pre-generate the next question in the background."""
-    try:
-        game_state = LIVE_QUIZ_GAMES[game_id]
-        
-        # Ensure questions array is large enough
-        while len(game_state.questions) <= next_question_index:
-            game_state.questions.append(None)
-        
-        # Only generate if not already generated
-        if game_state.questions[next_question_index] is None:
-            # Calculate category using 6-category cycling system
-            category_cycle_position = next_question_index % 6
-            category_index = category_cycle_position
-            category = game_state.categories[category_index]
-            
-            # Calculate question number within the category
-            questions_per_round = len(game_state.categories)  # 6 questions per full cycle
-            questions_in_current_round = next_question_index // questions_per_round
-            question_number_in_category = questions_in_current_round + 1
-            question_number = next_question_index + 1
-            
-            question = await generate_live_quiz_question(game_state, category, question_number)
-            game_question = GameQuestion(
-                question=question,
-                category=category,
-                question_number=question_number,
-                time_limit=60
-            )
-            game_state.questions[next_question_index] = game_question
-            
-            # Update generation history for pre-generated question
-            if question.subcategory and question.key_entities:
-                from utils import update_generation_history
-                update_generation_history(category, question.subcategory, question.key_entities)
-                if DEBUG_MODE:
-                    print(f"Updated history for pre-generated question in category '{category}': subcategory='{question.subcategory}', entities={question.key_entities[:3]}...")
-            else:
-                if DEBUG_MODE:
-                    print(f"Warning: Missing subcategory or key_entities for pre-generated question in category '{category}'")
-            
-            print(f"Pre-generated question {question_number} for category {category_cycle_position + 1}: {category} (round {question_number_in_category})")
-            
-    except Exception as e:
-        print(f"Failed to pre-generate question {next_question_index + 1}: {e}")
-        # Don't create fallback for pre-generation - let it generate on demand if needed
-
-async def question_timer(game_id: str, question_index: int):
-    """Handle question timer."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    game_question = game_state.questions[question_index]
-    
-    while game_question.is_active and datetime.now() < game_question.expires_at:
-        if not game_state.timer_paused:
-            remaining = int((game_question.expires_at - datetime.now()).total_seconds())
-            await broadcast_to_game(game_id, "timer_update", {
-                "question_number": game_question.question_number,
-                "remaining_seconds": remaining
-            })
-        
-        await asyncio.sleep(1)
-    
-    # Time's up
-    if game_question.is_active:
-        await show_question_results(game_id)
-
-async def pause_timer(game_id: str):
-    """Pause the question timer."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    if not game_state.timer_paused:
+    elif req.action == "pause_timer":
         game_state.timer_paused = True
         game_state.timer_pause_started = datetime.now()
-        await broadcast_to_game(game_id, "timer_paused", {})
-    return JSONResponse(content={"message": "Timer paused"})
-
-async def resume_timer(game_id: str):
-    """Resume the question timer."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    if game_state.timer_paused and game_state.timer_pause_started:
-        pause_duration = datetime.now() - game_state.timer_pause_started
-        game_question = game_state.questions[game_state.current_question_index]
-        game_question.expires_at += pause_duration
-        game_state.timer_paused = False
-        game_state.timer_pause_started = None
-        await broadcast_to_game(game_id, "timer_resumed", {})
-    return JSONResponse(content={"message": "Timer resumed"})
-
-async def show_question_results(game_id: str):
-    """Show results for the current question."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    game_question = game_state.questions[game_state.current_question_index]
-    game_question.is_active = False
+        await broadcast_to_game(req.game_id, "timer_paused", {}, ACTIVE_SSE_QUEUES)
+        return JSONResponse(content={"message": "Timer paused"})
     
-    # Score answers
-    correct_answer = game_question.question.answer
-    for player_id, answer_data in game_question.answers.items():
-        player = next((p for p in game_state.players if p.id == player_id), None)
-        if player:
-            # Handle skipped questions (both explicit skipped flag and empty answer)
-            if answer_data.get("skipped", False) or (answer_data.get("answer", "").strip() == ""):
-                is_correct = False
-                answer_data["is_correct"] = is_correct
-                player.is_correct = is_correct
-                # No points awarded for skipped questions (0 points)
-            else:
-                is_correct = answer_data["answer"].strip().lower() == correct_answer.lower()
-                answer_data["is_correct"] = is_correct
-                player.is_correct = is_correct
-                
-                if is_correct:
-                    player.score += 100
-                else:
-                    player.score -= 35
+    elif req.action == "resume_timer":
+        if game_state.timer_paused and game_state.timer_pause_started:
+            pause_duration = datetime.now() - game_state.timer_pause_started
+            game_question = game_state.questions[game_state.current_question_index]
+            game_question.expires_at += pause_duration
+            game_state.timer_paused = False
+            game_state.timer_pause_started = None
+            await broadcast_to_game(req.game_id, "timer_resumed", {}, ACTIVE_SSE_QUEUES)
+        return JSONResponse(content={"message": "Timer resumed"})
     
-    # Broadcast results
-    await broadcast_to_game(game_id, "question_results", {
-        "question_number": game_question.question_number,
-        "correct_answer": correct_answer,
-        "explanation": game_question.question.explanation,
-        "answers": {
-            pid: {
-                "player_name": next(p.name for p in game_state.players if p.id == pid),
-                "answer": "Skipped" if (data.get("skipped", False) or data.get("answer", "").strip() == "") else data.get("answer", "No Answer"),
-                "is_correct": data["is_correct"],
-                "skipped": data.get("skipped", False) or data.get("answer", "").strip() == ""
-            }
-            for pid, data in game_question.answers.items()
-        },
-        "scores": {p.id: p.score for p in game_state.players}
-    })
-
-async def next_question(game_id: str):
-    """Move to the next question."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    next_index = game_state.current_question_index + 1
-    
-    if next_index >= game_state.total_questions:
-        # Game finished
-        game_state.status = "finished"
-        await broadcast_to_game(game_id, "game_finished", {
-            "final_scores": {p.id: p.score for p in game_state.players},
-            "winner": max(game_state.players, key=lambda p: p.score).name
-        })
-        return JSONResponse(content={"message": "Game finished"})
-    
-    # Start the next question (will be generated on-demand if needed)
-    await start_question(game_id, next_index)
-    return JSONResponse(content={"message": "Next question started"})
-
-async def regenerate_question(game_id: str):
-    """Regenerate the current question."""
-    game_state = LIVE_QUIZ_GAMES[game_id]
-    current_question = game_state.questions[game_state.current_question_index]
-    
-    # Stop any existing timer for the current question
-    if hasattr(game_state, 'current_timer_task') and game_state.current_timer_task:
-        game_state.current_timer_task.cancel()
-        game_state.current_timer_task = None
-    
-    # Reset timer state
-    game_state.timer_paused = False
-    game_state.timer_pause_started = None
-    
-    try:
-        # Generate new question
-        new_question = await generate_live_quiz_question(
-            game_state,
-            current_question.category,
-            current_question.question_number
-        )
-        
-        # Update question
-        current_question.question = new_question
-        current_question.answers = {}
-        
-        # Update generation history for regenerated question to maintain uniqueness
-        if new_question.subcategory and new_question.key_entities:
-            from utils import update_generation_history
-            update_generation_history(current_question.category, new_question.subcategory, new_question.key_entities)
-            if DEBUG_MODE:
-                print(f"Updated history for regenerated question in category '{current_question.category}': subcategory='{new_question.subcategory}', entities={new_question.key_entities[:3]}...")
-        else:
-            if DEBUG_MODE:
-                print(f"Warning: Missing subcategory or key_entities for regenerated question in category '{current_question.category}'")
-        
-        # Reset player states (exclude host from answering requirement)
-        players_only = [p for p in game_state.players if p.id != game_state.host_id]
-        for player in players_only:
-            player.has_answered = False
-            player.last_answer = None
-            player.is_correct = None
-        
-        # Reset question timing
-        current_question.started_at = datetime.now()
-        current_question.expires_at = current_question.started_at + timedelta(seconds=current_question.time_limit)
-        
-        # Broadcast the regenerated question as a new question_start event
-        # This ensures both host and player clients update their question display
-        await broadcast_to_game(game_id, "question_started", {
-            "question_number": current_question.question_number,
-            "category": current_question.category,
-            "question": new_question.question,
-            "options": new_question.options,
-            "time_limit": current_question.time_limit,
-            "expires_at": current_question.expires_at.isoformat(),
-            "regenerated": True  # Flag to indicate this is a regenerated question
-        })
-        
-        # Also send the specific regeneration event for any special handling
-        await broadcast_to_game(game_id, "question_regenerated", {
-            "question": new_question.question,
-            "options": new_question.options
-        })
-        
-        # Restart timer with new question
-        game_state.current_timer_task = asyncio.create_task(question_timer(game_id, game_state.current_question_index))
-        
-        return JSONResponse(content={"message": "Question regenerated"})
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to regenerate question: {str(e)}")
-
-# --- SSE ENDPOINT ---
+    else:
+        raise HTTPException(status_code=400, detail="Unknown action")
 
 async def sse_endpoint(request: Request):
     """Server-Sent Events endpoint for real-time communication."""
     game_id = request.query_params.get("game_id")
     player_id = request.query_params.get("player_id")
-    connection_type = request.query_params.get("type", "player")  # host or player
+    connection_type = request.query_params.get("type", "player")
 
     if not game_id or not player_id:
         raise HTTPException(status_code=400, detail="game_id and player_id are required")
@@ -876,20 +364,15 @@ async def sse_endpoint(request: Request):
     if game_id not in LIVE_QUIZ_GAMES:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    # Update last activity when a new connection is established
     LIVE_QUIZ_GAMES[game_id].last_activity = datetime.now()
 
     async def event_stream():
-        # Create message queue for this connection
-        message_queue = asyncio.Queue()
-
-        # Add to active queues
+        message_queue = asyncio.Queue(maxsize=100)
         if game_id not in ACTIVE_SSE_QUEUES:
             ACTIVE_SSE_QUEUES[game_id] = []
         ACTIVE_SSE_QUEUES[game_id].append(message_queue)
 
         try:
-            # Send initial connection event
             game_state = LIVE_QUIZ_GAMES[game_id]
             initial_data = {
                 "connection_type": connection_type,
@@ -901,52 +384,33 @@ async def sse_endpoint(request: Request):
 
             yield f"data: {json.dumps({'type': 'connected', 'data': initial_data})}\n\n"
 
-            # Send immediate player count update for host
-            if connection_type == "host":
-                yield f"data: {json.dumps({'type': 'players_update', 'data': {'player_count': len(game_state.players), 'players': initial_data['players']}})}\n\n"
-
-            # Keep connection alive and check for messages
             last_ping = datetime.now()
-            connection_start = datetime.now()
-
             while True:
                 current_time = datetime.now()
-
-                # Update last activity periodically (every ping)
                 if (current_time - last_ping).total_seconds() >= 30:
-                    LIVE_QUIZ_GAMES[game_id].last_activity = current_time
+                    try:
+                        yield f"data: {json.dumps({'type': 'ping', 'data': {'timestamp': current_time.isoformat()}})}\n\n"
+                        last_ping = current_time
+                        if game_id in LIVE_QUIZ_GAMES:
+                            LIVE_QUIZ_GAMES[game_id].last_activity = current_time
+                    except Exception:
+                        break
 
-                # Send ping every 30 seconds
-                if (current_time - last_ping).total_seconds() >= 30:
-                    yield f"data: {json.dumps({'type': 'ping', 'data': {'timestamp': current_time.isoformat()}})}\n\n"
-                    last_ping = current_time
-
-                # Check for new messages to send
                 try:
                     message = await asyncio.wait_for(message_queue.get(), timeout=1.0)
                     yield message
                 except asyncio.TimeoutError:
                     pass
 
-                # Check if this queue is still active
                 if game_id in ACTIVE_SSE_QUEUES and message_queue not in ACTIVE_SSE_QUEUES[game_id]:
                     break
-
-                # Brief pause to prevent tight loop
                 await asyncio.sleep(0.1)
 
         except asyncio.CancelledError:
             pass
-        except Exception as e:
-            print(f"SSE connection error: {e}")
         finally:
-            # Clean up queue
             if game_id in ACTIVE_SSE_QUEUES and message_queue in ACTIVE_SSE_QUEUES[game_id]:
                 ACTIVE_SSE_QUEUES[game_id].remove(message_queue)
-
-            # Log disconnection for monitoring
-            connection_duration = datetime.now() - connection_start
-            print(f"SSE connection closed for {connection_type} {player_id} in game {game_id} after {connection_duration.total_seconds():.1f} seconds")
 
     return StreamingResponse(
         event_stream(),

@@ -58,12 +58,12 @@ async def call_generative_model(prompt: str, model_name: str, return_raw=False) 
                     if DEBUG_MODE:
                         print(f"Raw response: {raw_response}")
                     response_time = time.time() - start_time
-                    database.update_model_stats_db(model_name=current_model, success=True, response_time=response_time)
+                    await database.update_model_stats_db(model_name=current_model, success=True, response_time=response_time)
                     history_entry = {
                         "timestamp": datetime.utcnow().isoformat(),
                         "model": current_model, "prompt": prompt, "raw_response": response_text
                     }
-                    database.add_prompt_history_db(history_entry)
+                    await database.add_prompt_history_db(history_entry)
                     parsed_data = extract_json_from_response(response_text)
                     if return_raw:
                         return parsed_data, response_text
@@ -106,10 +106,10 @@ async def call_generative_model(prompt: str, model_name: str, return_raw=False) 
     # All attempts exhausted
     response_time = time.time() - start_time
     try:
-        database.update_model_stats_db(model_name=current_model, success=False, response_time=response_time)
+        await database.update_model_stats_db(model_name=current_model, success=False, response_time=response_time)
     except Exception:
         pass
-    database.log_error_db("call_generative_model", {"model": current_model, "error": str(last_exception), "raw_response_snippet": raw_response[:200] if raw_response else "None"})
+    await database.log_error_db("call_generative_model", {"model": current_model, "error": str(last_exception), "raw_response_snippet": raw_response[:200] if raw_response else "None"})
     raise last_exception if last_exception else Exception("Unknown error in call_generative_model")
 
 
@@ -118,7 +118,7 @@ async def ensure_blueprints_exist(category: str, language: str, theme: str, mode
     Ensure there are enough unused blueprints for the given category.
     If the count is less than 5, generate a batch of 20 blueprints and save them.
     """
-    count = database.get_blueprint_count(category)
+    count = await database.get_blueprint_count(category)
     if count >= 5:
         if DEBUG_MODE:
             print(f"Sufficient blueprints for '{category}' ({count} available).")
@@ -148,10 +148,10 @@ async def ensure_blueprints_exist(category: str, language: str, theme: str, mode
         if not isinstance(blueprints, list):
             blueprints = []
         if blueprints:
-            database.save_blueprints_batch(category, blueprints)
+            await database.save_blueprints_batch(category, blueprints)
             print(f"Saved {len(blueprints)} blueprints for category '{category}'.")
         else:
             print(f"Warning: No blueprints generated for '{category}'.")
     except Exception as e:
         print(f"Error generating blueprints for '{category}': {e}")
-        database.log_error_db("ensure_blueprints_exist", {"category": category, "error": str(e)})
+        await database.log_error_db("ensure_blueprints_exist", {"category": category, "error": str(e)})

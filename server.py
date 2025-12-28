@@ -14,7 +14,7 @@ from routes import (
     get_explanation_models, get_category_models,
     preload_questions, generate_question, generate_categories,
     get_category_mutation, get_incorrect_explanation,
-    root, manifest, service_worker
+    root
 )
 
 # Import live quiz routes
@@ -27,6 +27,7 @@ app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 
 # Import cleanup functions
 from live_quiz_routes import start_cleanup_task, stop_cleanup_task
+from state import load_state_from_disk, save_state_to_disk, periodic_save_task
 
 # Register API routes
 app.get("/api/db/stats")(get_db_stats)
@@ -51,8 +52,6 @@ app.get("/api/live-quiz/events")(sse_endpoint)
 
 # Register static file routes
 app.get("/", include_in_schema=False)(root)
-app.get("/manifest.json", include_in_schema=False)(manifest)
-app.get("/service-worker.js", include_in_schema=False)(service_worker)
 
 # Live Quiz static routes
 app.get("/live-quiz/host", include_in_schema=False)(lambda: FileResponse('live-quiz-host.html'))
@@ -62,7 +61,7 @@ app.get("/test", include_in_schema=False)(lambda: FileResponse('test_live_quiz.h
 # --- App Lifecycle and Static Files ---
 @app.on_event("startup")
 async def startup_event():
-    database.init_db()
+    await database.init_db()
     initialize_async_resources()
 
     # Fetch models from API and initialize
@@ -82,6 +81,8 @@ async def startup_event():
 async def shutdown_event():
     # Stop background cleanup task
     stop_cleanup_task()
-    print("Shutdown completed. Cleanup task stopped.")
+    # Save game state to disk
+    save_state_to_disk()
+    print("Shutdown completed. Cleanup task stopped and state saved.")
 
 app.mount("/", StaticFiles(directory=".", html=True), name="static")

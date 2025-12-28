@@ -18,6 +18,9 @@ export function shuffleArray(array) {
     }
 }
 
+// Make shuffleArray globally available for non-module scripts
+window.shuffleArray = shuffleArray;
+
 /**
  * A generic function to call the application's own backend API.
  * The server is now responsible for handling retries.

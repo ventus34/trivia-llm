@@ -2,119 +2,7 @@
 window.LiveQuizCommon = (function() {
     'use strict';
 
-    // Category Presets from board game
-    const CATEGORY_PRESETS = [
-        {
-            name: {pl: 'Wiedza Ogólna – Klasyk', en: 'General Knowledge – Classic'},
-            categories: [
-                {pl: 'Historia', en: 'History'},
-                {pl: 'Geografia', en: 'Geography'},
-                {pl: 'Nauka', en: 'Science'},
-                {pl: 'Kultura i sztuka', en: 'Culture & Art'},
-                {pl: 'Sport', en: 'Sports'},
-                {pl: 'Media i rozrywka', en: 'Media & Entertainment'}
-            ]
-        },
-        {
-            name: {pl: 'Wiedza Ogólna – Współczesność', en: 'General Knowledge – Modern Times'},
-            categories: [
-                {pl: 'Wydarzenia bieżące', en: 'Current Events'},
-                {pl: 'Technologia', en: 'Technology'},
-                {pl: 'Popkultura', en: 'Pop Culture'},
-                {pl: 'Odkrycia naukowe', en: 'Scientific Discoveries'},
-                {pl: 'Polityka', en: 'Politics'},
-                {pl: 'Internet i media społecznościowe', en: 'Internet & Social Media'}
-            ]
-        },
-        {
-            name: {pl: 'Polska – Wiedza Ogólna', en: 'Poland – General Knowledge'},
-            categories: [
-                {pl: 'Historia', en: 'History'},
-                {pl: 'Geografia', en: 'Geography'},
-                {pl: 'Kultura i sztuka', en: 'Culture & Art'},
-                {pl: 'Znani Polacy', en: 'Famous Poles'},
-                {pl: 'Sport', en: 'Sports'},
-                {pl: 'Społeczeństwo', en: 'Society'}
-            ]
-        },
-        {
-            name: {pl: 'Polska – Lata 90.', en: 'Poland – The 90s'},
-            categories: [
-                {pl: 'Historia', en: 'History'},
-                {pl: 'Muzyka', en: 'Music'},
-                {pl: 'Film i seriale', en: 'Movies & TV'},
-                {pl: 'Życie codzienne', en: 'Everyday Life'},
-                {pl: 'Sport', en: 'Sports'},
-                {pl: 'Technologia', en: 'Technology'}
-            ]
-        },
-        {
-            name: {pl: 'Nauka – Podstawy', en: 'Science – The Basics'},
-            categories: [
-                {pl: 'Fizyka', en: 'Physics'},
-                {pl: 'Chemia', en: 'Chemistry'},
-                {pl: 'Biologia', en: 'Biology'},
-                {pl: 'Astronomia', en: 'Astronomy'},
-                {pl: 'Matematyka', en: 'Mathematics'},
-                {pl: 'Wielcy odkrywcy', en: 'Great Discoverers'}
-            ]
-        },
-        {
-            name: {pl: 'Gry wideo', en: 'Video Games'},
-            categories: [
-                {pl: 'Historia gier', en: 'History of Games'},
-                {pl: 'Serie i postacie', en: 'Series & Characters'},
-                {pl: 'Konsole', en: 'Consoles'},
-                {pl: 'Gatunki', en: 'Genres'},
-                {pl: 'Kultura graczy', en: 'Gaming Culture'},
-                {pl: 'E-sport', en: 'E-sports'}
-            ]
-        },
-        {
-            name: {pl: 'Rozrywka – Kino', en: 'Entertainment – Cinema'},
-            categories: [
-                {pl: 'Historia kina', en: 'History of Cinema'},
-                {pl: 'Gatunki filmowe', en: 'Film Genres'},
-                {pl: 'Reżyserzy', en: 'Directors'},
-                {pl: 'Aktorzy', en: 'Actors'},
-                {pl: 'Nagrody filmowe', en: 'Film Awards'},
-                {pl: 'Kultowe filmy', en: 'Cult Movies'}
-            ]
-        },
-        {
-            name: {pl: 'Podróże – Świat', en: 'Travel – World'},
-            categories: [
-                {pl: 'Kontynenty', en: 'Continents'},
-                {pl: 'Kraje', en: 'Countries'},
-                {pl: 'Miasta', en: 'Cities'},
-                {pl: 'Zabytki', en: 'Landmarks'},
-                {pl: 'Cuda natury', en: 'Natural Wonders'},
-                {pl: 'Kultury i tradycje', en: 'Cultures & Traditions'}
-            ]
-        },
-        {
-            name: {pl: 'Kuchnia Polska', en: 'Polish Cuisine'},
-            categories: [
-                {pl: 'Dania główne', en: 'Main Courses'},
-                {pl: 'Zupy', en: 'Soups'},
-                {pl: 'Przystawki', en: 'Appetizers'},
-                {pl: 'Desery', en: 'Desserts'},
-                {pl: 'Święta i tradycje kulinarne', en: 'Holiday & Traditional Foods'},
-                {pl: 'Znane potrawy regionalne', en: 'Famous Regional Dishes'}
-            ]
-        },
-        {
-            name: {pl: 'Sport – Ogólne', en: 'Sport – General'},
-            categories: [
-                {pl: 'Igrzyska olimpijskie', en: 'Olympic Games'},
-                {pl: 'Piłka nożna', en: 'Football (Soccer)'},
-                {pl: 'Koszykówka', en: 'Basketball'},
-                {pl: 'Lekkoatletyka', en: 'Athletics'},
-                {pl: 'Sporty zimowe', en: 'Winter Sports'},
-                {pl: 'Znani sportowcy', en: 'Famous Athletes'}
-            ]
-        }
-    ];
+    // Category Presets are now imported from config.js or accessed via window.CATEGORY_PRESETS
 
     // API helper
     async function apiCall(endpoint, method = 'GET', data = null) {
@@ -199,7 +87,8 @@ window.LiveQuizCommon = (function() {
         if (presetSelect) {
             presetSelect.innerHTML = '<option value="">Choose a preset...</option>';
             
-            CATEGORY_PRESETS.forEach((preset, index) => {
+            const presets = window.CATEGORY_PRESETS || [];
+            presets.forEach((preset, index) => {
                 const option = document.createElement('option');
                 option.value = index;
                 option.textContent = preset.name[language] || preset.name.en;
@@ -363,7 +252,7 @@ window.LiveQuizCommon = (function() {
     }
 
     function getCategoryPresets() {
-        return CATEGORY_PRESETS;
+        return window.CATEGORY_PRESETS || [];
     }
 
     // Session Storage Functions

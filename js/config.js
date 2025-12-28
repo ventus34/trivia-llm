@@ -461,3 +461,6 @@ export const translations = {
     game_loaded_success: { pl: "Gra wczytana pomyślnie!", en: "Game loaded successfully!" },
     game_loaded_error: { pl: "Błąd wczytywania pliku. Upewnij się, że to poprawny plik zapisu.", en: "Error loading file. Make sure it's a valid save file." }
 };
+
+// Make CATEGORY_PRESETS globally available for live-quiz-common.js
+window.CATEGORY_PRESETS = CATEGORY_PRESETS;

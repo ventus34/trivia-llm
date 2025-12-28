@@ -13,14 +13,15 @@ from models import PreloadRequest
 # Background preload task with concurrency limits and safe status handling
 async def _preload_task(game_id: str, model_selection: str, request_data: PreloadRequest):
     # Mark as running and acquire global preload concurrency semaphore
-    from state import PRELOAD_TASK_STATUS  # Import here to avoid circular import
-    status = PRELOAD_TASK_STATUS.get(game_id)
+    from state import get_preload_status
+    status = get_preload_status(game_id)
     if not status:
         # if status was removed meanwhile, create a fallback to ensure the event exists
-        PRELOAD_TASK_STATUS[game_id] = {"state": "running", "event": asyncio.Event(), "last_scheduled": datetime.utcnow().timestamp()}
+        from state import set_preload_status
+        set_preload_status(game_id, {"state": "running", "event": asyncio.Event(), "last_scheduled": datetime.utcnow().timestamp()})
 
-    PRELOAD_TASK_STATUS[game_id]["state"] = "running"
-    PRELOAD_TASK_STATUS[game_id]["started_at"] = datetime.utcnow().isoformat()
+    status["state"] = "running"
+    status["started_at"] = datetime.utcnow().isoformat()
 
     # local helper to pick model
     def get_model_for_generation():
@@ -79,19 +80,19 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
                 explanation_parts = [format_explanation_part(data.get(key)) for key in ["explanation_correct", "explanation_distractors"]]
                 data["explanation"] = "\n\n".join(filter(None, explanation_parts))
                 inputs_for_db = {**params, 'model': model_to_use, 'category': category}
-                database.add_question(data, inputs_for_db)
-                database.cache_question(category, data)
+                await database.add_question(data, inputs_for_db)
+                await database.cache_question(category, data)
                 update_generation_history(category, data.get("subcategory"), data.get("key_entities"))
             else:
                 print(f"WARNING: Preloaded question for '{category}' was invalid. Reason: {error_msg}. Raw response snippet: '{raw_response[:300]}...'")
-                database.log_error_db("preload_task_validation", {"category": category, "error": error_msg, "raw_response_snippet": raw_response[:300]})
+                await database.log_error_db("preload_task_validation", {"category": category, "error": error_msg, "raw_response_snippet": raw_response[:300]})
         except asyncio.TimeoutError:
             print(f"ERROR: Preload timed out for category '{category}'")
-            database.log_error_db("preload_task_timeout", {"category": category})
+            await database.log_error_db("preload_task_timeout", {"category": category})
         except Exception as e:
             detailed_error = repr(e)
             print(f"ERROR: Preloading one question for '{category}' failed. Reason: {detailed_error}.")
-            database.log_error_db("preload_task_exception", {"category": category, "error": detailed_error})
+            await database.log_error_db("preload_task_exception", {"category": category, "error": detailed_error})
 
     try:
         # Acquire global preload concurrency semaphore
@@ -107,14 +108,14 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
         async with sem_ctx:
             # check if the category still needs caching
             category = request_data.category
-            if database.get_cache_count_for_category(category) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE:
+            if await database.get_cache_count_for_category(category) < MAX_QUESTIONS_PER_CATEGORY_IN_CACHE:
                 await generate_one_for_category(category)
 
     finally:
         # mark finished and notify waiters
-        PRELOAD_TASK_STATUS[game_id]["state"] = "done"
-        PRELOAD_TASK_STATUS[game_id]["finished_at"] = datetime.utcnow().isoformat()
+        status["state"] = "done"
+        status["finished_at"] = datetime.utcnow().isoformat()
         try:
-            PRELOAD_TASK_STATUS[game_id]["event"].set()
+            status["event"].set()
         except Exception:
             pass
