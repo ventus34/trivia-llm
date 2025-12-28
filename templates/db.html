@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Przeglądarka Bazy Pytań SQLite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js" crossorigin="anonymous"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/jasondavies/d3-cloud@1.2.7/build/d3.layout.cloud.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        .chart-container { position: relative; height: 40vh; width: 100%; }
+        .wordcloud-container { position: relative; height: 40vh; width: 100%; cursor: pointer; }
+        .network-container { position: relative; height: 50vh; width: 100%; background: #fff; border-radius: 0.5rem; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .drag-area-highlight { border-color: #2563eb; background-color: #eff6ff; }
+        .card-tag { display: inline-block; background-color: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; margin-right: 6px; margin-bottom: 6px; }
+        .question-details { transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
+        .details-visible { max-height: 1000px; opacity: 1; }
+
+        .table-container {
+            overflow-x: auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #e5e7eb; /* gray-200 */
+            padding: 0.75rem 1rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .data-table th {
+            background-color: #f9fafb; /* gray-50 */
+        }
+        .data-table td pre {
+            background-color: #f3f4f6; /* gray-100 */
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 0.875rem;
+        }
+
+        /* Dark Mode Overrides for non-Tailwind elements or specific needs */
+        .dark .bg-white { background-color: #1f2937; color: #f3f4f6; }
+        .dark .data-table th { background-color: #374151; color: #f9fafb; border-color: #4b5563; }
+        .dark .data-table td { border-color: #4b5563; }
+        .dark .data-table td pre { background-color: #111827; color: #e5e7eb; }
+        .dark .card-tag { background-color: #374151; color: #a5b4fc; }
+        .dark .network-container { background-color: #1f2937; }
+        .dark input, .dark select { background-color: #374151; color: #f9fafb; border-color: #4b5563; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+<div class="container mx-auto p-4 md:p-8">
+    <header class="relative text-center mb-8">
+        <div class="absolute right-0 top-0">
+            <button id="theme-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:ring-2 hover:ring-blue-400 transition-all">
+                <svg id="theme-toggle-dark-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                <svg id="theme-toggle-light-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+            </button>
+        </div>
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white">Interaktywna Przeglądarka Bazy Pytań</h1>
+        <p id="header-subtitle" class="text-lg text-gray-600 dark:text-gray-400 mt-2">Przeciągnij i upuść plik bazy danych SQLite, aby zwizualizować dane.</p>
+    </header>
+    <main>
+        <div id="drop-area" class="border-4 border-dashed border-gray-300 rounded-xl p-8 text-center bg-white shadow-md transition-all duration-300 cursor-pointer hover:border-blue-500 hover:bg-blue-50">
+            <div id="drop-area-content">
+                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <p class="mt-2 text-xl font-semibold text-gray-700">Upuść plik <span class="text-blue-600">.db</span> tutaj</p>
+                <p class="text-sm text-gray-500">lub kliknij, aby wybrać plik</p>
+                <input type="file" id="file-input" class="hidden" accept=".db,.sqlite,.sqlite3"/>
+            </div>
+            <div id="loading-indicator" class="hidden">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-4 text-lg font-medium text-gray-700">Przetwarzanie bazy danych...</p>
+            </div>
+        </div>
+        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4" role="alert">
+            <strong class="font-bold">Błąd!</strong>
+            <span class="block sm:inline" id="error-text"></span>
+        </div>
+        <div id="content-area" class="hidden mt-8">
+            {% include 'partials/db_stats.html' %}
+            {% include 'partials/db_questions.html' %}
+        </div>
+        {% include 'partials/db_additional.html' %}
+    </main>
+</div>
+<script src="/js/db-browser.js"></script>
+</body>
+</html>

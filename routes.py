@@ -345,4 +345,6 @@ async def get_incorrect_explanation(req: ExplanationRequest):
         raise HTTPException(status_code=500, detail=f"Failed to get explanation: {e}")
 
 # --- Static Files ---
-async def root(): return FileResponse('trivia.html')
+async def root(request: Request):
+    from server import templates
+    return templates.TemplateResponse("trivia.html", {"request": request})

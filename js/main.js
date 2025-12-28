@@ -24,6 +24,33 @@ import {CATEGORY_PRESETS} from "./config.js";
 
 
 /**
+ * Global fetch wrapper for handling network errors gracefully.
+ * @param {string} url - The URL to fetch.
+ * @param {object} options - The fetch options.
+ * @returns {Promise<Response>} The fetch response.
+ */
+export async function fetchWithErrorHandling(url, options) {
+    try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response;
+    } catch (error) {
+        console.error('Network error:', error);
+        // Show a user-friendly error message
+        if (typeof showNotification === 'function') {
+            showNotification(
+                { title: 'Network Error', body: 'Please check your internet connection and try again.' },
+                'error',
+                5000
+            );
+        }
+        throw error;
+    }
+}
+
+/**
  * Initializes the entire application, sets up event listeners, and injects the API adapter.
  * @param {object} apiAdapter - An object with methods for communicating with the backend.
  */

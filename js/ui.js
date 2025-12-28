@@ -18,11 +18,19 @@ import { saveGameState } from './persistence.js';
 
 /**
  * Automatically adjusts the height of a textarea to fit its content.
+ * Uses modern CSS field-sizing: content with JS fallback.
  * @param {HTMLTextAreaElement} textarea - The textarea element to resize.
  */
 export function autoResizeTextarea(textarea) {
-    textarea.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
-    textarea.style.height = `${textarea.scrollHeight}px`; // Set height to content height
+    // Try to use modern CSS field-sizing if supported
+    if ('fieldSizingMode' in textarea.style) {
+        textarea.style.fieldSizing = 'content';
+        textarea.style.height = 'auto';
+    } else {
+        // Fallback to JS-based resizing
+        textarea.style.height = 'auto'; // Reset height to correctly calculate scrollHeight
+        textarea.style.height = `${textarea.scrollHeight}px`; // Set height to content height
+    }
 }
 
 
@@ -58,8 +66,16 @@ export function populatePresetSelector() {
  * @param {number} [duration=5000] - The display duration in milliseconds.
  */
 export function showNotification(message, type = 'info', duration = 5000) {
+    // Create notification container if it doesn't exist
+    if (!UI.notificationContainer) {
+        UI.notificationContainer = document.createElement('div');
+        UI.notificationContainer.id = 'notification-container';
+        UI.notificationContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
+        document.body.appendChild(UI.notificationContainer);
+    }
+
     const notif = document.createElement('div');
-    notif.className = `notification ${type}`;
+    notif.className = `notification ${type} opacity-0 transform translate-x-full`;
 
     const iconContainer = document.createElement('div');
     iconContainer.className = 'flex-shrink-0';
@@ -79,12 +95,16 @@ export function showNotification(message, type = 'info', duration = 5000) {
 
     UI.notificationContainer.appendChild(notif);
 
+    // Animate in
     setTimeout(() => {
-        notif.classList.add('show');
+        notif.classList.remove('opacity-0', 'translate-x-full');
+        notif.classList.add('opacity-100', 'translate-x-0');
     }, 10);
 
+    // Animate out and remove
     setTimeout(() => {
-        notif.classList.remove('show');
+        notif.classList.remove('opacity-100', 'translate-x-0');
+        notif.classList.add('opacity-0', 'translate-x-full');
         setTimeout(() => notif.remove(), 500);
     }, duration);
 }

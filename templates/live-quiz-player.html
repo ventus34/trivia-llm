@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Live Quiz - Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <script>
+        (function() {
+            // Force dark theme for live quiz
+            document.documentElement.className = 'dark';
+        })();
+    </script>
+    <style>
+        /* Mobile-first optimizations */
+        body {
+            font-size: 16px; /* Prevent zoom on iOS */
+        }
+        
+        .answer-option {
+            min-height: 60px;
+            font-size: 1.1rem;
+        }
+        
+        .timer-display {
+            font-size: 3rem;
+            line-height: 1;
+        }
+        
+        .question-text {
+            font-size: 1.2rem;
+            line-height: 1.4;
+        }
+        
+        /* Answer selection animations */
+        .answer-option:not(:disabled):active {
+            transform: scale(0.98);
+            transition: transform 0.1s ease-in-out;
+        }
+        
+        .answer-option.selected {
+            background-color: #2563eb !important;
+            border-color: #3b82f6 !important;
+        }
+        
+        .answer-option.correct {
+            background-color: #15803d !important;
+            border-color: #22c55e !important;
+            animation: pulse 1s ease-in-out;
+        }
+        
+        .answer-option.incorrect {
+            background-color: #7f1d1d !important;
+            border-color: #991b1b !important;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+        
+        /* Loading spinner for answer submission */
+        .answer-option.loading {
+            position: relative;
+            opacity: 0.7;
+        }
+        
+        .answer-option.loading::after {
+            content: '';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: translateY(-50%) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+
+    {% include 'partials/player_lobby.html' %}
+    {% include 'partials/player_game.html' %}
+    {% include 'partials/player_overlays.html' %}
+    {% include 'partials/player_templates.html' %}
+
+    <script src="/js/live-quiz-player-simple.js"></script>
+</body>
+</html>

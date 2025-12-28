@@ -1,0 +1,37 @@
+<div id="game-screen" class="js-game-grid-layout hidden w-full min-h-screen p-4 lg:p-8 flex-col lg:flex-row items-center lg:items-stretch justify-center lg:justify-between gap-8 lg:gap-12">
+    <div class="flex flex-col items-center gap-4 pb-8 pt-8 pl-8 pr-8">
+        <div class="board-wrapper">
+            <div id="board" class="board-container"></div>
+        </div>
+    </div>
+
+    <div id="game-controls" class="w-full max-w-sm bg-white rounded-2xl shadow-xl flex flex-col">
+        <div class="scrollable-content space-y-4 overflow-y-auto flex-grow p-6">
+            <h2 class="text-2xl font-bold text-left flex justify-between items-start">
+                <div>
+                    <span><span data-lang-key="player_turn">Tura Gracza</span>: <span id="current-player-emoji"></span></span>
+                    <div id="current-player-name" class="text-xl font-medium -mt-1"></div>
+                </div>
+                <button id="open-game-menu-btn" title="Opcje gry" class="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+            </h2>
+
+            <div id="category-legend" class="grid grid-cols-2 gap-2"></div>
+
+            <div id="dice-result" class="text-center font-semibold text-lg p-4 bg-gray-100 rounded-lg flex flex-col items-center gap-4">
+                <span></span>
+                <div class="dice-container">
+                    <div id="dice" class="dice">
+                        <div class="face front">1</div><div class="face back">6</div><div class="face right">4</div>
+                        <div class="face left">3</div><div class="face top">2</div><div class="face bottom">5</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="player-scores" class="space-y-2"></div>
+
+            <div id="game-message" class="text-center font-medium text-red-600 h-6"></div>
+        </div>
+    </div>
+</div>

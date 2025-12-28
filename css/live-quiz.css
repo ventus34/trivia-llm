@@ -22,134 +22,273 @@ body {
 
 /* Component-specific styles */
 .live-quiz-host-setup {
-    @apply bg-gray-800 rounded-2xl p-8 space-y-6;
+    background-color: #1f2937;
+    border-radius: 1rem;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .live-quiz-lobby {
-    @apply bg-gray-800 rounded-2xl p-6;
+    background-color: #1f2937;
+    border-radius: 1rem;
+    padding: 1.5rem;
 }
 
 .live-quiz-question {
-    @apply bg-gray-800 rounded-2xl p-6 mb-6;
+    background-color: #1f2937;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .live-quiz-results {
-    @apply bg-gray-800 rounded-2xl p-6 text-center space-y-6;
+    background-color: #1f2937;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 /* Game controls styling */
 .game-controls {
-    @apply flex flex-wrap gap-4;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .game-controls button {
-    @apply px-6 py-3 rounded-lg text-white font-semibold transition-colors;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 600;
+    transition-property: background-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
 }
 
 .game-controls .btn-primary {
-    @apply bg-green-600 hover:bg-green-700;
+    background-color: #166534;
+}
+
+.game-controls .btn-primary:hover {
+    background-color: #15803d;
 }
 
 .game-controls .btn-secondary {
-    @apply bg-gray-600 hover:bg-gray-700;
+    background-color: #4b5563;
+}
+
+.game-controls .btn-secondary:hover {
+    background-color: #374151;
 }
 
 .game-controls .btn-warning {
-    @apply bg-yellow-600 hover:bg-yellow-700;
+    background-color: #d97706;
+}
+
+.game-controls .btn-warning:hover {
+    background-color: #b45309;
 }
 
 .game-controls .btn-info {
-    @apply bg-blue-600 hover:bg-blue-700;
+    background-color: #2563eb;
+}
+
+.game-controls .btn-info:hover {
+    background-color: #1d4ed8;
 }
 
 .game-controls .btn-purple {
-    @apply bg-purple-600 hover:bg-purple-700;
+    background-color: #7c3aed;
+}
+
+.game-controls .btn-purple:hover {
+    background-color: #6d28d9;
 }
 
 /* Timer styling */
 .timer-danger {
-    @apply text-red-400;
+    color: #f87171;
 }
 
 .timer-warning {
-    @apply text-yellow-400;
+    color: #fbbf24;
 }
 
 .timer-normal {
-    @apply text-white;
+    color: white;
 }
 
 /* Fullscreen styles */
 .fullscreen-overlay {
-    @apply fixed inset-0 bg-gray-900 z-50 flex flex-col;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #111827;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
 }
 
 .fullscreen-header {
-    @apply flex items-center justify-between p-8 bg-gray-800;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem;
+    background-color: #1f2937;
 }
 
 .fullscreen-content {
-    @apply flex-1 flex items-center justify-center p-8;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
 }
 
 .fullscreen-controls {
-    @apply p-8 bg-gray-800;
+    padding: 2rem;
+    background-color: #1f2937;
 }
 
 /* Player list styling */
 .players-list {
-    @apply space-y-2 max-h-96 overflow-y-auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 24rem;
+    overflow-y: auto;
 }
 
 .player-item {
-    @apply flex items-center justify-between p-3 bg-gray-700 rounded-lg;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background-color: #374151;
+    border-radius: 0.5rem;
 }
 
 .player-avatar {
-    @apply w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold;
+    width: 2rem;
+    height: 2rem;
+    background-color: #2563eb;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
 }
 
 .player-avatar-small {
-    @apply w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs;
+    width: 1.5rem;
+    height: 1.5rem;
+    background-color: #2563eb;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
 }
 
 /* Scoreboard styling */
 .scoreboard {
-    @apply space-y-2 max-h-80 overflow-y-auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 20rem;
+    overflow-y: auto;
 }
 
 .scoreboard-item {
-    @apply flex items-center justify-between p-2 bg-gray-700 rounded;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background-color: #374151;
+    border-radius: 0.25rem;
 }
 
 .scoreboard-position {
-    @apply text-sm font-semibold text-gray-400;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #9ca3af;
 }
 
 /* Progress bar */
 .progress-container {
-    @apply w-full bg-gray-700 rounded-full h-3;
+    width: 100%;
+    background-color: #374151;
+    border-radius: 9999px;
+    height: 0.75rem;
 }
 
 .progress-bar {
-    @apply bg-blue-600 h-3 rounded-full transition-all duration-300;
+    background-color: #2563eb;
+    height: 0.75rem;
+    border-radius: 9999px;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
 }
 
 /* Answer options grid */
 .answer-options-grid {
-    @apply grid grid-cols-2 gap-4;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
 }
 
 .answer-options-grid-host {
-    @apply grid grid-cols-2 gap-6;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
 }
 
 .answer-option-button {
-    @apply w-full p-6 text-left bg-gray-700 hover:bg-gray-600 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors;
+    width: 100%;
+    padding: 1.5rem;
+    text-align: left;
+    background-color: #374151;
+    border-radius: 0.75rem;
+    color: white;
+    border-width: 2px;
+    border-color: #4b5563;
+    transition-property: background-color, border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.answer-option-button:hover {
+    background-color: #4b5563;
+    border-color: #3b82f6;
 }
 
 .answer-option-display {
-    @apply p-6 bg-gray-700 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors;
+    padding: 1.5rem;
+    background-color: #374151;
+    border-radius: 0.75rem;
+    color: white;
+    border-width: 2px;
+    border-color: #4b5563;
+    transition-property: border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.answer-option-display:hover {
+    border-color: #3b82f6;
 }
 
 /* Correct answer highlighting that preserves player names */
@@ -166,131 +305,240 @@ body {
 
 /* Player names in answer options */
 .player-names {
-    @apply text-sm;
+    font-size: 0.875rem;
 }
 
 .player-names div {
-    @apply text-blue-300 font-medium;
+    color: #60a5fa;
+    font-weight: 500;
 }
 
 /* Connection status */
 .connection-status {
-    @apply fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-2 text-sm z-50;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #dc2626;
+    color: white;
+    text-align: center;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 0.875rem;
+    z-index: 50;
 }
 
 /* Loading overlay */
 .loading-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
 }
 
 .loading-content {
-    @apply bg-gray-800 rounded-2xl p-8 text-center;
+    background-color: #1f2937;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
 }
 
 /* Room info styling */
 .room-info {
-    @apply space-y-3;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .room-code-display {
-    @apply text-2xl font-mono font-bold text-blue-400;
+    font-size: 1.5rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: #60a5fa;
 }
 
 .game-id-display {
-    @apply text-sm text-gray-400 font-mono;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    font-family: monospace;
 }
 
 .player-count-display {
-    @apply text-white font-semibold;
+    color: white;
+    font-weight: 600;
 }
 
 /* Category display */
 .category-badge {
-    @apply text-sm text-gray-300 bg-gray-600 rounded px-3 py-1;
+    font-size: 0.875rem;
+    color: #d1d5db;
+    background-color: #4b5563;
+    border-radius: 0.25rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
 }
 
 .category-input {
-    @apply px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    background-color: #374151;
+    border-width: 1px;
+    border-color: #4b5563;
+    border-radius: 0.5rem;
+    color: white;
+}
+
+.category-input:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    --tw-ring-inset: var(--tw-empty,/*!*/ /*!*/);
+    --tw-ring-color: #3b82f6;
+    --tw-ring-offset-width: 2px;
+    --tw-ring-offset-color: #fff;
+    --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+    border-color: transparent;
 }
 
 /* Question results */
 .question-results {
-    @apply hidden mb-6;
+    display: none;
+    margin-bottom: 1.5rem;
 }
 
 .results-content {
-    @apply bg-gray-700 rounded-lg p-6;
+    background-color: #374151;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
 }
 
 .correct-answer {
-    @apply text-green-200 text-lg;
+    color: #bbf7d0;
+    font-size: 1.125rem;
 }
 
 .correct-answer-label {
-    @apply text-lg font-semibold text-green-300 mb-2;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #86efac;
+    margin-bottom: 0.5rem;
 }
 
 .explanation {
-    @apply text-blue-200 text-base leading-relaxed;
+    color: #93c5fd;
+    font-size: 1rem;
+    line-height: 1.75;
 }
 
 .explanation-label {
-    @apply text-lg font-semibold text-blue-300 mb-2;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #60a5fa;
+    margin-bottom: 0.5rem;
 }
 
 /* Question display for TV/fullscreen */
 .fullscreen-question-text {
-    @apply text-6xl font-bold text-white leading-relaxing mb-12 min-h-[200px] flex items-center justify-center;
+    font-size: 3.75rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.75;
+    margin-bottom: 3rem;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .host-question-text {
-    @apply text-3xl font-bold text-white leading-relaxing mb-8 min-h-[120px] flex items-center;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.75;
+    margin-bottom: 2rem;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
 }
 
 .player-question-text {
-    @apply text-xl font-medium leading-relaxing;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.75;
 }
 
 /* Final results */
 .final-scores {
-    @apply space-y-4 mb-8;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .winner-display {
-    @apply bg-yellow-600 rounded-lg p-4 mb-4;
+    background-color: #f59e0b;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
 }
 
 .winner-title {
-    @apply text-2xl font-bold text-white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
 }
 
 .winner-score {
-    @apply text-yellow-200;
+    color: #fef3c7;
 }
 
 .final-position {
-    @apply bg-gray-700 rounded-lg p-4;
+    background-color: #374151;
+    border-radius: 0.5rem;
+    padding: 1rem;
 }
 
 .final-score {
-    @apply text-3xl font-bold text-white;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: white;
 }
 
 .final-score-label {
-    @apply text-sm text-gray-400;
+    font-size: 0.875rem;
+    color: #9ca3af;
 }
 
 .final-rank {
-    @apply bg-blue-900 rounded-lg p-4;
+    background-color: #1e3a8a;
+    border-radius: 0.5rem;
+    padding: 1rem;
 }
 
 .final-rank-text {
-    @apply text-lg font-semibold text-blue-200;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #93c5fd;
 }
 
 /* QR Code styling - Large for lobby */
 .qr-code-container {
-    @apply inline-block p-6 bg-white rounded-xl shadow-lg;
+    display: inline-block;
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     width: 100%;
     height: 100%;
     max-width: 400px;
@@ -350,80 +598,97 @@ body {
 
 /* Answer status */
 .answer-status {
-    @apply text-center;
+    text-align: center;
 }
 
 .answer-status-text {
-    @apply text-lg text-gray-400;
+    font-size: 1.125rem;
+    color: #9ca3af;
 }
 
 .answer-status-correct {
-    @apply text-sm text-green-400;
+    font-size: 0.875rem;
+    color: #4ade80;
 }
 
 /* Player fullscreen styles */
 .player-fullscreen-timer {
-    @apply text-6xl font-mono font-bold text-white;
+    font-size: 3.75rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: white;
 }
 
 .player-fullscreen-question-text {
-    @apply text-5xl font-bold text-white leading-relaxing mb-12 min-h-[150px] flex items-center justify-center;
+    font-size: 3rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.75;
+    margin-bottom: 3rem;
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .player-fullscreen-answer-status {
-    @apply text-xl text-gray-400;
+    font-size: 1.25rem;
+    color: #9ca3af;
 }
 
 /* Host fullscreen styles */
 .host-fullscreen-timer {
-    @apply text-8xl font-mono font-bold text-white;
+    font-size: 5rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: white;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .fullscreen-question-text {
-        @apply text-4xl;
+        font-size: 2.25rem;
     }
-    
+     
     .host-question-text {
-        @apply text-2xl;
+        font-size: 1.5rem;
     }
-    
+     
     .player-question-text {
-        @apply text-lg;
+        font-size: 1.125rem;
     }
-    
+     
     .answer-options-grid {
-        @apply gap-3;
+        gap: 0.75rem;
     }
-    
+     
     .answer-option-button {
-        @apply p-4;
+        padding: 1rem;
     }
-    
+     
     .timer-display {
-        @apply text-2xl;
+        font-size: 1.5rem;
     }
 }
 
 @media (max-width: 640px) {
     .fullscreen-question-text {
-        @apply text-3xl;
+        font-size: 1.875rem;
     }
-    
+     
     .host-question-text {
-        @apply text-xl;
+        font-size: 1.25rem;
     }
-    
+     
     .player-question-text {
-        @apply text-base;
+        font-size: 1rem;
     }
-    
+     
     .game-controls {
-        @apply flex-col;
+        flex-direction: column;
     }
-    
+     
     .game-controls button {
-        @apply w-full;
+        width: 100%;
     }
 }

@@ -4,82 +4,22 @@ window.LiveQuizPlayerUI = (function(Common) {
 
     // Join Game Component
     function createJoinGameComponent() {
-        const container = document.createElement('div');
-        container.className = 'max-w-md mx-auto';
-        container.innerHTML = `
-            <h1 class="text-3xl font-bold text-center mb-8 text-white">🎮 Live Quiz</h1>
-            
-            <div class="bg-gray-800 rounded-2xl p-6 space-y-6">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
-                        📱
-                    </div>
-                    <h2 class="text-xl font-semibold text-white mb-2">Join a Game</h2>
-                    <p class="text-gray-400 text-sm">Enter the room code provided by the host</p>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Room Code</label>
-                    <input type="text" id="room-code" placeholder="123456" maxlength="6" class="w-full px-4 py-3 text-center text-2xl font-mono bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Your Name</label>
-                    <input type="text" id="player-name" placeholder="Enter your name" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                
-                <button id="join-game" class="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
-                    Join Game
-                </button>
-                
-                <div class="text-center">
-                    <p class="text-xs text-gray-500">
-                        Or scan the QR code to join automatically
-                    </p>
-                </div>
-            </div>
-        `;
-        return container;
+        const template = document.getElementById('tmpl-join-game');
+        if (!template) {
+            console.error('Template tmpl-join-game not found');
+            return document.createElement('div');
+        }
+        return template.content.cloneNode(true);
     }
-
+    
     // Lobby Component
     function createLobbyComponent() {
-        const container = document.createElement('div');
-        container.className = 'max-w-md mx-auto';
-        container.innerHTML = `
-            <h1 class="text-2xl font-bold text-center mb-8 text-white">🏠 Waiting Room</h1>
-            
-            <div class="bg-gray-800 rounded-2xl p-6 space-y-6">
-                <div class="text-center">
-                    <div class="text-4xl font-mono font-bold text-blue-400 mb-2" id="display-room-code">------</div>
-                    <p class="text-gray-400 text-sm">Room Code</p>
-                </div>
-                
-                <div class="bg-gray-700 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-300">Players Connected:</span>
-                        <span class="text-white font-semibold" id="player-count">0</span>
-                    </div>
-                </div>
-                
-                <div class="bg-gray-700 rounded-lg p-4">
-                    <h3 class="text-white font-semibold mb-3">Game Categories:</h3>
-                    <div id="categories-list" class="space-y-2">
-                        <!-- Categories will be added here -->
-                    </div>
-                </div>
-                
-                <div class="bg-blue-900 rounded-lg p-4 text-center">
-                    <div class="text-2xl mb-2">⏳</div>
-                    <p class="text-blue-200">Waiting for host to start the game...</p>
-                </div>
-                
-                <button id="leave-lobby" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                    Leave Game
-                </button>
-            </div>
-        `;
-        return container;
+        const template = document.getElementById('tmpl-lobby');
+        if (!template) {
+            console.error('Template tmpl-lobby not found');
+            return document.createElement('div');
+        }
+        return template.content.cloneNode(true);
     }
 
     // Question Display Component
@@ -119,17 +59,20 @@ window.LiveQuizPlayerUI = (function(Common) {
                     displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
                 }
 
+                const template = document.getElementById('tmpl-question-option');
+                if (!template) {
+                    console.error('Template tmpl-question-option not found');
+                    return;
+                }
+
                 displayOptions.forEach((option, index) => {
-                    const button = document.createElement('button');
-                    button.className = 'w-full p-6 text-left answer-option bg-gray-700 hover:bg-gray-600 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors';
-                    button.innerHTML = `
-                        <div class="flex items-center space-x-4">
-                            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-lg font-semibold">
-                                ${String.fromCharCode(65 + index)}
-                            </div>
-                            <span class="text-lg flex-1">${option}</span>
-                        </div>
-                    `;
+                    const button = template.content.cloneNode(true).firstElementChild;
+                    const letterSpan = button.querySelector('.font-semibold');
+                    const textSpan = button.querySelector('.flex-1');
+                    
+                    if (letterSpan) letterSpan.textContent = String.fromCharCode(65 + index);
+                    if (textSpan) textSpan.textContent = option;
+                    
                     if (submitCallback) {
                         button.addEventListener('click', () => submitCallback(option));
                     }
@@ -284,17 +227,20 @@ window.LiveQuizPlayerUI = (function(Common) {
                     displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
                 }
 
+                const template = document.getElementById('tmpl-question-option');
+                if (!template) {
+                    console.error('Template tmpl-question-option not found');
+                    return;
+                }
+
                 displayOptions.forEach((option, index) => {
-                    const button = document.createElement('button');
-                    button.className = 'w-full p-6 text-left answer-option bg-gray-700 hover:bg-gray-600 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors';
-                    button.innerHTML = `
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-xl font-semibold">
-                                ${String.fromCharCode(65 + index)}
-                            </div>
-                            <span class="text-xl flex-1">${option}</span>
-                        </div>
-                    `;
+                    const button = template.content.cloneNode(true).firstElementChild;
+                    const letterSpan = button.querySelector('.font-semibold');
+                    const textSpan = button.querySelector('.flex-1');
+                    
+                    if (letterSpan) letterSpan.textContent = String.fromCharCode(65 + index);
+                    if (textSpan) textSpan.textContent = option;
+                    
                     button.addEventListener('click', () => submitCallback(option));
                     optionsContainer.appendChild(button);
                 });
@@ -367,6 +313,33 @@ window.LiveQuizPlayerUI = (function(Common) {
         addMobileOptimizations();
     }
 
+    // Skeleton Loader Component
+    function createSkeletonLoaderComponent() {
+        return {
+            show: function() {
+                const questionContainer = document.getElementById('question-container');
+                if (!questionContainer) return;
+
+                const template = document.getElementById('tmpl-skeleton-loader');
+                if (!template) {
+                    console.error('Template tmpl-skeleton-loader not found');
+                    return;
+                }
+
+                const skeleton = template.content.cloneNode(true);
+                questionContainer.innerHTML = '';
+                questionContainer.appendChild(skeleton);
+            },
+
+            hide: function() {
+                const questionContainer = document.getElementById('question-container');
+                if (questionContainer) {
+                    questionContainer.innerHTML = '';
+                }
+            }
+        };
+    }
+
     return {
         init: init,
         createJoinGameComponent: createJoinGameComponent,
@@ -376,6 +349,7 @@ window.LiveQuizPlayerUI = (function(Common) {
         createFinalResultsComponent: createFinalResultsComponent,
         createTimerComponent: createTimerComponent,
         createFullscreenQuestionComponent: createFullscreenQuestionComponent,
-        createConnectionStatusComponent: createConnectionStatusComponent
+        createConnectionStatusComponent: createConnectionStatusComponent,
+        createSkeletonLoaderComponent: createSkeletonLoaderComponent
     };
 })(window.LiveQuizCommon);

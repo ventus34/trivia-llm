@@ -1,9 +1,10 @@
 import os
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
 
 import database
 from config import initialize_async_resources, fetch_models_from_api, initialize_models, DEBUG_MODE, MAX_CONCURRENT_PRELOAD_TASKS, MAX_PRELOAD_CATEGORIES, GENERATIVE_RATE_LIMIT_COUNT, GENERATIVE_RATE_LIMIT_PERIOD, GENERATIVE_INFLIGHT_LIMIT
@@ -24,6 +25,7 @@ from live_quiz_routes import (
 
 # --- Configuration ---
 app = FastAPI(title="Trivia Game Backend", version="1.0.0")
+templates = Jinja2Templates(directory="templates")
 
 # Import cleanup functions
 from live_quiz_routes import start_cleanup_task, stop_cleanup_task
@@ -54,9 +56,17 @@ app.get("/api/live-quiz/events")(sse_endpoint)
 app.get("/", include_in_schema=False)(root)
 
 # Live Quiz static routes
-app.get("/live-quiz/host", include_in_schema=False)(lambda: FileResponse('live-quiz-host.html'))
-app.get("/live-quiz/player", include_in_schema=False)(lambda: FileResponse('live-quiz-player.html'))
-app.get("/test", include_in_schema=False)(lambda: FileResponse('test_live_quiz.html'))
+@app.get("/live-quiz/host", include_in_schema=False)
+async def live_quiz_host(request: Request):
+    return templates.TemplateResponse("live-quiz-host.html", {"request": request})
+
+@app.get("/live-quiz/player", include_in_schema=False)
+async def live_quiz_player(request: Request):
+    return templates.TemplateResponse("live-quiz-player.html", {"request": request})
+
+@app.get("/db", include_in_schema=False)
+async def db_browser(request: Request):
+    return templates.TemplateResponse("db.html", {"request": request})
 
 # --- App Lifecycle and Static Files ---
 @app.on_event("startup")
