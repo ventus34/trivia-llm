@@ -121,6 +121,9 @@ window.LiveQuizHostGame = (function(Common) {
     function startQuestion(data) {
         gameState.currentQuestion = data;
         gameState.timerSeconds = data.time_limit;
+        if (data.total_questions) {
+            gameState.totalQuestions = data.total_questions;
+        }
 
         refreshQuestionUI(data);
         saveHostGameState('game-screen'); // Save state when question starts
@@ -183,22 +186,32 @@ window.LiveQuizHostGame = (function(Common) {
         const numberElement = document.getElementById('question-number');
         const textElement = document.getElementById('question-text');
 
+        const fullscreenCategoryElement = document.getElementById('fullscreen-question-category');
+        const fullscreenNumberElement = document.getElementById('fullscreen-question-number');
+        const fullscreenTextElement = document.getElementById('fullscreen-question-text');
+
+        const totalQuestions = data.total_questions || gameState.totalQuestions || 30;
+
         if (categoryElement) categoryElement.textContent = data.category;
-        if (numberElement) numberElement.textContent = `Question ${data.question_number}/${gameState.totalQuestions || 30}`;
+        if (numberElement) numberElement.textContent = `Question ${data.question_number}/${totalQuestions}`;
         if (textElement) textElement.textContent = data.question;
+
+        if (fullscreenCategoryElement) fullscreenCategoryElement.textContent = data.category;
+        if (fullscreenNumberElement) fullscreenNumberElement.textContent = `Question ${data.question_number}/${totalQuestions}`;
+        if (fullscreenTextElement) fullscreenTextElement.textContent = data.question;
         
         // Update options in 2x2 grid for TV
         const optionsContainer = document.getElementById('question-options');
-        if (optionsContainer) {
-            optionsContainer.innerHTML = '';
-            
-            if (data.options && data.options.length > 0) {
-                // Ensure we have exactly 4 options for 2x2 grid
-                const displayOptions = data.options.slice(0, 4);
-                while (displayOptions.length < 4) {
-                    displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
-                }
-                
+        const fullscreenOptionsContainer = document.getElementById('fullscreen-question-options');
+
+        if (optionsContainer || fullscreenOptionsContainer) {
+            const displayOptions = (data.options || []).slice(0, 4);
+            while (displayOptions.length < 4) {
+                displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+            }
+
+            if (optionsContainer) {
+                optionsContainer.innerHTML = '';
                 displayOptions.forEach((option, index) => {
                     const optionElement = document.createElement('div');
                     optionElement.className = 'p-6 bg-gray-700 rounded-xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors answer-option';
@@ -213,12 +226,31 @@ window.LiveQuizHostGame = (function(Common) {
                     optionsContainer.appendChild(optionElement);
                 });
             }
+
+            if (fullscreenOptionsContainer) {
+                fullscreenOptionsContainer.innerHTML = '';
+                displayOptions.forEach((option, index) => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'p-8 bg-gray-700 rounded-2xl text-white border-2 border-gray-600 hover:border-blue-500 transition-colors answer-option';
+                    optionElement.innerHTML = `
+                        <div class="flex items-center space-x-6">
+                            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
+                                ${String.fromCharCode(65 + index)}
+                            </div>
+                            <span class="text-2xl flex-1">${option}</span>
+                        </div>
+                    `;
+                    fullscreenOptionsContainer.appendChild(optionElement);
+                });
+            }
         }
     }
 
     function updateTimer(seconds) {
         gameState.timerSeconds = seconds;
         const timerElement = document.getElementById('timer');
+        const fullscreenTimerElement = document.getElementById('fullscreen-timer');
+
         if (timerElement) {
             timerElement.textContent = seconds;
 
@@ -230,6 +262,11 @@ window.LiveQuizHostGame = (function(Common) {
             } else {
                 timerElement.className = 'text-5xl font-mono font-bold text-white';
             }
+        }
+
+        if (fullscreenTimerElement) {
+            fullscreenTimerElement.textContent = seconds;
+            updateFullscreenTimerStyle(seconds);
         }
 
         // Save state on timer updates (but not too frequently)

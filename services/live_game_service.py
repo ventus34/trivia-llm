@@ -175,6 +175,7 @@ async def start_question(game_id: str, question_index: int, active_sse_queues: D
     # Broadcast question start
     await broadcast_to_game(game_id, "question_started", {
         "question_number": game_question.question_number,
+        "total_questions": game_state.total_questions,
         "category": game_question.category,
         "question": game_question.question.question,
         "options": game_question.question.options,

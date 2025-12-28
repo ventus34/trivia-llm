@@ -85,7 +85,7 @@ window.LiveQuizPlayerUI = (function(Common) {
     // Question Display Component
     function createQuestionDisplayComponent() {
         return {
-            updateQuestion: function(data, questionNumber) {
+            updateQuestion: function(data, questionNumber, totalQuestions) {
                 // Update category and number
                 const categoryElement = document.getElementById('question-category');
                 if (categoryElement) {
@@ -94,7 +94,7 @@ window.LiveQuizPlayerUI = (function(Common) {
 
                 const numberElement = document.getElementById('question-number');
                 if (numberElement) {
-                    numberElement.textContent = `Question ${questionNumber}/30`;
+                    numberElement.textContent = `Question ${questionNumber}/${totalQuestions || 30}`;
                 }
 
                 // Update question text
@@ -261,14 +261,14 @@ window.LiveQuizPlayerUI = (function(Common) {
     // Fullscreen Question Display
     function createFullscreenQuestionComponent() {
         return {
-            updateQuestion: function(data, questionNumber) {
+            updateQuestion: function(data, questionNumber, totalQuestions) {
                 // Update header
                 const categoryElement = document.getElementById('player-fullscreen-question-category');
                 const numberElement = document.getElementById('player-fullscreen-question-number');
                 const textElement = document.getElementById('player-fullscreen-question-text');
                 
                 if (categoryElement) categoryElement.textContent = data.category;
-                if (numberElement) numberElement.textContent = `Question ${questionNumber}/30`;
+                if (numberElement) numberElement.textContent = `Question ${questionNumber}/${totalQuestions || 30}`;
                 if (textElement) textElement.textContent = data.question;
             },
 

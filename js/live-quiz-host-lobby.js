@@ -60,6 +60,17 @@ window.LiveQuizHostLobby = (function(Common) {
     function handleSSEEvent(event) {
         switch (event.type) {
             case 'connected':
+                // Update total questions if present
+                if (event.data.total_questions) {
+                    gameState.totalQuestions = event.data.total_questions;
+                }
+
+                // Check if game is already in progress and redirect host
+                if (event.data.game_status === 'playing' && event.data.current_question) {
+                    Common.showScreen('game-screen');
+                    Common.showNotification('Reconnected to active game!', 'info');
+                }
+
                 // Filter out host from initial lobby data
                 if (event.data.players) {
                     const filteredPlayers = event.data.players.filter(p => p.id !== gameState.hostId);
@@ -87,6 +98,9 @@ window.LiveQuizHostLobby = (function(Common) {
                 break;
                 
             case 'question_started':
+                if (event.data.total_questions) {
+                    gameState.totalQuestions = event.data.total_questions;
+                }
                 if (window.LiveQuizHostGame) {
                     window.LiveQuizHostGame.startQuestion(event.data);
                 }

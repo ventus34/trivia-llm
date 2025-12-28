@@ -378,6 +378,7 @@ async def sse_endpoint(request: Request):
                 "connection_type": connection_type,
                 "game_status": game_state.status,
                 "current_question": game_state.current_question_index + 1 if game_state.status == "playing" else None,
+                "total_questions": game_state.total_questions,
                 "player_count": len(game_state.players),
                 "players": [{"id": p.id, "name": p.name, "score": p.score} for p in game_state.players]
             }

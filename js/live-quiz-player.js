@@ -489,6 +489,9 @@ window.LiveQuizPlayer = (function(Common) {
 
         switch (event.type) {
             case 'connected':
+                if (event.data.total_questions) {
+                    gameState.totalQuestions = event.data.total_questions;
+                }
                 updateLobby();
                 break;
 
@@ -507,6 +510,9 @@ window.LiveQuizPlayer = (function(Common) {
                 break;
 
             case 'question_started':
+                if (event.data.total_questions) {
+                    gameState.totalQuestions = event.data.total_questions;
+                }
                 startQuestion(event.data);
                 savePlayerState('question-screen'); // Save state when question starts
 
@@ -576,7 +582,7 @@ window.LiveQuizPlayer = (function(Common) {
         
         // Update UI
         document.getElementById('question-category').textContent = data.category;
-        document.getElementById('question-number').textContent = `Question ${data.question_number}/30`;
+        document.getElementById('question-number').textContent = `Question ${data.question_number}/${gameState.totalQuestions || 30}`;
         document.getElementById('question-text').textContent = data.question;
         
         // Update options in 2x2 grid
@@ -869,7 +875,7 @@ window.LiveQuizPlayer = (function(Common) {
             const textElement = document.getElementById('player-fullscreen-question-text');
             
             if (categoryElement) categoryElement.textContent = q.category;
-            if (numberElement) numberElement.textContent = `Question ${q.question_number}/30`;
+            if (numberElement) numberElement.textContent = `Question ${q.question_number}/${gameState.totalQuestions || 30}`;
             
             // Update timer
             const timerElement = document.getElementById('player-fullscreen-timer');
