@@ -45,38 +45,6 @@
       "en": "Short answer (1-3 words)"
     }
   },
-  "generate_question": {
-    "pl": {
-      "persona": "Ekspert quizowy. Generuj tylko JSON.",
-      "static_instructions": [
-        "WYMAGANIA:",
-        "1. ANTY-CLICHÉ: Zignoruj 3 pierwsze skojarzenia dla tej kategorii. Szukaj wyjątków, nie reguł.",
-        "2. UNIKALNOŚĆ: Sprawdź ZAKAZANE. Jeśli temat jest popularny, znajdź jego niszowy aspekt.",
-        "3. OBIEKTYWIZM: 1 poprawna odpowiedź. Żadnych opinii.",
-        "4. ZWIĘZŁOŚĆ: Pytanie <20 słów. Opcje <5 słów. Wyjaśnienia max 1 zdanie.",
-        "5. BRAK SPOILERA: Odpowiedź nie może paść w pytaniu.",
-        "6. DYSTRAKTORY: Błędne opcje muszą być wiarygodne.",
-        "7. FORMAT JSON (bez markdown):",
-        "{{\n  \"question\": \"Treść...\",\n  \"answer\": \"Poprawna...\",\n  \"subcategory\": \"Precyzyjna podkategoria\",\n  \"key_entities\": [\"KluczoweNazwy\"]\n  \"options\": [\"A\", \"B\", \"C\", \"D\"]\n  \"explanation_correct\": \"Fakt weryfikujący.\",\n  \"explanation_distractors\": \"Dlaczego błędne.\"\n}}"
-      ],
-      "task_template": "ZADANIE:\nKat: \"{category}\"\nTrudność: {knowledge_prompt}\nTryb: {game_mode_prompt}\nMotyw: {theme_context}\n\nZAKAZANE (Unikaj tych haseł):\n- Podkategorie: {subcategory_history_prompt}\n- Nazwy: {entity_history_prompt}"
-    },
-    "en": {
-      "persona": "Quiz expert. Generate JSON only.",
-      "static_instructions": [
-        "REQUIREMENTS:",
-        "1. ANTI-CLICHÉ: Discard the first 3 associations that come to mind. Focus on exceptions, not rules.",
-        "2. UNIQUENESS: Check FORBIDDEN. If topic is popular, find an obscure angle.",
-        "3. OBJECTIVITY: 1 correct answer. No opinions.",
-        "4. CONCISE: Question <20 words. Options <5 words. Explanations max 1 sentence.",
-        "5. NO SPOILERS: Answer not in question text.",
-        "6. DISTRACTORS: Plausible incorrect options.",
-        "7. JSON FORMAT (no markdown):",
-        "{{\n  \"question\": \"Text...\",\n  \"answer\": \"Correct...\",\n  \"subcategory\": \"Precise subcategory\",\n  \"key_entities\": [\"KeyEntities\"]\n  \"options\": [\"A\", \"B\", \"C\", \"D\"]\n  \"explanation_correct\": \"Verification fact.\",\n  \"explanation_distractors\": \"Why incorrect.\"\n}}"
-      ],
-      "task_template": "TASK:\nCat: \"{category}\"\nDiff: {knowledge_prompt}\nMode: {game_mode_prompt}\nTheme: {theme_context}\n\nFORBIDDEN (Avoid these):\n- Subcats: {subcategory_history_prompt}\n- Entities: {entity_history_prompt}"
-    }
-  },
   "generate_categories": {
     "pl": {
       "static_instructions": [
@@ -131,80 +99,157 @@
       "task_template": "Q: \"{question}\"\nCorrect: \"{correct_answer}\"\nPlayer: \"{player_answer}\""
     }
   },
-  "generate_blueprints": {
+"generate_blueprints": {
     "pl": {
-      "system": "Jesteś redaktorem bazy danych do gry typu quiz. Twoim celem jest precyzyjna kategoryzacja faktów.",
+      "system": "Jesteś architektem bazy danych wiedzy. Twoim celem jest ekstrakcja atomowych faktów.",
       "instruction": [
-        "Dla podanej KATEGORII wygeneruj listę 50 zestawów danych (faktów) do pytań.",
-        "ZASADY:",
-        "1. KONKRET: Każdy zestaw musi dotyczyć jednego, weryfikowalnego faktu (data, nazwisko, wzór, nazwa geograficzna).",
-        "2. ATOMOWOŚĆ: Jeden temat = jeden fakt.",
-        "3. FORMAT JSON: Zwróć obiekt z kluczem 'topics' zawierającym tablicę 50 obiektów, każdy z polami: subcategory (string), modifier (string), target_answer (string).",
-        "4. 'modifier' określa typ pytania, np. 'Rok wydarzenia', 'Autor dzieła', 'Stolica kraju', 'Symbol chemiczny'.",
-        "5. Używaj tylko polskiego języka w odpowiedziach."
+        "Dla podanej KATEGORII wygeneruj listę 50 unikalnych faktów (szkiców pytań).",
+        "",
+        "KRYTERIA JAKOŚCI DANYCH:",
+        "1. WERYFIKOWALNOŚĆ: Fakt musi być bezsporny (data, nazwa własna, wzór, liczba). Unikaj opinii.",
+        "2. ATOMOWOŚĆ: Jeden wpis dotyczy jednej konkretnej informacji.",
+        "3. KRÓTKA ODPOWIEDŹ: Pole 'target_answer' musi być zwięzłe (max 3-4 słowa).",
+        "4. RÓŻNORODNOŚĆ: Pokryj całe spektrum kategorii, nie tylko najpopularniejsze tematy.",
+        "",
+        "FORMAT JSON (zwróć wyłącznie ten obiekt):",
+        "{{",
+        "  \"topics\": [",
+        "    {{",
+        "      \"subcategory\": \"Precyzyjna dziedzina (np. 'Fizyka kwantowa')\",",
+        "      \"modifier\": \"Typ pytania (np. 'Rok odkrycia', 'Nazwisko twórcy')\",",
+        "      \"target_answer\": \"Konkretna wartość (np. '1925', 'Erwin Schrödinger')\"",
+        "    }}",
+        "  ]",
+        "}}"
       ],
-      "task_template": "Kategoria: \"{category}\"\nMotyw: \"{theme}\""
+      "task_template": "Kategoria: \"{category}\"\nMotyw przewodni: \"{theme}\""
     },
     "en": {
-      "system": "You are a database editor for a quiz game. Your goal is precise fact categorization.",
+      "system": "You are a knowledge database architect. Your goal is to extract atomic facts.",
       "instruction": [
-        "For the given CATEGORY, generate a list of 50 data sets (facts) for questions.",
-        "RULES:",
-        "1. CONCRETE: Each set must concern one verifiable fact (date, name, formula, geographical name).",
-        "2. ATOMIC: One topic = one fact.",
-        "3. JSON FORMAT: Return an object with 'topics' key containing an array of 50 objects, each with fields: subcategory (string), modifier (string), target_answer (string).",
-        "4. 'modifier' specifies question type, e.g. 'Year of event', 'Author of work', 'Capital of country', 'Chemical symbol'.",
-        "5. Use only English language in answers."
+        "Generate a list of 50 unique facts (question blueprints) for the given CATEGORY.",
+        "",
+        "DATA QUALITY CRITERIA:",
+        "1. VERIFIABILITY: Facts must be indisputable (dates, names, formulas). Avoid opinions.",
+        "2. ATOMICITY: One entry relates to exactly one piece of information.",
+        "3. SHORT ANSWER: The 'target_answer' must be concise (max 3-4 words).",
+        "4. DIVERSITY: Cover the entire spectrum of the category.",
+        "",
+        "JSON FORMAT (return strictly this object):",
+        "{{",
+        "  \"topics\": [",
+        "    {{",
+        "      \"subcategory\": \"Precise field (e.g. 'Quantum Physics')\",",
+        "      \"modifier\": \"Question type (e.g. 'Discovery Year')\",",
+        "      \"target_answer\": \"Concrete value (e.g. '1925')\"",
+        "    }}",
+        "  ]",
+        "}}"
       ],
       "task_template": "Category: \"{category}\"\nTheme: \"{theme}\""
     }
   },
   "generate_question_from_blueprint": {
     "pl": {
-      "persona": "Generator pytań do quizu. Styl encyklopedyczny i zwięzły.",
+      "persona": "Ekspert teleturniejowy. Tworzysz pytania wymagające precyzyjnej wiedzy.",
       "static_instructions": [
-        "Stwórz pytanie na podstawie SZKICU.",
-        "KRYTYCZNE OGRANICZENIA DŁUGOŚCI:",
-        "1. PYTANIE: Dokładnie 1 zdanie. Krótkie i precyzyjne.",
-        "2. WYJAŚNIENIA: Maksymalnie 2-3 zwięzłe zdania. Tylko kluczowe fakty.",
+        "ZADANIE: Stwórz pytanie na podstawie dostarczonego SZKICU.",
         "",
-        "ZASADY MERYTORYCZNE:",
-        "1. Dystraktory (błędne): Muszą być z tej samej kategorii (np. inne lata, inne miasta) i brzmieć wiarygodnie.",
-        "2. Brak lania wody. Styl suchy, informacyjny.",
-        "3. Użyj DOKŁADNIE podanej odpowiedzi jako poprawnej.",
+        "RYGORYSTYCZNE ZASADY TREŚCI:",
+        "1. PRECYZJA: Pytanie musi być jednoznacznym zdaniem pytającym.",
+        "2. BRAK SPOILERA: Pytanie NIE MOŻE zawierać słów sugerujących odpowiedź.",
+        "3. HOMOGENICZNOŚĆ OPCJI: Dystraktory (błędne opcje) muszą należeć do TEJ SAMEJ kategorii semantycznej co poprawna odpowiedź (np. same daty, same miasta).",
+        "4. POPRAWNA ODPOWIEDŹ: Musi być identyczna z 'Target Answer' ze szkicu.",
         "",
-        "FORMAT ODPOWIEDZI (JSON):",
+        "WYMAGANIA TECHNICZNE (JSON):",
+        "1. Zwróć czysty JSON bez Markdown.",
+        "2. Klucz 'answer' musi być kopią jednego z elementów tablicy 'options'.",
+        "3. Escape'uj cudzysłowy wewnątrz tekstów.",
+        "",
+        "FORMAT ODPOWIEDZI:",
         "{{",
-        "  \"question\": \"Treść pytania (1 zdanie)\",",
-        "  \"options\": [\"A\", \"B\", \"C\", \"D\"]\n  \"answer\": \"Poprawna (identyczna z jedną z opcji)\",",
-        "  \"explanation_correct\": \"Zwięzłe uzasadnienie (max 2 zdania).\",",
-        "  \"explanation_incorrect\": \"Krótko dlaczego reszta odpada (max 2 zdania).\"",
+        "  \"question\": \"Treść pytania?\",",
+        "  \"options\": [\"A\", \"B\", \"C\", \"D\"],",
+        "  \"answer\": \"Poprawna (musi być w options)\",",
+        "  \"explanation_correct\": \"Faktograficzne wyjaśnienie (max 2 zdania).\",",
+        "  \"explanation_incorrect\": \"Dlaczego inne są błędne (max 2 zdania).\"",
         "}}"
       ],
-      "task_template": "Kategoria: \"{category}\"\nSZKIC:\n- Podkategoria: {subcategory}\n- Typ pytania: {modifier}\n- Odpowiedź: {target_answer}\n\nTrudność: {knowledge_level}"
+      "task_template": "Kategoria: \"{category}\"\nSZKIC:\n- Podkategoria: {subcategory}\n- Typ pytania: {modifier}\n- Odpowiedź docelowa: {target_answer}\n\nPoziom trudności: {knowledge_level}"
     },
     "en": {
-      "persona": "Trivial Pursuit question generator. Encyclopedic and concise style.",
+      "persona": "Trivia expert. You create questions requiring precise knowledge.",
       "static_instructions": [
-        "Create a question based on the BLUEPRINT.",
-        "CRITICAL LENGTH CONSTRAINTS:",
-        "1. QUESTION: Exactly 1 sentence. Short and precise.",
-        "2. EXPLANATIONS: Max 2-3 concise sentences. Key facts only.",
+        "TASK: Create a question based on the provided BLUEPRINT.",
         "",
         "CONTENT RULES:",
-        "1. Distractors: Must be strictly from the same category (e.g. other years, other cities).",
-        "2. No fluff. Dry, informational style.",
-        "3. Use EXACTLY the target answer as correct.",
+        "1. PRECISION: The question must be a clear interrogative sentence.",
+        "2. NO SPOILERS: Do not include words that suggest the answer.",
+        "3. OPTION HOMOGENEITY: Distractors must belong to the SAME semantic category as the correct answer (e.g. all dates, all cities).",
+        "4. CORRECT ANSWER: Must be identical to the 'Target Answer' from the blueprint.",
         "",
-        "RESPONSE FORMAT (JSON):",
+        "TECHNICAL REQUIREMENTS (JSON):",
+        "1. Return pure JSON without Markdown.",
+        "2. The 'answer' key must be a copy of one element from the 'options' array.",
+        "",
+        "RESPONSE FORMAT:",
         "{{",
-        "  \"question\": \"Question text (1 sentence)\",",
-        "  \"options\": [\"A\", \"B\", \"C\", \"D\"]\n  \"answer\": \"Correct option (exact match)\",",
-        "  \"explanation_correct\": \"Concise reason (max 2 sentences).\",",
-        "  \"explanation_incorrect\": \"Briefly why others are wrong (max 2 sentences).\"",
+        "  \"question\": \"Question text?\",",
+        "  \"options\": [\"A\", \"B\", \"C\", \"D\"],",
+        "  \"answer\": \"Correct option (must be in options)\",",
+        "  \"explanation_correct\": \"Factual explanation (max 2 sentences).\",",
+        "  \"explanation_incorrect\": \"Why others are wrong (max 2 sentences).\"",
         "}}"
       ],
-      "task_template": "Category: \"{category}\"\nBLUEPRINT:\n- Subcategory: {subcategory}\n- Question Type: {modifier}\n- Target Answer: {target_answer}\n\nDifficulty: {knowledge_level}"
+      "task_template": "Category: \"{category}\"\nBLUEPRINT:\n- Subcategory: {subcategory}\n- Type: {modifier}\n- Target Answer: {target_answer}\n\nDifficulty: {knowledge_level}"
+    }
+  },
+  "generate_question": {
+    "pl": {
+      "persona": "Bezwzględny weryfikator faktów i twórca quizów.",
+      "static_instructions": [
+        "CEL: Stwórz pytanie quizowe, które jest trudne, ale sprawiedliwe.",
+        "",
+        "ZASADY PROJEKTOWANIA:",
+        "1. ZASADA ANTY-BANALNA: Odrzuć pierwsze 3 skojarzenia. Szukaj głębiej.",
+        "2. JEDNOZNACZNOŚĆ: Pytanie musi mieć TYLKO JEDNĄ poprawną odpowiedź.",
+        "3. DYSTRAKTORY-PUŁAPKI: Błędne odpowiedzi muszą wyglądać na poprawne dla laika (ta sama kategoria semantyczna).",
+        "4. ZWIĘZŁOŚĆ: Pytanie < 25 słów. Opcje < 6 słów.",
+        "",
+        "STRUKTURA JSON:",
+        "{{",
+        "  \"question\": \"Treść pytania?\",",
+        "  \"options\": [\"A\", \"B\", \"C\", \"D\"],",
+        "  \"answer\": \"Poprawna\",",
+        "  \"subcategory\": \"Tag tematyczny\",",
+        "  \"explanation_correct\": \"Fakt potwierdzający (źródłowy).\",",
+        "  \"explanation_incorrect\": \"Krótko: dlaczego inne są błędne/mylące.\"",
+        "}}"
+      ],
+      "task_template": "ZADANIE:\nKategoria: \"{category}\"\nPoziom: {knowledge_prompt}\nTryb gry: {game_mode_prompt}\nMotyw: {theme_context}\n\nZAKAZY (Już było): {entity_history_prompt}"
+    },
+    "en": {
+      "persona": "Ruthless fact-checker and quiz creator.",
+      "static_instructions": [
+        "GOAL: Create a quiz question that is hard but fair.",
+        "",
+        "DESIGN RULES:",
+        "1. ANTI-CLICHE: Discard the first 3 associations. Dig deeper.",
+        "2. AMBIGUITY CHECK: The question must have ONLY ONE correct answer.",
+        "3. DISTRACTOR TRAPS: Wrong answers must look plausible (same semantic category).",
+        "4. BREVITY: Question < 25 words. Options < 6 words.",
+        "",
+        "JSON STRUCTURE:",
+        "{{",
+        "  \"question\": \"Question text?\",",
+        "  \"options\": [\"A\", \"B\", \"C\", \"D\"],",
+        "  \"answer\": \"Correct\",",
+        "  \"subcategory\": \"Topic tag\",",
+        "  \"explanation_correct\": \"Supporting fact.\",",
+        "  \"explanation_incorrect\": \"Briefly: why others are wrong/misleading.\"",
+        "}}"
+      ],
+      "task_template": "TASK:\nCategory: \"{category}\"\nLevel: {knowledge_prompt}\nMode: {game_mode_prompt}\nTheme: {theme_context}\n\nEXCLUSIONS (Already used): {entity_history_prompt}"
     }
   }
 }

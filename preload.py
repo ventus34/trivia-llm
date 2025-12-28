@@ -45,7 +45,7 @@ async def _preload_task(game_id: str, model_selection: str, request_data: Preloa
             except Exception as e:
                 print(f"Warning: Could not ensure blueprints for '{category}': {e}. Falling back to old generation.")
             
-            blueprint = database.get_unused_blueprint(category)
+            blueprint = await database.get_unused_blueprint(category)
             if blueprint:
                 if DEBUG_MODE:
                     print(f"Using blueprint for preload '{category}': subcategory={blueprint['subcategory']}, modifier={blueprint['modifier']}")
