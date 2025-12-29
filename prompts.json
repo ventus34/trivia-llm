@@ -103,7 +103,7 @@
     "pl": {
       "system": "Jesteś architektem bazy danych wiedzy. Twoim celem jest ekstrakcja atomowych faktów.",
       "instruction": [
-        "Dla podanej KATEGORII wygeneruj listę 50 unikalnych faktów (szkiców pytań).",
+        "Dla podanej KATEGORII wygeneruj listę 20 unikalnych faktów (szkiców pytań).",
         "",
         "KRYTERIA JAKOŚCI DANYCH:",
         "1. WERYFIKOWALNOŚĆ: Fakt musi być bezsporny (data, nazwa własna, wzór, liczba). Unikaj opinii.",
@@ -127,7 +127,7 @@
     "en": {
       "system": "You are a knowledge database architect. Your goal is to extract atomic facts.",
       "instruction": [
-        "Generate a list of 50 unique facts (question blueprints) for the given CATEGORY.",
+        "Generate a list of 20 unique facts (question blueprints) for the given CATEGORY.",
         "",
         "DATA QUALITY CRITERIA:",
         "1. VERIFIABILITY: Facts must be indisputable (dates, names, formulas). Avoid opinions.",
