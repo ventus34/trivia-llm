@@ -348,6 +348,28 @@ async def host_control(req: HostControlRequest):
             game_state.timer_pause_started = None
             await broadcast_to_game(req.game_id, "timer_resumed", {}, ACTIVE_SSE_QUEUES)
         return JSONResponse(content={"message": "Timer resumed"})
+
+    elif req.action == "regenerate_question":
+        # Regenerate current question and restart timer
+        current_index = game_state.current_question_index
+        if current_index is None:
+            raise HTTPException(status_code=400, detail="No active question")
+
+        # Clear cached question to force regeneration
+        if len(game_state.questions) > current_index:
+            game_state.questions[current_index] = None
+
+        await start_question(req.game_id, current_index, ACTIVE_SSE_QUEUES)
+
+        # Notify host about regeneration (players ignore this event)
+        regenerated_question = game_state.questions[current_index]
+        if regenerated_question:
+            await broadcast_to_game(req.game_id, "question_regenerated", {
+                "question": regenerated_question.question.question,
+                "options": regenerated_question.question.options
+            }, ACTIVE_SSE_QUEUES)
+
+        return JSONResponse(content={"message": "Question regenerated"})
     
     else:
         raise HTTPException(status_code=400, detail="Unknown action")

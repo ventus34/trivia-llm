@@ -2,6 +2,50 @@
 window.LiveQuizPlayer = (function(Common) {
     'use strict';
 
+    const PlayerApi = window.LiveQuizPlayerApi || {
+        joinRoom: (roomCode, playerName) => Common.apiCall(Common.API_ENDPOINTS.joinRoom, 'POST', {
+            room_code: roomCode,
+            player_name: playerName
+        }),
+        submitAnswer: (gameId, playerId, answer, skipped = false) => Common.apiCall(Common.API_ENDPOINTS.submitAnswer, 'POST', {
+            game_id: gameId,
+            player_id: playerId,
+            answer: answer,
+            skipped: skipped
+        })
+    };
+
+    const PlayerUI = window.LiveQuizPlayerUI || {
+        setLobbyRoomCode: (roomCode) => {
+            const displayRoomCodeElement = document.getElementById('display-room-code');
+            if (displayRoomCodeElement) displayRoomCodeElement.textContent = roomCode;
+        },
+        renderCategories: (categories = []) => {
+            const categoriesList = document.getElementById('categories-list');
+            if (!categoriesList) return;
+            categoriesList.innerHTML = '';
+            categories.forEach(category => {
+                const categoryElement = document.createElement('div');
+                categoryElement.className = 'text-sm text-gray-300 bg-gray-600 rounded px-3 py-1';
+                categoryElement.textContent = category;
+                categoriesList.appendChild(categoryElement);
+            });
+        },
+        setAnswerStatus: (html) => {
+            const answerStatus = document.getElementById('answer-status');
+            if (answerStatus) answerStatus.innerHTML = html;
+        },
+        setFinalPositionText: (position, total) => {
+            const positionTextElement = document.getElementById('final-position-text');
+            if (positionTextElement) {
+                positionTextElement.textContent = Common.formatTranslation('final_position_format', {
+                    position: position,
+                    total: total
+                });
+            }
+        }
+    };
+
     // Global game state
     let gameState = {
         gameId: null,
@@ -211,6 +255,13 @@ window.LiveQuizPlayer = (function(Common) {
     function setupEventListeners() {
         // Join game
         document.getElementById('join-game')?.addEventListener('click', joinGame);
+        document.addEventListener('click', (event) => {
+            const target = event.target.closest ? event.target.closest('#join-game') : null;
+            if (target) {
+                event.preventDefault();
+                joinGame();
+            }
+        });
         
         // Enter room code input
         document.getElementById('room-code')?.addEventListener('input', (e) => {
@@ -325,10 +376,7 @@ window.LiveQuizPlayer = (function(Common) {
         }
 
         try {
-            const response = await Common.apiCall(Common.API_ENDPOINTS.joinRoom, 'POST', {
-                room_code: roomCode,
-                player_name: playerName
-            });
+            const response = await PlayerApi.joinRoom(roomCode, playerName);
 
             gameState.gameId = response.game_id;
             gameState.playerId = response.player_id;
@@ -376,10 +424,7 @@ window.LiveQuizPlayer = (function(Common) {
                     }
                 } else if (response.game_status === 'waiting') {
                     Common.showScreen('lobby-screen');
-                    const displayRoomCodeElement = document.getElementById('display-room-code');
-                    if (displayRoomCodeElement) {
-                        displayRoomCodeElement.textContent = roomCode;
-                    }
+                    PlayerUI.setLobbyRoomCode(roomCode);
                 } else {
                     // Game finished or other status
                     Common.showScreen('lobby-screen'); // Fallback
@@ -392,30 +437,18 @@ window.LiveQuizPlayer = (function(Common) {
                 Common.showScreen('question-screen');
 
                 // Add categories to show what's being played
-                const categoriesList = document.getElementById('categories-list');
-                if (categoriesList) {
-                    categoriesList.innerHTML = '';
-                    response.categories.forEach(category => {
-                        const categoryElement = document.createElement('div');
-                        categoryElement.className = 'text-sm text-gray-300 bg-gray-600 rounded px-3 py-1';
-                        categoryElement.textContent = category;
-                        categoriesList.appendChild(categoryElement);
-                    });
-                }
+                PlayerUI.renderCategories(response.categories || []);
 
                 // Update status message
-                const answerStatus = document.getElementById('answer-status');
-                if (answerStatus) {
-                    const currentQuestion = response.current_question || '?';
-                    answerStatus.innerHTML = `
-                        <div class="text-lg text-yellow-400">
-                            ${Common.formatTranslation('game_in_progress_text', { number: currentQuestion })}
-                        </div>
-                        <div class="text-sm text-gray-400 mt-1">
-                            ${Common.getTranslation('late_joiner_text')}
-                        </div>
-                    `;
-                }
+                const currentQuestion = response.current_question || '?';
+                PlayerUI.setAnswerStatus(`
+                    <div class="text-lg text-yellow-400">
+                        ${Common.formatTranslation('game_in_progress_text', { number: currentQuestion })}
+                    </div>
+                    <div class="text-sm text-gray-400 mt-1">
+                        ${Common.getTranslation('late_joiner_text')}
+                    </div>
+                `);
 
                 // Disable answer buttons for late joiners
                 setTimeout(() => {
@@ -430,22 +463,10 @@ window.LiveQuizPlayer = (function(Common) {
             } else {
                 // Normal lobby join
                 // Update lobby screen
-                const displayRoomCodeElement = document.getElementById('display-room-code');
-                if (displayRoomCodeElement) {
-                    displayRoomCodeElement.textContent = roomCode;
-                }
+                PlayerUI.setLobbyRoomCode(roomCode);
 
                 // Add categories
-                const categoriesList = document.getElementById('categories-list');
-                if (categoriesList) {
-                    categoriesList.innerHTML = '';
-                    response.categories.forEach(category => {
-                        const categoryElement = document.createElement('div');
-                        categoryElement.className = 'text-sm text-gray-300 bg-gray-600 rounded px-3 py-1';
-                        categoryElement.textContent = category;
-                        categoriesList.appendChild(categoryElement);
-                    });
-                }
+                PlayerUI.renderCategories(response.categories || []);
 
                 Common.showScreen('lobby-screen');
                 savePlayerState('lobby-screen'); // Save state after successful join
@@ -600,7 +621,8 @@ window.LiveQuizPlayer = (function(Common) {
             // Ensure we have exactly 4 options for 2x2 grid
             const displayOptions = data.options.slice(0, 4);
             while (displayOptions.length < 4) {
-                displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+                const letter = String.fromCharCode(65 + displayOptions.length);
+                displayOptions.push(Common.formatTranslation('option_placeholder', { letter }));
             }
             
             displayOptions.forEach((option, index) => {
@@ -709,11 +731,7 @@ window.LiveQuizPlayer = (function(Common) {
         }
         
         try {
-            await Common.apiCall(Common.API_ENDPOINTS.submitAnswer, 'POST', {
-                game_id: gameState.gameId,
-                player_id: gameState.playerId,
-                answer: answer
-            });
+            await PlayerApi.submitAnswer(gameState.gameId, gameState.playerId, answer, false);
         } catch (error) {
             Common.showNotification(`${Common.getTranslation('submit_answer_failed_prefix')} ${error.message}`, 'error');
             gameState.hasAnswered = false;
@@ -760,12 +778,7 @@ window.LiveQuizPlayer = (function(Common) {
         }
         
         try {
-            await Common.apiCall(Common.API_ENDPOINTS.submitAnswer, 'POST', {
-                game_id: gameState.gameId,
-                player_id: gameState.playerId,
-                answer: "", // Empty string for skipped questions
-                skipped: true
-            });
+            await PlayerApi.submitAnswer(gameState.gameId, gameState.playerId, "", true);
         } catch (error) {
             Common.showNotification(`${Common.getTranslation('skip_question_failed_prefix')} ${error.message}`, 'error');
             gameState.hasAnswered = false;
@@ -844,10 +857,7 @@ window.LiveQuizPlayer = (function(Common) {
         
         if (finalScoreElement) finalScoreElement.textContent = finalScore;
         if (positionTextElement) {
-            positionTextElement.textContent = Common.formatTranslation('final_position_format', {
-                position: position,
-                total: totalPlayers
-            });
+            PlayerUI.setFinalPositionText(position, totalPlayers);
         }
         
         Common.showScreen('final-results-screen');
@@ -915,7 +925,8 @@ window.LiveQuizPlayer = (function(Common) {
                     // Ensure we have exactly 4 options for 2x2 grid
                     const displayOptions = q.options.slice(0, 4);
                     while (displayOptions.length < 4) {
-                        displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+                        const letter = String.fromCharCode(65 + displayOptions.length);
+                        displayOptions.push(Common.formatTranslation('option_placeholder', { letter }));
                     }
                     
                     displayOptions.forEach((option, index) => {

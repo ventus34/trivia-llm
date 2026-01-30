@@ -297,6 +297,7 @@ window.LiveQuizCommon = (function() {
         auto_advance_toast: { pl: 'Auto-przejście do następnego pytania...', en: 'Auto-advancing to next question...' },
         ready_next_question_toast: { pl: 'Gotowe na kolejne pytanie. Kliknij „Następne pytanie”.', en: 'Ready for next question. Click "Next Question" to continue.' },
         question_number_text: { pl: 'Pytanie {current}/{total}', en: 'Question {current}/{total}' },
+        option_placeholder: { pl: 'Opcja {letter}', en: 'Option {letter}' },
         enter_valid_room_code: { pl: 'Podaj prawidłowy 6-cyfrowy kod pokoju', en: 'Please enter a valid 6-digit room code' },
         enter_player_name: { pl: 'Podaj swoje imię', en: 'Please enter your name' },
         joining_game_loading: { pl: 'Dołączanie do gry...', en: 'Joining game...' },

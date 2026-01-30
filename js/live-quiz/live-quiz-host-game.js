@@ -213,7 +213,8 @@ window.LiveQuizHostGame = (function(Common) {
         if (optionsContainer || fullscreenOptionsContainer) {
             const displayOptions = (data.options || []).slice(0, 4);
             while (displayOptions.length < 4) {
-                displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+                const letter = String.fromCharCode(65 + displayOptions.length);
+                displayOptions.push(Common.formatTranslation('option_placeholder', { letter }));
             }
 
             if (optionsContainer) {
@@ -781,7 +782,8 @@ window.LiveQuizHostGame = (function(Common) {
                 // Ensure we have exactly 4 options for 2x2 grid
                 const displayOptions = q.options.slice(0, 4);
                 while (displayOptions.length < 4) {
-                    displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
+                    const letter = String.fromCharCode(65 + displayOptions.length);
+                    displayOptions.push(Common.formatTranslation('option_placeholder', { letter }));
                 }
 
                 displayOptions.forEach((option, index) => {

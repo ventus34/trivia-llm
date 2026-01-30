@@ -1,343 +1,55 @@
-// Live Quiz Player UI Components
+// Live Quiz Player UI Helpers
 window.LiveQuizPlayerUI = (function(Common) {
     'use strict';
 
-    // Join Game Component
-    function createJoinGameComponent() {
-        const template = document.getElementById('tmpl-join-game');
-        if (!template) {
-            console.error('Template tmpl-join-game not found');
-            return document.createElement('div');
+    function setLobbyRoomCode(roomCode) {
+        const displayRoomCodeElement = document.getElementById('display-room-code');
+        if (displayRoomCodeElement) {
+            displayRoomCodeElement.textContent = roomCode;
         }
-        return template.content.cloneNode(true);
     }
-    
-    // Lobby Component
-    function createLobbyComponent() {
-        const template = document.getElementById('tmpl-lobby');
-        if (!template) {
-            console.error('Template tmpl-lobby not found');
-            return document.createElement('div');
+
+    function renderCategories(categories = []) {
+        const categoriesList = document.getElementById('categories-list');
+        if (!categoriesList) return;
+
+        categoriesList.innerHTML = '';
+        categories.forEach(category => {
+            const categoryElement = document.createElement('div');
+            categoryElement.className = 'text-sm text-gray-300 bg-gray-600 rounded px-3 py-1';
+            categoryElement.textContent = category;
+            categoriesList.appendChild(categoryElement);
+        });
+    }
+
+    function setAnswerStatus(html) {
+        const answerStatus = document.getElementById('answer-status');
+        if (answerStatus) {
+            answerStatus.innerHTML = html;
         }
-        return template.content.cloneNode(true);
     }
 
-    // Question Display Component
-    function createQuestionDisplayComponent() {
-        return {
-            updateQuestion: function(data, questionNumber, totalQuestions) {
-                // Update category and number
-                const categoryElement = document.getElementById('question-category');
-                if (categoryElement) {
-                    categoryElement.textContent = data.category;
-                }
-
-                const numberElement = document.getElementById('question-number');
-                if (numberElement) {
-                    numberElement.textContent = `Question ${questionNumber}/${totalQuestions || 30}`;
-                }
-
-                // Update question text
-                const questionTextElement = document.getElementById('question-text');
-                if (questionTextElement) {
-                    questionTextElement.textContent = data.question;
-                }
-
-                // Update options
-                this.updateOptions(data.options || []);
-            },
-
-            updateOptions: function(options, submitCallback) {
-                const optionsContainer = document.getElementById('answer-options');
-                if (!optionsContainer) return;
-
-                optionsContainer.innerHTML = '';
-
-                // Ensure we have exactly 4 options for 2x2 grid
-                const displayOptions = options.slice(0, 4);
-                while (displayOptions.length < 4) {
-                    displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
-                }
-
-                const template = document.getElementById('tmpl-question-option');
-                if (!template) {
-                    console.error('Template tmpl-question-option not found');
-                    return;
-                }
-
-                displayOptions.forEach((option, index) => {
-                    const button = template.content.cloneNode(true).firstElementChild;
-                    const letterSpan = button.querySelector('.font-semibold');
-                    const textSpan = button.querySelector('.flex-1');
-                    
-                    if (letterSpan) letterSpan.textContent = String.fromCharCode(65 + index);
-                    if (textSpan) textSpan.textContent = option;
-                    
-                    if (submitCallback) {
-                        button.addEventListener('click', () => submitCallback(option));
-                    }
-                    optionsContainer.appendChild(button);
-                });
-            },
-
-            resetAnswerStatus: function() {
-                const answerStatus = document.getElementById('answer-status');
-                if (answerStatus) {
-                    answerStatus.innerHTML = '<div class="text-lg text-gray-400">Select your answer</div>';
-                }
-            },
-
-            disableOptions: function() {
-                document.querySelectorAll('#answer-options button').forEach(button => {
-                    button.disabled = true;
-                    button.classList.add('opacity-50', 'cursor-not-allowed');
-                });
-            },
-
-            showAnswered: function() {
-                const answerStatus = document.getElementById('answer-status');
-                if (answerStatus) {
-                    answerStatus.innerHTML = '<div class="text-sm text-green-400">✓ Answer submitted!</div>';
-                }
-            },
-
-            showSkipped: function() {
-                const answerStatus = document.getElementById('answer-status');
-                if (answerStatus) {
-                    answerStatus.innerHTML = '<div class="text-sm text-gray-400">⏭️ Question skipped</div>';
-                }
-            },
-
-            enableSkipButton: function(enabled = true) {
-                const skipButton = document.getElementById('skip-question');
-                if (skipButton) {
-                    skipButton.disabled = !enabled;
-                    skipButton.classList.toggle('opacity-50', !enabled);
-                    skipButton.classList.toggle('cursor-not-allowed', !enabled);
-                }
-            }
-        };
+    function setFinalPositionText(position, total) {
+        const positionTextElement = document.getElementById('final-position-text');
+        if (positionTextElement) {
+            positionTextElement.textContent = Common.formatTranslation('final_position_format', {
+                position: position,
+                total: total
+            });
+        }
     }
 
-    // Results Display Component
-    function createResultsDisplayComponent() {
-        return {
-            showResults: function(playerAnswer, isCorrect, correctAnswer, explanation) {
-                // Update result UI
-                const resultIcon = document.getElementById('result-icon');
-                const resultTitle = document.getElementById('result-title');
-                const resultMessage = document.getElementById('result-message');
-                
-                if (resultIcon) resultIcon.textContent = isCorrect ? '✅' : '❌';
-                if (resultTitle) resultTitle.textContent = isCorrect ? 'Correct!' : 'Incorrect';
-                if (resultMessage) resultMessage.textContent = isCorrect ? 'Great job!' : 'Better luck next time!';
-                
-                // Show player's answer
-                const yourAnswerDiv = document.getElementById('your-answer');
-                const answerText = document.getElementById('answer-text');
-                if (yourAnswerDiv && answerText) {
-                    yourAnswerDiv.classList.remove('hidden');
-                    answerText.textContent = playerAnswer;
-                }
-                
-                // Show correct answer
-                const correctAnswerDiv = document.getElementById('correct-answer');
-                const correctAnswerText = document.getElementById('correct-answer-text');
-                if (correctAnswerDiv && correctAnswerText) {
-                    correctAnswerDiv.classList.remove('hidden');
-                    correctAnswerText.textContent = correctAnswer;
-                }
-                
-                // Show explanation if available
-                const explanationDiv = document.getElementById('explanation');
-                const explanationText = document.getElementById('explanation-text');
-                if (explanationDiv && explanationText && explanation) {
-                    explanationDiv.classList.remove('hidden');
-                    explanationText.textContent = explanation;
-                }
-            }
-        };
-    }
-
-    // Final Results Component
-    function createFinalResultsComponent() {
-        return {
-            showResults: function(finalScore, position, totalPlayers) {
-                // Update UI
-                const finalScoreElement = document.getElementById('final-score');
-                const positionTextElement = document.getElementById('final-position-text');
-                
-                if (finalScoreElement) finalScoreElement.textContent = finalScore;
-                if (positionTextElement) positionTextElement.textContent = `Position: ${position}/${totalPlayers}`;
-            }
-        };
-    }
-
-    // Timer Component
-    function createTimerComponent() {
-        return {
-            update: function(seconds) {
-                const timerElement = document.getElementById('timer');
-                if (timerElement) {
-                    timerElement.textContent = seconds;
-                    
-                    // Change color based on time remaining
-                    if (seconds <= 10) {
-                        timerElement.className = 'timer-display text-red-400 font-bold';
-                    } else if (seconds <= 30) {
-                        timerElement.className = 'timer-display text-yellow-400 font-bold';
-                    } else {
-                        timerElement.className = 'timer-display text-white font-bold';
-                    }
-                }
-            },
-
-            showPaused: function() {
-                const timerElement = document.getElementById('timer');
-                if (timerElement) {
-                    timerElement.textContent = '⏸️';
-                }
-            }
-        };
-    }
-
-    // Fullscreen Question Display
-    function createFullscreenQuestionComponent() {
-        return {
-            updateQuestion: function(data, questionNumber, totalQuestions) {
-                // Update header
-                const categoryElement = document.getElementById('player-fullscreen-question-category');
-                const numberElement = document.getElementById('player-fullscreen-question-number');
-                const textElement = document.getElementById('player-fullscreen-question-text');
-                
-                if (categoryElement) categoryElement.textContent = data.category;
-                if (numberElement) numberElement.textContent = `Question ${questionNumber}/${totalQuestions || 30}`;
-                if (textElement) textElement.textContent = data.question;
-            },
-
-            updateOptions: function(options, submitCallback) {
-                const optionsContainer = document.getElementById('player-fullscreen-question-options');
-                if (!optionsContainer) return;
-
-                optionsContainer.innerHTML = '';
-
-                // Ensure we have exactly 4 options for 2x2 grid
-                const displayOptions = options.slice(0, 4);
-                while (displayOptions.length < 4) {
-                    displayOptions.push('Option ' + String.fromCharCode(65 + displayOptions.length));
-                }
-
-                const template = document.getElementById('tmpl-question-option');
-                if (!template) {
-                    console.error('Template tmpl-question-option not found');
-                    return;
-                }
-
-                displayOptions.forEach((option, index) => {
-                    const button = template.content.cloneNode(true).firstElementChild;
-                    const letterSpan = button.querySelector('.font-semibold');
-                    const textSpan = button.querySelector('.flex-1');
-                    
-                    if (letterSpan) letterSpan.textContent = String.fromCharCode(65 + index);
-                    if (textSpan) textSpan.textContent = option;
-                    
-                    button.addEventListener('click', () => submitCallback(option));
-                    optionsContainer.appendChild(button);
-                });
-            },
-
-            updateAnswerStatus: function(statusHtml) {
-                const answerStatus = document.getElementById('player-fullscreen-answer-status');
-                if (answerStatus) {
-                    answerStatus.innerHTML = statusHtml;
-                }
-            },
-
-            disableOptions: function() {
-                document.querySelectorAll('#player-fullscreen-question-options button').forEach(button => {
-                    button.disabled = true;
-                    button.classList.add('opacity-50', 'cursor-not-allowed');
-                });
-            }
-        };
-    }
-
-    // Connection Status Component
-    function createConnectionStatusComponent() {
-        return {
-            show: function() {
-                const connectionStatus = document.getElementById('connection-status');
-                if (connectionStatus) {
-                    connectionStatus.classList.remove('hidden');
-                }
-            },
-
-            hide: function() {
-                const connectionStatus = document.getElementById('connection-status');
-                if (connectionStatus) {
-                    connectionStatus.classList.add('hidden');
-                }
-            }
-        };
-    }
-
-    // Mobile Optimizations
-    function addMobileOptimizations() {
-        const style = document.createElement('style');
-        style.textContent = `
-            /* Mobile-first optimizations */
-            body {
-                font-size: 16px; /* Prevent zoom on iOS */
-            }
-            
-            .answer-option {
-                min-height: 60px;
-                font-size: 1.1rem;
-            }
-            
-            .timer-display {
-                font-size: 3rem;
-                line-height: 1;
-            }
-            
-            .question-text {
-                font-size: 1.2rem;
-                line-height: 1.4;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    function init() {
-        // Add mobile optimizations
-        addMobileOptimizations();
-    }
-
-    // Skeleton Loader Component
-    function createSkeletonLoaderComponent() {
-        return {
-            show: function() {
-                const questionContainer = document.getElementById('question-container');
-                if (!questionContainer) return;
-
-                const template = document.getElementById('tmpl-skeleton-loader');
-                if (!template) {
-                    console.error('Template tmpl-skeleton-loader not found');
-                    return;
-                }
-
-                const skeleton = template.content.cloneNode(true);
-                questionContainer.innerHTML = '';
-                questionContainer.appendChild(skeleton);
-            },
-
-            hide: function() {
-                const questionContainer = document.getElementById('question-container');
-                if (questionContainer) {
-                    questionContainer.innerHTML = '';
-                }
-            }
-        };
+    return {
+        setLobbyRoomCode,
+        renderCategories,
+        setAnswerStatus,
+        setFinalPositionText
+    };
+})(window.LiveQuizCommon);
+                position: position,
+                total: total
+            });
+        }
     }
 
     return {
@@ -350,6 +62,10 @@ window.LiveQuizPlayerUI = (function(Common) {
         createTimerComponent: createTimerComponent,
         createFullscreenQuestionComponent: createFullscreenQuestionComponent,
         createConnectionStatusComponent: createConnectionStatusComponent,
-        createSkeletonLoaderComponent: createSkeletonLoaderComponent
+        createSkeletonLoaderComponent: createSkeletonLoaderComponent,
+        setLobbyRoomCode: setLobbyRoomCode,
+        renderCategories: renderCategories,
+        setAnswerStatus: setAnswerStatus,
+        setFinalPositionText: setFinalPositionText
     };
 })(window.LiveQuizCommon);
