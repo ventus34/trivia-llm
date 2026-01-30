@@ -27,15 +27,15 @@ graph TD
 ```
 
 ## Key Backend Modules
-- [server.py](server.py): app setup, routing, templates, lifecycle hooks.
-- [routes.py](routes.py): classic trivia API endpoints.
-- [live_quiz_routes.py](live_quiz_routes.py): live quiz endpoints and SSE.
-- [generative.py](generative.py): LLM call wrapper with retry/limits.
-- [database.py](database.py): SQLite schema and persistence.
-- [preload.py](preload.py): background preloading jobs.
-- [utils.py](utils.py): prompt building, validation, JSON parsing.
+- [backend/server.py](../backend/server.py): app setup, routing, templates, lifecycle hooks.
+- [backend/routes.py](../backend/routes.py): classic trivia API endpoints.
+- [backend/live_quiz_routes.py](../backend/live_quiz_routes.py): live quiz endpoints and SSE.
+- [backend/generative.py](../backend/generative.py): LLM call wrapper with retry/limits.
+- [backend/database.py](../backend/database.py): SQLite schema and persistence.
+- [backend/preload.py](../backend/preload.py): background preloading jobs.
+- [backend/utils.py](../backend/utils.py): prompt building, validation, JSON parsing.
 
 ## Data Stores
 - SQLite file: [questions.db](questions.db)
-- In-memory live quiz state: [state.py](state.py)
+- In-memory live quiz state: [backend/state.py](../backend/state.py)
 - Pickled state snapshot: [game_state.pickle](game_state.pickle)

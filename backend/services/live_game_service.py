@@ -7,14 +7,14 @@ from typing import Dict, List, Optional
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from live_quiz_models import (
+from ..live_quiz_models import (
     LiveQuizGameState, Player, GameQuestion, Question,
     CreateRoomRequest, JoinRoomRequest, SubmitAnswerRequest,
     RoomStatus
 )
-from state import LIVE_QUIZ_GAMES, ROOM_CODES
-from generative import call_generative_model
-from config import DEBUG_MODE
+from ..state import LIVE_QUIZ_GAMES, ROOM_CODES
+from ..generative import call_generative_model
+from ..config import DEBUG_MODE
 
 async def broadcast_to_game(game_id: str, event_type: str, data: dict, active_sse_queues: Dict[str, List[asyncio.Queue]]):
     """Broadcast an SSE event to all connected clients in a game."""
@@ -62,8 +62,8 @@ def generate_game_id() -> str:
 
 async def generate_live_quiz_question(game_state: LiveQuizGameState, category: str, question_number: int):
     """Generate a question using the existing AI system."""
-    from models import QuestionRequest
-    from utils import build_question_prompt as build_prompt
+    from ..models import QuestionRequest
+    from ..utils import build_question_prompt as build_prompt
     
     # Create request for the existing question generation system
     req = QuestionRequest(
@@ -98,7 +98,7 @@ async def generate_live_quiz_question(game_state: LiveQuizGameState, category: s
     
     # Update generation history to track subcategories and key entities
     if question.subcategory and question.key_entities:
-        from utils import update_generation_history
+        from ..utils import update_generation_history
         update_generation_history(category, question.subcategory, question.key_entities)
     
     return question
@@ -184,7 +184,7 @@ async def start_question(game_id: str, question_index: int, active_sse_queues: D
     }, active_sse_queues)
     
     # Start timer
-    from live_quiz_routes import question_timer
+    from ..live_quiz_routes import question_timer
     game_state.current_timer_task = asyncio.create_task(question_timer(game_id, question_index))
     
     # Pre-generate next

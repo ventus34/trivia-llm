@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional
 from collections import deque
 from fastapi import HTTPException
 
-from config import ALLOWED_MODELS, PROMPTS, DEBUG_MODE
-from state import CATEGORY_GENERATION_HISTORY, MAX_SUBCATEGORY_HISTORY, MAX_ENTITY_HISTORY, MAX_CATEGORIES_TRACKED
+from .config import ALLOWED_MODELS, PROMPTS, DEBUG_MODE
+from .state import CATEGORY_GENERATION_HISTORY, MAX_SUBCATEGORY_HISTORY, MAX_ENTITY_HISTORY, MAX_CATEGORIES_TRACKED
 
 def update_generation_history(category: str, subcategory: str, key_entities: List[str]):
     if category not in CATEGORY_GENERATION_HISTORY:
@@ -62,7 +62,7 @@ def is_question_valid(data: Any, game_mode: str) -> (bool, str):
 
 def validate_model(model: str):
     # Allow any model when using dynamic models from API
-    from config import DYNAMIC_MODELS
+    from .config import DYNAMIC_MODELS
     if DYNAMIC_MODELS and model in DYNAMIC_MODELS:
         return
     # Otherwise check against allowed models
@@ -188,7 +188,7 @@ def extract_json_from_response(text: str) -> Any:
 
     error_msg = f"ERROR: JSON parsing failed after all attempts. Raw snippet: {text[:200]}..."
     print(error_msg)
-    import database
+    from . import database
     try:
         # database.log_error_db is now async, but this is a sync function.
         # We'll skip logging here or use a background task if needed.

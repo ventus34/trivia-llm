@@ -24,7 +24,7 @@ Start here: [docs/README.md](docs/README.md)
 ## Local Development
 1. Create [.env](.env) from [.env_template](.env_template)
 2. Install dependencies from [requirements.txt](requirements.txt)
-3. Run: uvicorn server:app --reload
+3. Run: uvicorn backend.server:app --reload
 
 ## UI Routes
 - / → Trivia board

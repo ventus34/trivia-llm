@@ -4,13 +4,13 @@ from datetime import datetime
 from fastapi import Request, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 
-import database
-from config import CATEGORY_MODELS, EXPLANATION_MODELS, FALLBACK_MODEL, PROMPTS, MAX_PRELOAD_CATEGORIES, MIN_PRELOAD_INTERVAL, DEBUG_MODE
-from state import PRELOAD_STATUS_LOCK, PRELOAD_TASK_STATUS
-from generative import call_generative_model, ensure_blueprints_exist
-from preload import _preload_task
-from utils import build_question_prompt, is_question_valid, format_explanation_part, update_generation_history
-from models import GenerateCategoriesRequest, QuestionRequest, ExplanationRequest, MutationRequest, PreloadRequest
+from . import database
+from .config import CATEGORY_MODELS, EXPLANATION_MODELS, FALLBACK_MODEL, PROMPTS, MAX_PRELOAD_CATEGORIES, MIN_PRELOAD_INTERVAL, DEBUG_MODE
+from .state import PRELOAD_STATUS_LOCK, PRELOAD_TASK_STATUS
+from .generative import call_generative_model, ensure_blueprints_exist
+from .preload import _preload_task
+from .utils import build_question_prompt, is_question_valid, format_explanation_part, update_generation_history
+from .models import GenerateCategoriesRequest, QuestionRequest, ExplanationRequest, MutationRequest, PreloadRequest
 
 # --- API Endpoints ---
 async def get_db_stats():
@@ -23,15 +23,15 @@ async def get_db_errors():
     return JSONResponse(content=await database.get_error_logs())
 
 async def get_question_models():
-    from config import QUESTION_MODELS
+    from .config import QUESTION_MODELS
     return JSONResponse(content=QUESTION_MODELS)
 
 async def get_explanation_models():
-    from config import EXPLANATION_MODELS
+    from .config import EXPLANATION_MODELS
     return JSONResponse(content=EXPLANATION_MODELS)
 
 async def get_category_models():
-    from config import CATEGORY_MODELS
+    from .config import CATEGORY_MODELS
     return JSONResponse(content=CATEGORY_MODELS)
 
 async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTasks):
@@ -48,7 +48,7 @@ async def preload_questions(req: PreloadRequest, background_tasks: BackgroundTas
     req_signature = json.dumps(req.model_dump(), sort_keys=True)
 
     # Use a lock to avoid race conditions when scheduling multiple preload tasks concurrently
-    from state import PRELOAD_STATUS_LOCK
+    from .state import PRELOAD_STATUS_LOCK
     if PRELOAD_STATUS_LOCK is None:
         # Initialize if not done yet (fallback for race conditions)
         import asyncio
@@ -281,7 +281,7 @@ async def generate_categories(req: GenerateCategoriesRequest):
             model_to_use = "trivia"
              
             # Use the helper function to build the prompt properly
-            from utils import build_categories_prompt
+            from .utils import build_categories_prompt
             prompt = build_categories_prompt(req.language, req.theme)
             response_data, raw_response = await call_generative_model(prompt, model_to_use, return_raw=True)
             if response_data and isinstance(response_data, dict):
@@ -346,5 +346,5 @@ async def get_incorrect_explanation(req: ExplanationRequest):
 
 # --- Static Files ---
 async def root(request: Request):
-    from server import templates
+    from .server import templates
     return templates.TemplateResponse("trivia.html", {"request": request})

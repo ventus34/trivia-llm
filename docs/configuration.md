@@ -1,7 +1,7 @@
 # Configuration
 
 ## Environment Variables
-These are read in [config.py](config.py).
+These are read in [backend/config.py](../backend/config.py).
 
 Required:
 - OPENAI_API_KEY
@@ -31,6 +31,6 @@ Optional:
   - Incorrect answer explanations
 
 ## Validation Rules
-Theme strings are validated in [models.py](models.py):
+Theme strings are validated in [backend/models.py](../backend/models.py):
 - Max 8 words
 - Only letters, digits, spaces, and - . , < >

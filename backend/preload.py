@@ -3,21 +3,21 @@ import random
 from datetime import datetime
 from typing import Dict, Any
 
-import database
-from config import MODELS_BY_LANGUAGE, DEBUG_MODE, PROMPTS
-from state import PRELOAD_CONCURRENCY_SEMAPHORE, MAX_QUESTIONS_PER_CATEGORY_IN_CACHE
-from generative import call_generative_model, ensure_blueprints_exist
-from utils import build_question_prompt, is_question_valid, format_explanation_part, update_generation_history
-from models import PreloadRequest
+from . import database
+from .config import MODELS_BY_LANGUAGE, DEBUG_MODE, PROMPTS
+from .state import PRELOAD_CONCURRENCY_SEMAPHORE, MAX_QUESTIONS_PER_CATEGORY_IN_CACHE
+from .generative import call_generative_model, ensure_blueprints_exist
+from .utils import build_question_prompt, is_question_valid, format_explanation_part, update_generation_history
+from .models import PreloadRequest
 
 # Background preload task with concurrency limits and safe status handling
 async def _preload_task(game_id: str, model_selection: str, request_data: PreloadRequest):
     # Mark as running and acquire global preload concurrency semaphore
-    from state import get_preload_status
+    from .state import get_preload_status
     status = get_preload_status(game_id)
     if not status:
         # if status was removed meanwhile, create a fallback to ensure the event exists
-        from state import set_preload_status
+        from .state import set_preload_status
         set_preload_status(game_id, {"state": "running", "event": asyncio.Event(), "last_scheduled": datetime.utcnow().timestamp()})
 
     status["state"] = "running"

@@ -4,9 +4,9 @@ import random
 from typing import Any, Tuple, List, Dict, Optional
 from datetime import datetime
 
-import database
-from config import client, DEBUG_MODE, GEN_CALL_MAX_ATTEMPTS, FALLBACK_MODEL, generative_api_limiter, GENERATIVE_CONCURRENCY_SEMAPHORE, PROMPTS
-from utils import extract_json_from_response, validate_model
+from . import database
+from .config import client, DEBUG_MODE, GEN_CALL_MAX_ATTEMPTS, FALLBACK_MODEL, generative_api_limiter, GENERATIVE_CONCURRENCY_SEMAPHORE, PROMPTS
+from .utils import extract_json_from_response, validate_model
 
 # Rate-limit / retry aware call to generative model
 async def call_generative_model(prompt: str, model_name: str, return_raw=False) -> Any:

@@ -10,13 +10,13 @@ from typing import Dict, List
 from fastapi import Request, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 
-from live_quiz_models import (
+from .live_quiz_models import (
     LiveQuizGameState, Player,
     CreateRoomRequest, JoinRoomRequest, SubmitAnswerRequest, HostControlRequest,
     RoomStatus
 )
-from state import LIVE_QUIZ_GAMES, ROOM_CODES
-from services.live_game_service import (
+from .state import LIVE_QUIZ_GAMES, ROOM_CODES
+from .services.live_game_service import (
     broadcast_to_game, generate_room_code, generate_player_id, generate_game_id,
     start_question, show_question_results
 )

@@ -1,6 +1,6 @@
 # Database
 
-The application uses a SQLite database file stored as [questions.db](questions.db). The schema is defined in [database.py](database.py).
+The application uses a SQLite database file stored as [questions.db](questions.db). The schema is defined in [backend/database.py](../backend/database.py).
 
 ## Tables
 

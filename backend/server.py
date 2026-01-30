@@ -6,11 +6,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 
-import database
-from config import initialize_async_resources, fetch_models_from_api, initialize_models, DEBUG_MODE, MAX_CONCURRENT_PRELOAD_TASKS, MAX_PRELOAD_CATEGORIES, GENERATIVE_RATE_LIMIT_COUNT, GENERATIVE_RATE_LIMIT_PERIOD, GENERATIVE_INFLIGHT_LIMIT
+from . import database
+from .config import initialize_async_resources, fetch_models_from_api, initialize_models, DEBUG_MODE, MAX_CONCURRENT_PRELOAD_TASKS, MAX_PRELOAD_CATEGORIES, GENERATIVE_RATE_LIMIT_COUNT, GENERATIVE_RATE_LIMIT_PERIOD, GENERATIVE_INFLIGHT_LIMIT
 
 # Import routes to register them
-from routes import (
+from .routes import (
     get_db_stats, get_db_prompts, get_db_errors, get_question_models,
     get_explanation_models, get_category_models,
     preload_questions, generate_question, generate_categories,
@@ -19,7 +19,7 @@ from routes import (
 )
 
 # Import live quiz routes
-from live_quiz_routes import (
+from .live_quiz_routes import (
     create_room, join_room, get_room_status, submit_answer, host_control, sse_endpoint
 )
 
@@ -28,8 +28,8 @@ app = FastAPI(title="Trivia Game Backend", version="1.0.0")
 templates = Jinja2Templates(directory="templates")
 
 # Import cleanup functions
-from live_quiz_routes import start_cleanup_task, stop_cleanup_task
-from state import load_state_from_disk, save_state_to_disk, periodic_save_task
+from .live_quiz_routes import start_cleanup_task, stop_cleanup_task
+from .state import load_state_from_disk, save_state_to_disk, periodic_save_task
 
 # Register API routes
 app.get("/api/db/stats")(get_db_stats)

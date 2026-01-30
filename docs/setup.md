@@ -31,7 +31,7 @@ The app will be available at http://localhost:8000
 2. Install dependencies from [requirements.txt](requirements.txt).
 3. Run the server:
 
-- uvicorn server:app --reload
+- uvicorn backend.server:app --reload
 
 ## Frontend Tooling
 The frontend is served by FastAPI. Use Node tooling only for linting/formatting/tests:

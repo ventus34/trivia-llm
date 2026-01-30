@@ -13,7 +13,7 @@ The server validates model IDs. Ensure the UI sends one of the models from:
 
 ## Live Quiz Rooms Expire
 Rooms are cleaned up after 24 hours of inactivity. This is controlled in:
-- [live_quiz_routes.py](live_quiz_routes.py)
+- [backend/live_quiz_routes.py](../backend/live_quiz_routes.py)
 
 ## Database Not Persisting (Docker)
 By default, the SQLite file is [questions.db](questions.db) in the app working directory. If you need persistence across container restarts, ensure the file path is mounted to a Docker volume.

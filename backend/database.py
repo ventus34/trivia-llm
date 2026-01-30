@@ -3,7 +3,7 @@ import json
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-DATABASE_FILE = "/app/data/questions.db"
+DATABASE_FILE = "questions.db"
 
 def get_db_connection():
     """Returns an asynchronous database connection object (not yet connected)."""

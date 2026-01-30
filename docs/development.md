@@ -1,10 +1,10 @@
 # Development
 
 ## Project Structure
-- Backend (FastAPI): [server.py](server.py), [routes.py](routes.py), [live_quiz_routes.py](live_quiz_routes.py)
+- Backend (FastAPI): [backend/server.py](../backend/server.py), [backend/routes.py](../backend/routes.py), [backend/live_quiz_routes.py](../backend/live_quiz_routes.py)
 - Frontend: [templates/](templates/) and [js/](js/)
-- Shared utilities: [utils.py](utils.py), [config.py](config.py)
-- Data: [database.py](database.py), [questions.db](questions.db)
+- Shared utilities: [backend/utils.py](../backend/utils.py), [backend/config.py](../backend/config.py)
+- Data: [backend/database.py](../backend/database.py), [questions.db](questions.db)
 
 ## Linting & Formatting
 Defined in [package.json](package.json):
