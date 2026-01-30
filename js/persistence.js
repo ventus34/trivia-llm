@@ -7,7 +7,8 @@ import { gameState } from './state.js';
 import { translations } from './config.js';
 import { UI } from './dom.js';
 import { createBoardLayout } from './board.js';
-import { setLanguage, renderBoard, renderCategoryLegend, updateUI, showNotification } from './ui.js';
+import { setLanguage, renderBoard, renderCategoryLegend, updateUI } from './ui.js';
+import { showNotification } from './ui-notifications.js';
 
 /**
  * Creates a "clean" version of the game state for saving.

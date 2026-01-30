@@ -6,15 +6,22 @@
 import { CONFIG, translations, CATEGORY_PRESETS} from './config.js';
 import { gameState } from './state.js';
 import { UI } from './dom.js';
-import {
-    handleSuggestAlternatives,
-    askQuestion,
-    handleMcqAnswer,
-    nextTurn,
-    checkWinCondition,
-    handleSquareClick
-} from './game.js';
+import { renderExplanation } from './explanations.js';
 import { saveGameState } from './persistence.js';
+import { showHistoryModal } from './ui-history.js';
+import { showNotification } from './ui-notifications.js';
+
+const uiHandlers = {
+    handleSquareClick: null,
+    askQuestion: null,
+    nextTurn: null,
+    checkWinCondition: null,
+    handleSuggestAlternatives: null
+};
+
+export function registerUIHandlers(handlers) {
+    Object.assign(uiHandlers, handlers);
+}
 
 /**
  * Automatically adjusts the height of a textarea to fit its content.
@@ -65,49 +72,6 @@ export function populatePresetSelector() {
  * @param {string} [type='info'] - The type of notification ('info', 'success', 'error').
  * @param {number} [duration=5000] - The display duration in milliseconds.
  */
-export function showNotification(message, type = 'info', duration = 5000) {
-    // Create notification container if it doesn't exist
-    if (!UI.notificationContainer) {
-        UI.notificationContainer = document.createElement('div');
-        UI.notificationContainer.id = 'notification-container';
-        UI.notificationContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
-        document.body.appendChild(UI.notificationContainer);
-    }
-
-    const notif = document.createElement('div');
-    notif.className = `notification ${type} opacity-0 transform translate-x-full`;
-
-    const iconContainer = document.createElement('div');
-    iconContainer.className = 'flex-shrink-0';
-
-    let iconSvg = '';
-    if (type === 'error') iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-    else if (type === 'success') iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-    else iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-
-    iconContainer.innerHTML = iconSvg;
-
-    const textContainer = document.createElement('div');
-    textContainer.innerHTML = `<p class="text-sm font-medium text-gray-900">${message.title}</p><p class="text-sm text-gray-500">${message.body}</p>`;
-
-    notif.appendChild(iconContainer);
-    notif.appendChild(textContainer);
-
-    UI.notificationContainer.appendChild(notif);
-
-    // Animate in
-    setTimeout(() => {
-        notif.classList.remove('opacity-0', 'translate-x-full');
-        notif.classList.add('opacity-100', 'translate-x-0');
-    }, 10);
-
-    // Animate out and remove
-    setTimeout(() => {
-        notif.classList.remove('opacity-100', 'translate-x-0');
-        notif.classList.add('opacity-0', 'translate-x-full');
-        setTimeout(() => notif.remove(), 500);
-    }, duration);
-}
 
 /**
  * Sets the UI language and updates all translatable text elements.
@@ -174,7 +138,11 @@ export function updateCategoryInputs(cats) {
         suggestBtn.className = 'category-suggestion-btn';
         suggestBtn.title = translations.suggestion_button_title[gameState.currentLanguage];
         suggestBtn.innerHTML = '✨';
-        suggestBtn.addEventListener('click', () => handleSuggestAlternatives(textarea));
+        suggestBtn.addEventListener('click', () => {
+            if (typeof uiHandlers.handleSuggestAlternatives === 'function') {
+                uiHandlers.handleSuggestAlternatives(textarea);
+            }
+        });
 
         wrapper.appendChild(textarea);
         wrapper.appendChild(suggestBtn);
@@ -266,7 +234,11 @@ export function renderBoard() {
             squareEl.style.background = 'radial-gradient(circle, #fff, #d1d5db)';
         }
 
-        squareEl.addEventListener('click', () => handleSquareClick(square.id));
+        squareEl.addEventListener('click', () => {
+            if (typeof uiHandlers.handleSquareClick === 'function') {
+                uiHandlers.handleSquareClick(square.id);
+            }
+        });
         UI.boardElement.appendChild(squareEl);
 
         square.connections.forEach(connId => {
@@ -407,7 +379,9 @@ export function promptCategoryChoice() {
         button.style.backgroundColor = CONFIG.CATEGORY_COLORS[index];
         button.onclick = () => {
             UI.categoryChoiceModal.classList.remove('visible');
-            askQuestion(index);
+            if (typeof uiHandlers.askQuestion === 'function') {
+                uiHandlers.askQuestion(index);
+            }
         };
         UI.categoryChoiceButtons.appendChild(button);
     });
@@ -456,56 +430,13 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
         UI.correctAnswerText.classList.add('bg-red-100');
     }
 
-    // Handle explanation display
-    const lang = gameState.currentLanguage;
-    let explanationContent = '';
-    
-    // Always show both correct and incorrect explanations with proper prefixes
-    const explanationParts = [];
-    
-    // Add correct answer explanation
-    if (gameState.currentQuestionData.explanation_correct) {
-        const correctLabelPl = 'Wyjaśnienie poprawnej odpowiedzi:';
-        const correctLabelEn = 'Explanation of correct answer:';
-        const correctLabel = lang === 'pl' ? correctLabelPl : correctLabelEn;
-        explanationParts.push(`${correctLabel}\n${gameState.currentQuestionData.explanation_correct}`);
-    } else if (gameState.currentQuestionData.explanation) {
-        // Fallback for combined explanation field
-        const correctLabelPl = 'Wyjaśnienie poprawnej odpowiedzi:';
-        const correctLabelEn = 'Explanation of correct answer:';
-        const correctLabel = lang === 'pl' ? correctLabelPl : correctLabelEn;
-        explanationParts.push(`${correctLabel}\n${gameState.currentQuestionData.explanation}`);
-    }
-    
-    // Add incorrect answer explanation (check for both possible field names)
-    const incorrectExplanation = gameState.currentQuestionData.explanation_distractors || gameState.currentQuestionData.explanation_incorrect;
-    if (incorrectExplanation) {
-        const incorrectLabelPl = 'Wyjaśnienie odpowiedzi niepoprawnych:';
-        const incorrectLabelEn = 'Explanation of incorrect answers:';
-        const incorrectLabel = lang === 'pl' ? incorrectLabelPl : incorrectLabelEn;
-        explanationParts.push(`${incorrectLabel}\n${incorrectExplanation}`);
-    }
-    
-    // If we have any explanations, join them with double newlines
-    if (explanationParts.length > 0) {
-        explanationContent = explanationParts.join('\n\n');
-    } else {
-        // Fallback if no explanations are available
-        explanationContent = lang === 'pl' ? 'Brak dostępnych wyjaśnień.' : 'No explanations available.';
-    }
-
-    // Always show the explanation container
-    UI.explanationContainer.classList.remove('hidden');
-    UI.explanationText.innerHTML = explanationContent.replace(/\n/g, '<br>');
-    
-    // Set the explanation background color based on whether the answer was correct
-    if (answersMatch) {
-        UI.explanationText.classList.remove('bg-yellow-100', 'bg-red-100');
-        UI.explanationText.classList.add('bg-green-100');
-    } else {
-        UI.explanationText.classList.remove('bg-yellow-100', 'bg-green-100');
-        UI.explanationText.classList.add('bg-red-100');
-    }
+    renderExplanation({
+        questionData: gameState.currentQuestionData,
+        lang: gameState.currentLanguage,
+        containerEl: UI.explanationContainer,
+        textEl: UI.explanationText,
+        isCorrect: answersMatch
+    });
 
     showAnswerPopup();
 }
@@ -595,10 +526,14 @@ export function closePopupAndContinue() {
         UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
         UI.diceElement.disabled = false;
     } else {
-        nextTurn();
+        if (typeof uiHandlers.nextTurn === 'function') {
+            uiHandlers.nextTurn();
+        }
     }
     updateUI();
-    checkWinCondition();
+    if (typeof uiHandlers.checkWinCondition === 'function') {
+        uiHandlers.checkWinCondition();
+    }
     saveGameState();
 }
 
@@ -627,47 +562,6 @@ export function hideModal() {
 /**
  * Renders the prompt history in its dedicated modal.
  */
-export function renderPromptHistory() {
-    UI.historyContent.innerHTML = '';
-    const lang = gameState.currentLanguage;
-
-    if (gameState.promptHistory.length === 0) {
-        UI.historyContent.textContent = translations.history_empty[lang];
-        return;
-    }
-
-    const fragment = document.createDocumentFragment();
-    gameState.promptHistory.slice().reverse().forEach((entry, index) => {
-        const entryDiv = document.createElement('div');
-        entryDiv.className = 'p-4 border rounded-lg bg-gray-50';
-
-        const promptTitle = document.createElement('h4');
-        promptTitle.className = 'font-semibold text-gray-800';
-        promptTitle.textContent = `${translations.history_prompt_title[lang]} #${gameState.promptHistory.length - index}`;
-
-        const promptPre = document.createElement('pre');
-        promptPre.className = 'mt-2 p-3 bg-gray-200 text-sm text-gray-700 rounded-md overflow-x-auto whitespace-pre-wrap';
-        const promptCode = document.createElement('code');
-        promptCode.textContent = entry.prompt;
-        promptPre.appendChild(promptCode);
-
-        const responseTitle = document.createElement('h4');
-        responseTitle.className = 'mt-4 font-semibold text-gray-800';
-        responseTitle.textContent = translations.history_response_title[lang];
-
-        const responsePre = document.createElement('pre');
-        responsePre.className = 'mt-2 p-3 bg-blue-100 text-sm text-blue-800 rounded-md overflow-x-auto whitespace-pre-wrap';
-        const responseCode = document.createElement('code');
-        responseCode.textContent = entry.response;
-        responsePre.appendChild(responseCode);
-
-        entryDiv.append(promptTitle, promptPre, responseTitle, responsePre);
-        fragment.appendChild(entryDiv);
-    });
-
-    UI.historyContent.appendChild(fragment);
-}
-
 /**
  * Updates the model selection in the game state.
  * @param {string} modelId - The ID of the selected model.
@@ -681,18 +575,6 @@ export function updateModelSelection(modelId, type) {
     } else if (type === 'category') {
         gameState.selectedCategoryModel = modelId;
     }
-}
-
-/** Shows the prompt history modal. */
-export function showHistoryModal() {
-    UI.historyModalTitle.textContent = translations.history_modal_title[gameState.currentLanguage];
-    renderPromptHistory();
-    UI.historyModal.classList.add('visible');
-}
-
-/** Hides the prompt history modal. */
-export function hideHistoryModal() {
-    UI.historyModal.classList.remove('visible');
 }
 
 /**

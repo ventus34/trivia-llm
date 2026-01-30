@@ -9,12 +9,14 @@ import { gameState } from './state.js';
 import { UI } from './dom.js';
 import { createBoardLayout, findPossibleMoves } from './board.js';
 import {
-    showNotification, updateUI, renderBoard, renderCategoryLegend,
+    updateUI, renderBoard, renderCategoryLegend,
     animateDiceRoll, animatePawnMovement, promptCategoryChoice,
     hideModal, showVerificationPopup, showModal, updateCategoryInputs,
     autoResizeTextarea
 } from './ui.js';
+import { renderExplanation } from './explanations.js';
 import { saveGameState } from './persistence.js';
+import { showNotification } from './ui-notifications.js';
 
 
 function generateGameId() {
@@ -418,56 +420,13 @@ export async function handleManualVerification(isCorrect) {
     UI.verificationButtons.classList.add('hidden');
     UI.postVerificationButtons.classList.remove('hidden');
 
-    // Handle explanation display
-    const lang = gameState.currentLanguage;
-    let explanationContent = '';
-    
-    // Always show both correct and incorrect explanations with proper prefixes
-    const explanationParts = [];
-    
-    // Add correct answer explanation
-    if (gameState.currentQuestionData.explanation_correct) {
-        const correctLabelPl = 'Wyjaśnienie poprawnej odpowiedzi:';
-        const correctLabelEn = 'Explanation of correct answer:';
-        const correctLabel = lang === 'pl' ? correctLabelPl : correctLabelEn;
-        explanationParts.push(`${correctLabel}\n${gameState.currentQuestionData.explanation_correct}`);
-    } else if (gameState.currentQuestionData.explanation) {
-        // Fallback for combined explanation field
-        const correctLabelPl = 'Wyjaśnienie poprawnej odpowiedzi:';
-        const correctLabelEn = 'Explanation of correct answer:';
-        const correctLabel = lang === 'pl' ? correctLabelPl : correctLabelEn;
-        explanationParts.push(`${correctLabel}\n${gameState.currentQuestionData.explanation}`);
-    }
-    
-    // Add incorrect answer explanation (check for both possible field names)
-    const incorrectExplanation = gameState.currentQuestionData.explanation_distractors || gameState.currentQuestionData.explanation_incorrect;
-    if (incorrectExplanation) {
-        const incorrectLabelPl = 'Wyjaśnienie odpowiedzi niepoprawnych:';
-        const incorrectLabelEn = 'Explanation of incorrect answers:';
-        const incorrectLabel = lang === 'pl' ? incorrectLabelPl : incorrectLabelEn;
-        explanationParts.push(`${incorrectLabel}\n${incorrectExplanation}`);
-    }
-    
-    // If we have any explanations, join them with double newlines
-    if (explanationParts.length > 0) {
-        explanationContent = explanationParts.join('\n\n');
-    } else {
-        // Fallback if no explanations are available
-        explanationContent = lang === 'pl' ? 'Brak dostępnych wyjaśnień.' : 'No explanations available.';
-    }
-
-    // Always show the explanation container
-    UI.explanationContainer.classList.remove('hidden');
-    UI.explanationText.innerHTML = explanationContent.replace(/\n/g, '<br>');
-    
-    // Set the explanation background color based on whether the answer was correct
-    if (isCorrect) {
-        UI.explanationText.classList.remove('bg-yellow-100', 'bg-red-100');
-        UI.explanationText.classList.add('bg-green-100');
-    } else {
-        UI.explanationText.classList.remove('bg-yellow-100', 'bg-green-100');
-        UI.explanationText.classList.add('bg-red-100');
-    }
+    renderExplanation({
+        questionData: gameState.currentQuestionData,
+        lang: gameState.currentLanguage,
+        containerEl: UI.explanationContainer,
+        textEl: UI.explanationText,
+        isCorrect
+    });
 
 }
 

@@ -6,11 +6,13 @@
 
 import { gameState } from './state.js';
 import { UI } from './dom.js';
+import { showNotification } from './ui-notifications.js';
 import {
     setLanguage, updateDescriptions, updatePlayerNameInputs,
-    closePopupAndContinue, hideHistoryModal,
-    showHistoryModal, setupGameMenu, populatePresetSelector, updateCategoryInputs
+    closePopupAndContinue, setupGameMenu, populatePresetSelector, updateCategoryInputs,
+    registerUIHandlers
 } from './ui.js';
+import { hideHistoryModal } from './ui-history.js';
 import {
     loadGameState, restartGame, downloadGameState,
     handleStateUpload, restoreGameState
@@ -18,7 +20,8 @@ import {
 import {
     initializeGame, generateCategories, askQuestion,
     rollDice, handleOpenAnswer, handleManualVerification,
-    verifyIncorrectAnswer
+    verifyIncorrectAnswer, handleSquareClick, checkWinCondition, nextTurn,
+    handleSuggestAlternatives
 } from './game.js';
 import {CATEGORY_PRESETS} from "./config.js";
 
@@ -56,6 +59,14 @@ export async function fetchWithErrorHandling(url, options) {
  */
 export async function initializeApp(apiAdapter) {
     gameState.api = apiAdapter;
+
+    registerUIHandlers({
+        handleSquareClick,
+        askQuestion,
+        nextTurn,
+        checkWinCondition,
+        handleSuggestAlternatives
+    });
 
     await populatePresetSelector();
 
