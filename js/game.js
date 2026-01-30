@@ -9,11 +9,14 @@ import { gameState } from './state.js';
 import { UI } from './dom.js';
 import { createBoardLayout, findPossibleMoves } from './board.js';
 import {
-    updateUI, renderBoard, renderCategoryLegend,
-    animateDiceRoll, animatePawnMovement, promptCategoryChoice,
+    promptCategoryChoice,
     hideModal, showVerificationPopup, showModal, updateCategoryInputs,
     autoResizeTextarea
 } from './ui.js';
+import {
+    updateUI, renderBoard, renderCategoryLegend,
+    animateDiceRoll, animatePawnMovement
+} from './ui-board.js';
 import { renderExplanation } from './explanations.js';
 import { saveGameState } from './persistence.js';
 import { showNotification } from './ui-notifications.js';

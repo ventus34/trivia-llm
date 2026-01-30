@@ -7,7 +7,8 @@ import { gameState } from './state.js';
 import { translations } from './config.js';
 import { UI } from './dom.js';
 import { createBoardLayout } from './board.js';
-import { setLanguage, renderBoard, renderCategoryLegend, updateUI } from './ui.js';
+import { setLanguage } from './ui.js';
+import { renderBoard, renderCategoryLegend, updateUI } from './ui-board.js';
 import { showNotification } from './ui-notifications.js';
 
 /**
