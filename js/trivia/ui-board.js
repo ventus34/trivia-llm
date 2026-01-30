@@ -135,37 +135,86 @@ export function updateUI() {
 }
 
 /*
- * Creates a realistic, multi-step tumble animation for the dice.
+ * Creates a smooth dice roll animation.
  * @param {number} roll - The final dice roll result (1-6).
  */
 export async function animateDiceRoll(roll) {
+    // Final rotations for each face to be on top
     const rotations = {
-        1: 'rotateY(0deg) rotateX(0deg)', 2: 'rotateX(-90deg)', 3: 'rotateY(90deg)',
-        4: 'rotateY(-90deg)', 5: 'rotateX(90deg)', 6: 'rotateY(180deg)'
+        1: { x: 0, y: 0 },
+        2: { x: -90, y: 0 },
+        3: { x: 0, y: 90 },
+        4: { x: 0, y: -90 },
+        5: { x: 90, y: 0 },
+        6: { x: 0, y: 180 }
     };
-    const finalTransform = rotations[roll];
+    
+    const dice = UI.diceElement;
+    const target = rotations[roll];
+    
+    // Random spin direction
+    const spinDirection = Math.random() > 0.5 ? 1 : -1;
+    
+    // Add extra full rotations (2-3 spins) to make it look like a real roll
+    const extraSpins = 2 + Math.floor(Math.random() * 2);
+    const totalRotationY = target.y + spinDirection * extraSpins * 360;
+    const totalRotationX = target.x + spinDirection * extraSpins * 360;
+    
+    // Starting position (current dice state from CSS)
+    const startX = -15;
+    const startY = 15;
+    
+    // Animation duration - smooth and readable
+    const duration = 1200;
+    
+    // Disable CSS transitions
+    dice.style.transition = 'none';
+    
+    const startTime = performance.now();
+    
+    return new Promise(resolve => {
+        function animate(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Smooth easing - starts fast, slows down naturally
+            const eased = easeOutCubic(progress);
+            
+            // Calculate current rotation
+            const currentX = startX + (totalRotationX - startX) * eased;
+            const currentY = startY + (totalRotationY - startY) * eased;
+            
+            // Subtle scale effect - slight grow at start, back to normal
+            const scaleProgress = Math.sin(progress * Math.PI);
+            const scale = 1 + 0.08 * scaleProgress * (1 - progress);
+            
+            // Subtle lift effect
+            const lift = -15 * scaleProgress * (1 - progress * 0.5);
+            
+            dice.style.transform = `
+                translateY(${lift}px)
+                scale(${scale})
+                rotateX(${currentX}deg)
+                rotateY(${currentY}deg)
+            `;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Snap to final position
+                dice.style.transform = `rotateX(${target.x}deg) rotateY(${target.y}deg)`;
+                dice.style.transition = '';
+                resolve();
+            }
+        }
+        
+        requestAnimationFrame(animate);
+    });
+}
 
-    let currentX = 0;
-    let currentY = 0;
-    const spinX = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
-    const spinY = (Math.random() > 0.5 ? 1 : -1) * (350 + Math.random() * 200);
-    const tumbleCount = 2;
-    const tumbleDelay = 100;
-
-    UI.diceElement.style.transition = 'transform 0.1s linear';
-
-    for (let i = 0; i < tumbleCount; i++) {
-        currentX += spinX / (i * 1.5 + 1);
-        currentY += spinY / (i * 1.5 + 1);
-        const tumbleTransform = `rotateX(${currentX}deg) rotateY(${currentY}deg)`;
-        UI.diceElement.style.transform = tumbleTransform;
-        await new Promise(resolve => setTimeout(resolve, tumbleDelay));
-    }
-
-    UI.diceElement.style.transition = 'transform 0.8s cubic-bezier(0.2, 1, 0.2, 1)';
-    UI.diceElement.style.transform = finalTransform;
-    await new Promise(resolve => setTimeout(resolve, 800));
-    UI.diceElement.style.transition = '';
+// Smooth easing function - cubic ease out
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
 }
 
 /**
