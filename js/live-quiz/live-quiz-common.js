@@ -3,6 +3,21 @@ window.LiveQuizCommon = (function() {
     'use strict';
 
     // Category Presets are now imported from config.js or accessed via window.CATEGORY_PRESETS
+    const MAX_PLAYERS = 12;
+    const DEFAULT_TOTAL_QUESTIONS = 30;
+    const DEFAULT_QUESTION_MODEL = 'trivia';
+    const DEFAULT_EXPLANATION_MODEL = 'OR:.google/gemini-3-flash-preview';
+    const DEFAULT_CATEGORY_MODEL = 'OR:.google/gemini-3-flash-preview';
+
+    const API_ENDPOINTS = {
+        modelsQuestions: '/api/models/questions',
+        generateCategories: '/api/generate-categories',
+        createRoom: '/api/live-quiz/create-room',
+        joinRoom: '/api/live-quiz/join-room',
+        submitAnswer: '/api/live-quiz/submit-answer',
+        hostControl: '/api/live-quiz/host-control',
+        events: '/api/live-quiz/events'
+    };
     const DEFAULT_CATEGORY_PRESETS = [
         {
             name: {pl: 'Wiedza Ogólna – Klasyk', en: 'General Knowledge – Classic'},
@@ -194,10 +209,13 @@ window.LiveQuizCommon = (function() {
         current_scores_title: { pl: '🏆 Wyniki', en: '🏆 Current Scores' },
         game_progress_title: { pl: '📈 Postęp gry', en: '📈 Game Progress' },
         question_label: { pl: 'Pytanie:', en: 'Question:' },
+        answered_label: { pl: 'Odpowiedzi:', en: 'Answered:' },
+        players_list_label: { pl: 'Gracze:', en: 'Players:' },
         results_title: { pl: '📋 Wyniki', en: '📋 Results' },
         correct_answer_label: { pl: 'Poprawna odpowiedź:', en: 'Correct Answer:' },
         explanation_label: { pl: 'Wyjaśnienie:', en: 'Explanation:' },
         player_votes_label: { pl: 'Głosy graczy:', en: 'Player Votes:' },
+        score_label: { pl: 'Wynik', en: 'Score' },
         game_finished_title: { pl: '🎉 Koniec gry!', en: '🎉 Game Finished!' },
         final_results_title: { pl: 'Wyniki końcowe', en: 'Final Results' },
         position_header: { pl: 'Miejsce', en: 'Position' },
@@ -246,8 +264,74 @@ window.LiveQuizCommon = (function() {
         timer_paused_by_host: { pl: 'Timer wstrzymany przez hosta', en: 'Timer paused by host' },
         timer_resumed: { pl: 'Timer wznowiony', en: 'Timer resumed' },
         connection_lost_text: { pl: '🔌 Połączenie utracone. Próba ponownego połączenia...', en: '🔌 Connection lost. Trying to reconnect...' },
-        loading_text: { pl: 'Ładowanie...', en: 'Loading...' }
+        loading_text: { pl: 'Ładowanie...', en: 'Loading...' },
+        theme_required_error: { pl: 'Najpierw wpisz motyw', en: 'Please enter a theme first' },
+        generating_categories_loading: { pl: 'Generuję kategorie...', en: 'Generating categories...' },
+        categories_generated_success: { pl: 'Kategorie wygenerowane!', en: 'Categories generated successfully!' },
+        categories_generated_failed: { pl: 'Nie udało się wygenerować kategorii — możesz wpisać je ręcznie.', en: 'Failed to generate categories, you can add them manually' },
+        preset_select_required: { pl: 'Wybierz najpierw preset', en: 'Please select a preset first' },
+        preset_loaded_success: { pl: 'Preset wczytany!', en: 'Preset loaded successfully!' },
+        fill_all_categories_error: { pl: 'Uzupełnij wszystkie 6 kategorii', en: 'Please fill in all 6 categories' },
+        creating_room_loading: { pl: 'Tworzenie pokoju...', en: 'Creating room...' },
+        create_room_failed_prefix: { pl: 'Nie udało się utworzyć pokoju:', en: 'Failed to create room:' },
+        room_code_copied: { pl: 'Kod pokoju skopiowany!', en: 'Room code copied!' },
+        join_url_copied: { pl: 'Link dołączenia skopiowany!', en: 'Join URL copied!' },
+        connection_lost_refresh: { pl: 'Połączenie utracone. Odśwież stronę.', en: 'Connection lost. Please refresh the page.' },
+        reconnected_active_game: { pl: 'Połączono ponownie z aktywną grą!', en: 'Reconnected to active game!' },
+        player_joined_toast: { pl: '{name} dołączył(a) do gry!', en: '{name} joined the game!' },
+        player_reconnected_toast: { pl: '{name} wrócił(a) do gry!', en: '{name} reconnected!' },
+        question_regenerated: { pl: 'Pytanie odświeżone!', en: 'Question regenerated!' },
+        game_started_toast: { pl: 'Gra wystartowała!', en: 'Game started!' },
+        starting_game_loading: { pl: 'Uruchamianie gry...', en: 'Starting game...' },
+        start_game_failed_prefix: { pl: 'Nie udało się uruchomić gry:', en: 'Failed to start game:' },
+        action_failed_prefix: { pl: 'Akcja nieudana:', en: 'Action failed:' },
+        host_action_next_question: { pl: 'Następne pytanie', en: 'Next question' },
+        host_action_regenerate_question: { pl: 'Pytanie odświeżone', en: 'Question regenerated' },
+        host_action_pause_timer: { pl: 'Timer wstrzymany', en: 'Timer paused' },
+        host_action_resume_timer: { pl: 'Timer wznowiony', en: 'Timer resumed' },
+        auto_advance_disabled_manual: { pl: 'Auto-przejście wyłączone (ręczne przejście)', en: 'Auto-advance disabled (manual advance)' },
+        timer_paused_toast: { pl: 'Timer wstrzymany', en: 'Timer paused' },
+        timer_resumed_toast: { pl: 'Timer wznowiony', en: 'Timer resumed' },
+        no_explanation_available: { pl: 'Brak wyjaśnienia.', en: 'No explanation available.' },
+        question_results_toast: { pl: 'Wyniki pytania {number}: {correct}/{total} poprawnych', en: 'Question {number} results: {correct}/{total} correct' },
+        auto_advance_toast: { pl: 'Auto-przejście do następnego pytania...', en: 'Auto-advancing to next question...' },
+        ready_next_question_toast: { pl: 'Gotowe na kolejne pytanie. Kliknij „Następne pytanie”.', en: 'Ready for next question. Click "Next Question" to continue.' },
+        question_number_text: { pl: 'Pytanie {current}/{total}', en: 'Question {current}/{total}' },
+        enter_valid_room_code: { pl: 'Podaj prawidłowy 6-cyfrowy kod pokoju', en: 'Please enter a valid 6-digit room code' },
+        enter_player_name: { pl: 'Podaj swoje imię', en: 'Please enter your name' },
+        joining_game_loading: { pl: 'Dołączanie do gry...', en: 'Joining game...' },
+        join_game_success: { pl: 'Dołączono do gry!', en: 'Joined game successfully!' },
+        join_game_failed_prefix: { pl: 'Nie udało się dołączyć:', en: 'Failed to join game:' },
+        game_in_progress_text: { pl: '⚡ Gra w toku! (Pytanie {number})', en: '⚡ Game in progress! (Question {number})' },
+        late_joiner_text: { pl: 'Dołączyłeś późno — zaczniesz od następnego pytania.', en: "You're a late joiner. You'll start participating from the next question." },
+        joined_in_progress_toast: { pl: 'Dołączono do gry w toku. Zaczniesz od następnego pytania.', en: "Joined game in progress! You'll start from the next question." },
+        reconnected_toast: { pl: 'Połączono ponownie z grą!', en: 'Successfully reconnected to game!' },
+        auto_reconnected_toast: { pl: 'Automatycznie połączono z Twoją grą!', en: 'Auto-reconnected to your game!' },
+        recovered_session_toast: { pl: 'Przywrócono poprzednią sesję!', en: 'Recovered your previous session!' },
+        game_expired_error: { pl: 'Gra wygasła z powodu braku aktywności.', en: 'Game has expired due to inactivity.' },
+        submit_answer_failed_prefix: { pl: 'Nie udało się wysłać odpowiedzi:', en: 'Failed to submit answer:' },
+        skip_question_failed_prefix: { pl: 'Nie udało się pominąć pytania:', en: 'Failed to skip question:' },
+        player_won_toast: { pl: '🏆 Wygrana! Gratulacje!', en: '🏆 You won! Congratulations!' },
+        game_finished_placement_toast: { pl: 'Koniec gry! Zająłeś {position} z {total}.', en: 'Game finished! You placed {position} of {total}' },
+        final_position_format: { pl: 'Miejsce: {position}/{total}', en: 'Position: {position}/{total}' }
     };
+
+    function formatTranslation(key, params = {}, lang = getPreferredLanguage()) {
+        let text = getTranslation(key, lang);
+        Object.entries(params).forEach(([paramKey, value]) => {
+            text = text.split(`{${paramKey}}`).join(String(value));
+        });
+        return text;
+    }
+
+    function buildSseUrl({ gameId, playerId, type }) {
+        const params = new URLSearchParams({
+            game_id: gameId,
+            player_id: playerId,
+            type: type
+        });
+        return `${API_ENDPOINTS.events}?${params.toString()}`;
+    }
 
     function getPreferredLanguage() {
         const select = document.getElementById('language');
@@ -638,6 +722,14 @@ window.LiveQuizCommon = (function() {
         applyTranslations,
         setLanguage,
         getTranslation,
+        formatTranslation,
+        buildSseUrl,
+        API_ENDPOINTS,
+        MAX_PLAYERS,
+        DEFAULT_TOTAL_QUESTIONS,
+        DEFAULT_QUESTION_MODEL,
+        DEFAULT_EXPLANATION_MODEL,
+        DEFAULT_CATEGORY_MODEL,
         saveToSession,
         loadFromSession,
         removeFromSession,

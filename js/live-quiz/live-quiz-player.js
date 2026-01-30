@@ -308,24 +308,24 @@ window.LiveQuizPlayer = (function(Common) {
 
         if (!roomCode || roomCode.length !== 6) {
             if (!autoReconnect) {
-                Common.showNotification('Please enter a valid 6-digit room code', 'error');
+                Common.showNotification(Common.getTranslation('enter_valid_room_code'), 'error');
             }
             return;
         }
 
         if (!playerName) {
             if (!autoReconnect) {
-                Common.showNotification('Please enter your name', 'error');
+                Common.showNotification(Common.getTranslation('enter_player_name'), 'error');
             }
             return;
         }
 
         if (!autoReconnect) {
-            Common.showLoading('Joining game...');
+            Common.showLoading(Common.getTranslation('joining_game_loading'));
         }
 
         try {
-            const response = await Common.apiCall('/api/live-quiz/join-room', 'POST', {
+            const response = await Common.apiCall(Common.API_ENDPOINTS.joinRoom, 'POST', {
                 room_code: roomCode,
                 player_name: playerName
             });
@@ -343,9 +343,9 @@ window.LiveQuizPlayer = (function(Common) {
             if (isReconnection) {
                 // Handle reconnection
                 if (autoReconnect) {
-                    Common.showNotification('Auto-reconnected to game!', 'success');
+                    Common.showNotification(Common.getTranslation('auto_reconnected_toast'), 'success');
                 } else {
-                    Common.showNotification('Reconnected to game successfully!', 'success');
+                    Common.showNotification(Common.getTranslation('reconnected_toast'), 'success');
                 }
 
                 // Restore player score and state
@@ -409,10 +409,10 @@ window.LiveQuizPlayer = (function(Common) {
                     const currentQuestion = response.current_question || '?';
                     answerStatus.innerHTML = `
                         <div class="text-lg text-yellow-400">
-                            ⚡ Game in progress! (Question ${currentQuestion})
+                            ${Common.formatTranslation('game_in_progress_text', { number: currentQuestion })}
                         </div>
                         <div class="text-sm text-gray-400 mt-1">
-                            You're a late joiner. You'll start participating from the next question.
+                            ${Common.getTranslation('late_joiner_text')}
                         </div>
                     `;
                 }
@@ -425,7 +425,7 @@ window.LiveQuizPlayer = (function(Common) {
                     });
                 }, 500);
 
-                Common.showNotification('Joined game in progress! You\'ll start from the next question.', 'info');
+                Common.showNotification(Common.getTranslation('joined_in_progress_toast'), 'info');
                 savePlayerState('question-screen');
             } else {
                 // Normal lobby join
@@ -449,14 +449,14 @@ window.LiveQuizPlayer = (function(Common) {
 
                 Common.showScreen('lobby-screen');
                 savePlayerState('lobby-screen'); // Save state after successful join
-                Common.showNotification('Joined game successfully!', 'success');
+                Common.showNotification(Common.getTranslation('join_game_success'), 'success');
             }
 
             setupSSE(); // Always setup SSE to receive real-time updates
 
         } catch (error) {
             if (!autoReconnect) {
-                Common.showNotification('Failed to join game: ' + error.message, 'error');
+                Common.showNotification(`${Common.getTranslation('join_game_failed_prefix')} ${error.message}`, 'error');
             } else {
                 console.log('Auto-reconnection failed:', error.message);
                 // Clear invalid stored identity
@@ -470,7 +470,11 @@ window.LiveQuizPlayer = (function(Common) {
     }
 
     function setupSSE() {
-        const sseUrl = `/api/live-quiz/events?game_id=${gameState.gameId}&player_id=${gameState.playerId}&type=player`;
+        const sseUrl = Common.buildSseUrl({
+            gameId: gameState.gameId,
+            playerId: gameState.playerId,
+            type: 'player'
+        });
         gameState.sse = new EventSource(sseUrl);
         
         gameState.sse.onmessage = (event) => {
@@ -496,16 +500,16 @@ window.LiveQuizPlayer = (function(Common) {
                 break;
 
             case 'player_joined':
-                Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
+                Common.showNotification(Common.formatTranslation('player_joined_toast', { name: event.data.player.name }), 'success');
                 break;
 
             case 'player_reconnected':
                 if (event.data.player.id !== gameState.playerId) {
                     // Someone else reconnected
-                    Common.showNotification(`${event.data.player.name} reconnected!`, 'info');
+                    Common.showNotification(Common.formatTranslation('player_reconnected_toast', { name: event.data.player.name }), 'info');
                 } else {
                     // We reconnected
-                    Common.showNotification('Successfully reconnected to game!', 'success');
+                    Common.showNotification(Common.getTranslation('reconnected_toast'), 'success');
                 }
                 break;
 
@@ -548,7 +552,7 @@ window.LiveQuizPlayer = (function(Common) {
                 break;
 
             case 'game_started':
-                Common.showNotification('Game started!', 'success');
+                Common.showNotification(Common.getTranslation('game_started_toast'), 'success');
                 savePlayerState('question-screen'); // Save state when game starts
                 break;
 
@@ -558,7 +562,7 @@ window.LiveQuizPlayer = (function(Common) {
                 break;
 
             case 'game_expired':
-                Common.showNotification('Game has expired due to inactivity.', 'error');
+                Common.showNotification(Common.getTranslation('game_expired_error'), 'error');
                 // Disconnect and return to join screen
                 if (gameState.sse) {
                     gameState.sse.close();
@@ -582,7 +586,10 @@ window.LiveQuizPlayer = (function(Common) {
         
         // Update UI
         document.getElementById('question-category').textContent = data.category;
-        document.getElementById('question-number').textContent = `Question ${data.question_number}/${gameState.totalQuestions || 30}`;
+        document.getElementById('question-number').textContent = Common.formatTranslation('question_number_text', {
+            current: data.question_number,
+            total: data.total_questions || gameState.totalQuestions || Common.DEFAULT_TOTAL_QUESTIONS
+        });
         document.getElementById('question-text').textContent = data.question;
         
         // Update options in 2x2 grid
@@ -702,13 +709,13 @@ window.LiveQuizPlayer = (function(Common) {
         }
         
         try {
-            await Common.apiCall('/api/live-quiz/submit-answer', 'POST', {
+            await Common.apiCall(Common.API_ENDPOINTS.submitAnswer, 'POST', {
                 game_id: gameState.gameId,
                 player_id: gameState.playerId,
                 answer: answer
             });
         } catch (error) {
-            Common.showNotification('Failed to submit answer: ' + error.message, 'error');
+            Common.showNotification(`${Common.getTranslation('submit_answer_failed_prefix')} ${error.message}`, 'error');
             gameState.hasAnswered = false;
             savePlayerState('question-screen'); // Save state after reverting
         }
@@ -753,14 +760,14 @@ window.LiveQuizPlayer = (function(Common) {
         }
         
         try {
-            await Common.apiCall('/api/live-quiz/submit-answer', 'POST', {
+            await Common.apiCall(Common.API_ENDPOINTS.submitAnswer, 'POST', {
                 game_id: gameState.gameId,
                 player_id: gameState.playerId,
                 answer: "", // Empty string for skipped questions
                 skipped: true
             });
         } catch (error) {
-            Common.showNotification('Failed to skip question: ' + error.message, 'error');
+            Common.showNotification(`${Common.getTranslation('skip_question_failed_prefix')} ${error.message}`, 'error');
             gameState.hasAnswered = false;
             savePlayerState('question-screen'); // Save state after reverting
         }
@@ -836,15 +843,23 @@ window.LiveQuizPlayer = (function(Common) {
         const positionTextElement = document.getElementById('final-position-text');
         
         if (finalScoreElement) finalScoreElement.textContent = finalScore;
-        if (positionTextElement) positionTextElement.textContent = `Position: ${position}/${totalPlayers}`;
+        if (positionTextElement) {
+            positionTextElement.textContent = Common.formatTranslation('final_position_format', {
+                position: position,
+                total: totalPlayers
+            });
+        }
         
         Common.showScreen('final-results-screen');
         
         // Show result notification
         if (position === 1) {
-            Common.showNotification('🏆 You won! Congratulations!', 'success');
+            Common.showNotification(Common.getTranslation('player_won_toast'), 'success');
         } else {
-            Common.showNotification(`Game finished! You placed ${position} of ${totalPlayers}`, 'info');
+            Common.showNotification(Common.formatTranslation('game_finished_placement_toast', {
+                position: position,
+                total: totalPlayers
+            }), 'info');
         }
     }
 
@@ -875,7 +890,12 @@ window.LiveQuizPlayer = (function(Common) {
             const textElement = document.getElementById('player-fullscreen-question-text');
             
             if (categoryElement) categoryElement.textContent = q.category;
-            if (numberElement) numberElement.textContent = `Question ${q.question_number}/${gameState.totalQuestions || 30}`;
+            if (numberElement) {
+                numberElement.textContent = Common.formatTranslation('question_number_text', {
+                    current: q.question_number,
+                    total: gameState.totalQuestions || Common.DEFAULT_TOTAL_QUESTIONS
+                });
+            }
             
             // Update timer
             const timerElement = document.getElementById('player-fullscreen-timer');
@@ -1011,7 +1031,7 @@ window.LiveQuizPlayer = (function(Common) {
                 console.log('🔄 Attempting auto-reconnection...');
                 try {
                     await joinGame(true); // Auto-reconnect with stored credentials
-                    Common.showNotification('Auto-reconnected to your game!', 'success');
+                    Common.showNotification(Common.getTranslation('auto_reconnected_toast'), 'success');
                     return;
                 } catch (error) {
                     console.log('Auto-reconnection failed, trying session recovery...');
@@ -1024,7 +1044,7 @@ window.LiveQuizPlayer = (function(Common) {
             if (!recovered) {
                 Common.showScreen('join-screen');
             } else {
-                Common.showNotification('Recovered your previous session!', 'success');
+                Common.showNotification(Common.getTranslation('recovered_session_toast'), 'success');
             }
         }, 200);
     }

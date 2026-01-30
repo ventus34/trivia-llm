@@ -20,14 +20,14 @@ window.LiveQuizHostLobby = (function(Common) {
         // Copy room code
         document.getElementById('copy-room-code')?.addEventListener('click', () => {
             navigator.clipboard.writeText(gameState.roomCode);
-            Common.showNotification('Room code copied!', 'success');
+            Common.showNotification(Common.getTranslation('room_code_copied'), 'success');
         });
         
         // Copy join URL
         document.getElementById('copy-join-url')?.addEventListener('click', () => {
             const url = document.getElementById('join-url').value;
             navigator.clipboard.writeText(url);
-            Common.showNotification('Join URL copied!', 'success');
+            Common.showNotification(Common.getTranslation('join_url_copied'), 'success');
         });
         
         // Start game
@@ -43,7 +43,11 @@ window.LiveQuizHostLobby = (function(Common) {
     }
 
     function setupSSE() {
-        const sseUrl = `/api/live-quiz/events?game_id=${gameState.gameId}&player_id=${gameState.hostId}&type=host`;
+        const sseUrl = Common.buildSseUrl({
+            gameId: gameState.gameId,
+            playerId: gameState.hostId,
+            type: 'host'
+        });
         gameState.sse = new EventSource(sseUrl);
         
         gameState.sse.onmessage = (event) => {
@@ -53,7 +57,7 @@ window.LiveQuizHostLobby = (function(Common) {
         
         gameState.sse.onerror = (error) => {
             console.error('SSE Error:', error);
-            Common.showNotification('Connection lost. Please refresh the page.', 'error');
+            Common.showNotification(Common.getTranslation('connection_lost_refresh'), 'error');
         };
     }
 
@@ -68,7 +72,7 @@ window.LiveQuizHostLobby = (function(Common) {
                 // Check if game is already in progress and redirect host
                 if (event.data.game_status === 'playing' && event.data.current_question) {
                     Common.showScreen('game-screen');
-                    Common.showNotification('Reconnected to active game!', 'info');
+                    Common.showNotification(Common.getTranslation('reconnected_active_game'), 'info');
                 }
 
                 // Filter out host from initial lobby data
@@ -89,12 +93,12 @@ window.LiveQuizHostLobby = (function(Common) {
                 
             case 'player_joined':
                 addPlayer(event.data.player);
-                Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
+                Common.showNotification(Common.formatTranslation('player_joined_toast', { name: event.data.player.name }), 'success');
                 break;
 
             case 'late_player_joined':
                 addPlayer(event.data.player);
-                Common.showNotification(`${event.data.player.name} joined the game!`, 'success');
+                Common.showNotification(Common.formatTranslation('player_joined_toast', { name: event.data.player.name }), 'success');
                 break;
                 
             case 'question_started':
@@ -140,7 +144,7 @@ window.LiveQuizHostLobby = (function(Common) {
                 if (window.LiveQuizHostGame) {
                     // When a question is regenerated, we need to get the new question data
                     // The backend should send updated question data, but for now we'll refresh the current question
-                    Common.showNotification('Question regenerated!', 'info');
+                    Common.showNotification(Common.getTranslation('question_regenerated'), 'info');
                     
                     // If we have current question data, refresh the UI
                     if (gameState.currentQuestion) {
@@ -162,7 +166,7 @@ window.LiveQuizHostLobby = (function(Common) {
                 
             case 'game_started':
                 Common.showScreen('game-screen');
-                Common.showNotification('Game started!', 'success');
+                Common.showNotification(Common.getTranslation('game_started_toast'), 'success');
                 break;
                 
             case 'game_finished':
@@ -201,7 +205,7 @@ window.LiveQuizHostLobby = (function(Common) {
     function updatePlayerCount(count) {
         const playerCountElement = document.getElementById('player-count');
         if (playerCountElement) {
-            playerCountElement.textContent = `${count}/12`;
+            playerCountElement.textContent = `${count}/${Common.MAX_PLAYERS}`;
         }
     }
 
@@ -234,7 +238,7 @@ window.LiveQuizHostLobby = (function(Common) {
                     </div>
                     <span class="text-white">${player.name}</span>
                 </div>
-                <div class="text-sm text-gray-400">Score: ${player.score}</div>
+                <div class="text-sm text-gray-400">${Common.getTranslation('score_label')}: ${player.score}</div>
             `;
             playersList.appendChild(playerElement);
         });
@@ -262,7 +266,7 @@ window.LiveQuizHostLobby = (function(Common) {
                 </div>
                 <span class="text-white">${player.name}</span>
             </div>
-            <div class="text-sm text-gray-400">Score: ${player.score}</div>
+            <div class="text-sm text-gray-400">${Common.getTranslation('score_label')}: ${player.score}</div>
         `;
         playersList.appendChild(playerElement);
         
@@ -272,11 +276,11 @@ window.LiveQuizHostLobby = (function(Common) {
     }
 
     async function startGame() {
-        Common.showLoading('Starting game...');
+        Common.showLoading(Common.getTranslation('starting_game_loading'));
         try {
             await hostControl('start_game');
         } catch (error) {
-            Common.showNotification('Failed to start game: ' + error.message, 'error');
+            Common.showNotification(`${Common.getTranslation('start_game_failed_prefix')} ${error.message}`, 'error');
         } finally {
             Common.hideLoading();
         }
@@ -284,12 +288,12 @@ window.LiveQuizHostLobby = (function(Common) {
 
     async function hostControl(action) {
         try {
-            await Common.apiCall('/api/live-quiz/host-control', 'POST', {
+            await Common.apiCall(Common.API_ENDPOINTS.hostControl, 'POST', {
                 game_id: gameState.gameId,
                 action: action
             });
         } catch (error) {
-            Common.showNotification('Action failed: ' + error.message, 'error');
+            Common.showNotification(`${Common.getTranslation('action_failed_prefix')} ${error.message}`, 'error');
         }
     }
 

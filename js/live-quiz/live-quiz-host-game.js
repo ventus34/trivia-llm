@@ -165,7 +165,7 @@ window.LiveQuizHostGame = (function(Common) {
         gameState.previousScores = { ...gameState.currentScores };
         
         // Update progress
-        const totalQuestions = gameState.totalQuestions || 30;
+        const totalQuestions = gameState.totalQuestions || Common.DEFAULT_TOTAL_QUESTIONS;
         const progress = (data.question_number / totalQuestions) * 100;
         document.getElementById('progress-question').textContent = `${data.question_number}/${totalQuestions}`;
         const progressBar = document.getElementById('progress-bar');
@@ -190,14 +190,20 @@ window.LiveQuizHostGame = (function(Common) {
         const fullscreenNumberElement = document.getElementById('fullscreen-question-number');
         const fullscreenTextElement = document.getElementById('fullscreen-question-text');
 
-        const totalQuestions = data.total_questions || gameState.totalQuestions || 30;
+        const totalQuestions = data.total_questions || gameState.totalQuestions || Common.DEFAULT_TOTAL_QUESTIONS;
 
         if (categoryElement) categoryElement.textContent = data.category;
-        if (numberElement) numberElement.textContent = `Question ${data.question_number}/${totalQuestions}`;
+        if (numberElement) numberElement.textContent = Common.formatTranslation('question_number_text', {
+            current: data.question_number,
+            total: totalQuestions
+        });
         if (textElement) textElement.textContent = data.question;
 
         if (fullscreenCategoryElement) fullscreenCategoryElement.textContent = data.category;
-        if (fullscreenNumberElement) fullscreenNumberElement.textContent = `Question ${data.question_number}/${totalQuestions}`;
+        if (fullscreenNumberElement) fullscreenNumberElement.textContent = Common.formatTranslation('question_number_text', {
+            current: data.question_number,
+            total: totalQuestions
+        });
         if (fullscreenTextElement) fullscreenTextElement.textContent = data.question;
         
         // Update options in 2x2 grid for TV
@@ -282,7 +288,7 @@ window.LiveQuizHostGame = (function(Common) {
             pauseBtn.classList.add('hidden');
             resumeBtn.classList.remove('hidden');
         }
-        Common.showNotification('Timer paused', 'info');
+        Common.showNotification(Common.getTranslation('timer_paused_toast'), 'info');
     }
 
     function showTimerResumed() {
@@ -292,7 +298,7 @@ window.LiveQuizHostGame = (function(Common) {
             pauseBtn.classList.remove('hidden');
             resumeBtn.classList.add('hidden');
         }
-        Common.showNotification('Timer resumed', 'info');
+        Common.showNotification(Common.getTranslation('timer_resumed_toast'), 'info');
     }
 
     function updateAnswerStatus(data) {
@@ -335,14 +341,14 @@ window.LiveQuizHostGame = (function(Common) {
 
         answerStatus.innerHTML = `
             <div class="flex justify-between text-sm mb-3">
-                <span class="text-gray-300">Answered:</span>
+                <span class="text-gray-300">${Common.getTranslation('answered_label')}</span>
                 <span class="text-white font-semibold">${answered}/${total}</span>
             </div>
             <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
                 <div class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: ${percentage}%"></div>
             </div>
             <div class="space-y-1">
-                <h4 class="text-sm font-semibold text-gray-300 mb-2">Players:</h4>
+                <h4 class="text-sm font-semibold text-gray-300 mb-2">${Common.getTranslation('players_list_label')}</h4>
                 ${playerListHtml}
             </div>
         `;
@@ -605,14 +611,18 @@ window.LiveQuizHostGame = (function(Common) {
         const correctAnswerElement = document.getElementById('correct-answer');
         const explanationElement = document.getElementById('question-explanation');
         if (correctAnswerElement) correctAnswerElement.textContent = data.correct_answer;
-        if (explanationElement) explanationElement.textContent = data.explanation || 'No explanation available.';
+        if (explanationElement) explanationElement.textContent = data.explanation || Common.getTranslation('no_explanation_available');
 
         // Highlight correct answer
         highlightCorrectAnswer(data.correct_answer);
 
         // Show results notification
         const correctCount = Object.values(data.answers).filter(a => a.is_correct).length;
-        Common.showNotification(`Question ${data.question_number} results: ${correctCount}/${Object.keys(data.answers).length} correct`, 'info');
+        Common.showNotification(Common.formatTranslation('question_results_toast', {
+            number: data.question_number,
+            correct: correctCount,
+            total: Object.keys(data.answers).length
+        }), 'info');
 
         // Clear any existing auto-advance timeout
         if (gameState.autoAdvanceTimeout) {
@@ -640,7 +650,7 @@ window.LiveQuizHostGame = (function(Common) {
                     if (currentToggle && currentToggle.checked) {
                         // Auto-advance to next question (without manual flag, so auto-advance stays enabled)
                         hostControl('next_question');
-                        Common.showNotification('Auto-advancing to next question...', 'info');
+                        Common.showNotification(Common.getTranslation('auto_advance_toast'), 'info');
                     }
                 }
                 gameState.autoAdvanceTimeout = null;
@@ -650,7 +660,7 @@ window.LiveQuizHostGame = (function(Common) {
             setTimeout(() => {
                 const gameScreen = document.getElementById('game-screen');
                 if (gameScreen && !gameScreen.classList.contains('hidden')) {
-                    Common.showNotification('Ready for next question. Click "Next Question" to continue.', 'info');
+                    Common.showNotification(Common.getTranslation('ready_next_question_toast'), 'info');
                 }
             }, 10000);
         }
@@ -751,7 +761,10 @@ window.LiveQuizHostGame = (function(Common) {
 
             // Update header
             document.getElementById('fullscreen-question-category').textContent = q.category;
-            document.getElementById('fullscreen-question-number').textContent = `Question ${q.question_number}/${gameState.totalQuestions || 30}`;
+            document.getElementById('fullscreen-question-number').textContent = Common.formatTranslation('question_number_text', {
+                current: q.question_number,
+                total: gameState.totalQuestions || Common.DEFAULT_TOTAL_QUESTIONS
+            });
 
             // Update timer
             document.getElementById('fullscreen-timer').textContent = gameState.timerSeconds;
@@ -890,21 +903,21 @@ window.LiveQuizHostGame = (function(Common) {
         }
 
         try {
-            await Common.apiCall('/api/live-quiz/host-control', 'POST', {
+            await Common.apiCall(Common.API_ENDPOINTS.hostControl, 'POST', {
                 game_id: gameState.gameId,
                 action: action
             });
 
             // Show success notification for user feedback
-            const actionNames = {
-                'next_question': 'Next question',
-                'regenerate_question': 'Question regenerated',
-                'pause_timer': 'Timer paused',
-                'resume_timer': 'Timer resumed'
+            const actionLabels = {
+                'next_question': Common.getTranslation('host_action_next_question'),
+                'regenerate_question': Common.getTranslation('host_action_regenerate_question'),
+                'pause_timer': Common.getTranslation('host_action_pause_timer'),
+                'resume_timer': Common.getTranslation('host_action_resume_timer')
             };
 
-            if (actionNames[action]) {
-                Common.showNotification(`${actionNames[action]}!`, 'success');
+            if (actionLabels[action]) {
+                Common.showNotification(`${actionLabels[action]}!`, 'success');
             }
 
             // Turn off auto-advance ONLY when host manually advances to next question
@@ -921,10 +934,10 @@ window.LiveQuizHostGame = (function(Common) {
                 if (autoAdvanceToggle) autoAdvanceToggle.checked = false;
                 if (fullscreenAutoAdvanceToggle) fullscreenAutoAdvanceToggle.checked = false;
 
-                Common.showNotification('Auto-advance disabled (manual advance)', 'info');
+                Common.showNotification(Common.getTranslation('auto_advance_disabled_manual'), 'info');
             }
         } catch (error) {
-            Common.showNotification('Action failed: ' + error.message, 'error');
+            Common.showNotification(`${Common.getTranslation('action_failed_prefix')} ${error.message}`, 'error');
         } finally {
             // Re-enable buttons after action completes
             if (buttonsToDisable[action]) {

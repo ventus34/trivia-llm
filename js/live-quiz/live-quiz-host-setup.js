@@ -7,7 +7,7 @@ window.LiveQuizHostSetup = (function(Common) {
         try {
             console.log('Loading models...');
             
-            const questionModels = await Common.apiCall('/api/models/questions');
+            const questionModels = await Common.apiCall(Common.API_ENDPOINTS.modelsQuestions);
             console.log('Question models loaded:', questionModels);
             
             // Populate question models (without "Auto" option)
@@ -97,24 +97,24 @@ window.LiveQuizHostSetup = (function(Common) {
         document.getElementById('generate-categories')?.addEventListener('click', async () => {
             const theme = document.getElementById('theme').value.trim();
             if (!theme) {
-                Common.showNotification('Please enter a theme first', 'error');
+                Common.showNotification(Common.getTranslation('theme_required_error'), 'error');
                 return;
             }
             
-            Common.showLoading('Generating categories...');
+            Common.showLoading(Common.getTranslation('generating_categories_loading'));
             try {
-                const response = await Common.apiCall('/api/generate-categories', 'POST', {
-                    model: 'OR:.google/gemini-3-flash-preview', // Use default model
+                const response = await Common.apiCall(Common.API_ENDPOINTS.generateCategories, 'POST', {
+                    model: Common.DEFAULT_CATEGORY_MODEL,
                     theme: theme,
                     language: document.getElementById('language').value
                 });
                 
                 Common.updateCategoryInputs(response.categories);
                 Common.saveGameSetup(); // Save after generating
-                Common.showNotification('Categories generated successfully!', 'success');
+                Common.showNotification(Common.getTranslation('categories_generated_success'), 'success');
             } catch (error) {
                 // Categories generation failed, but don't block the user
-                Common.showNotification('Failed to generate categories, you can add them manually', 'error');
+                Common.showNotification(Common.getTranslation('categories_generated_failed'), 'error');
             } finally {
                 Common.hideLoading();
             }
@@ -125,7 +125,7 @@ window.LiveQuizHostSetup = (function(Common) {
         document.getElementById('load-preset')?.addEventListener('click', () => {
             const selectedIndex = document.getElementById('category-preset-select').value;
             if (selectedIndex === '') {
-                Common.showNotification('Please select a preset first', 'error');
+                Common.showNotification(Common.getTranslation('preset_select_required'), 'error');
                 return;
             }
             
@@ -139,7 +139,7 @@ window.LiveQuizHostSetup = (function(Common) {
             document.getElementById('theme').value = presetName;
             Common.saveGameSetup(); // Save after loading preset
             
-            Common.showNotification('Preset loaded successfully!', 'success');
+            Common.showNotification(Common.getTranslation('preset_loaded_success'), 'success');
         });
     }
 
@@ -161,17 +161,17 @@ window.LiveQuizHostSetup = (function(Common) {
             .filter(cat => cat !== '');
         
         if (categories.length !== 6) {
-            Common.showNotification('Please fill in all 6 categories', 'error');
+            Common.showNotification(Common.getTranslation('fill_all_categories_error'), 'error');
             return;
         }
         
         const questionsPerCategory = parseInt(document.getElementById('questions-per-category').value);
         const totalQuestions = categories.length * questionsPerCategory;
         
-        Common.showLoading('Creating room...');
+        Common.showLoading(Common.getTranslation('creating_room_loading'));
         try {
-            const selectedQuestionModel = document.getElementById('question-model')?.value || 'trivia';
-            const response = await Common.apiCall('/api/live-quiz/create-room', 'POST', {
+            const selectedQuestionModel = document.getElementById('question-model')?.value || Common.DEFAULT_QUESTION_MODEL;
+            const response = await Common.apiCall(Common.API_ENDPOINTS.createRoom, 'POST', {
                 categories: categories,
                 game_mode: 'mcq', // Always multiple choice
                 knowledge_level: document.getElementById('knowledge-level').value,
@@ -179,8 +179,8 @@ window.LiveQuizHostSetup = (function(Common) {
                 theme: document.getElementById('theme').value.trim() || null,
                 include_category_theme: document.getElementById('include-theme').checked,
                 selected_question_model: selectedQuestionModel,
-                selected_explanation_model: 'OR:.google/gemini-3-flash-preview', // Default value
-                selected_category_model: 'OR:.google/gemini-3-flash-preview', // Default value
+                selected_explanation_model: Common.DEFAULT_EXPLANATION_MODEL,
+                selected_category_model: Common.DEFAULT_CATEGORY_MODEL,
                 questions_per_category: questionsPerCategory,
                 answer_time: parseInt(document.getElementById('answer-time').value)
             });
@@ -211,7 +211,7 @@ window.LiveQuizHostSetup = (function(Common) {
             }
             
         } catch (error) {
-            Common.showNotification('Failed to create room: ' + error.message, 'error');
+            Common.showNotification(`${Common.getTranslation('create_room_failed_prefix')} ${error.message}`, 'error');
         } finally {
             Common.hideLoading();
         }
