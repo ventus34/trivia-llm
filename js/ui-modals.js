@@ -8,9 +8,10 @@ import { gameState } from './state.js';
 import { UI } from './dom.js';
 import { renderExplanation } from './explanations.js';
 import { uiHandlers } from './ui-handlers.js';
-import { updateUI, renderCategoryLegend } from './ui-board.js';
+import { renderCategoryLegend } from './ui-board.js';
 import { saveGameState } from './persistence.js';
 import { showNotification } from './ui-notifications.js';
+import { emit } from './store.js';
 
 /**
  * Displays the modal for choosing a category (used when on the HUB square).
@@ -127,6 +128,7 @@ export async function showMutationScreen() {
                 gameState.categories[categoryIndex] = newCategoryName;
 
                 renderCategoryLegend();
+                emit('categories:update');
                 delete gameState.categoryTopicHistory[oldCategory];
                 if (!gameState.categoryTopicHistory[newCategoryName]) {
                     gameState.categoryTopicHistory[newCategoryName] = { subcategories: [], entities: [] };
@@ -170,7 +172,7 @@ export function closePopupAndContinue() {
             uiHandlers.nextTurn();
         }
     }
-    updateUI();
+    emit('state:update');
     if (typeof uiHandlers.checkWinCondition === 'function') {
         uiHandlers.checkWinCondition();
     }

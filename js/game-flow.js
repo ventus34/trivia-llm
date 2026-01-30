@@ -14,7 +14,6 @@ import {
     showModal
 } from './ui.js';
 import {
-    updateUI,
     renderBoard,
     renderCategoryLegend,
     animateDiceRoll,
@@ -23,6 +22,7 @@ import {
 import { renderExplanation } from './explanations.js';
 import { saveGameState } from './persistence.js';
 import { showNotification } from './ui-notifications.js';
+import { emit } from './store.js';
 
 function generateGameId() {
     return 'game-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
@@ -84,7 +84,7 @@ export function initializeGame() {
     createBoardLayout();
     renderBoard();
     renderCategoryLegend();
-    updateUI();
+    emit('state:update');
     UI.diceResultDiv.classList.add('hint-pulsate');
     UI.setupScreen.classList.add('hidden');
     UI.gameScreen.classList.remove('hidden');
@@ -227,7 +227,7 @@ export async function handleSquareClick(squareId) {
  */
 export function nextTurn() {
     gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-    updateUI();
+    emit('state:update');
 
     UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
     UI.diceElement.disabled = false;

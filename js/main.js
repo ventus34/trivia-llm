@@ -22,6 +22,7 @@ import {
 } from './game-flow.js';
 import { handleSuggestAlternatives } from './game-api.js';
 import { setupEventListeners } from './ui-events.js';
+import { setupStateSubscriptions } from './ui-state.js';
 
 
 /**
@@ -88,6 +89,8 @@ export async function initializeApp(apiAdapter) {
     } else {
         setLanguage(localStorage.getItem('trivia_lang') || 'pl');
     }
+
+    setupStateSubscriptions();
 
     setupEventListeners();
 
