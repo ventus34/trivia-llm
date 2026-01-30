@@ -107,6 +107,8 @@ export function updateUI() {
         return;
     }
 
+    renderCategoryLegend();
+
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
     if (!currentPlayer) {
         return;
