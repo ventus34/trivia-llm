@@ -18,11 +18,20 @@ import {
     handleStateUpload, restoreGameState
 } from './persistence.js';
 import {
-    initializeGame, generateCategories, askQuestion,
-    rollDice, handleOpenAnswer, handleManualVerification,
-    verifyIncorrectAnswer, handleSquareClick, checkWinCondition, nextTurn,
+    initializeGame,
+    askQuestion,
+    rollDice,
+    handleOpenAnswer,
+    handleManualVerification,
+    handleSquareClick,
+    checkWinCondition,
+    nextTurn
+} from './game-flow.js';
+import {
+    generateCategories,
+    verifyIncorrectAnswer,
     handleSuggestAlternatives
-} from './game.js';
+} from './game-api.js';
 import {CATEGORY_PRESETS} from "./config.js";
 
 
