@@ -7,7 +7,7 @@ DATABASE_FILE = "/app/data/questions.db"
 
 def get_db_connection():
     """Returns oan asynchronous database connection object (not yet connected)."""
-    conn = aisqlite.connect(DATABASE_FILE, timeout=10)
+    conn = aiosqlite.connect(DATABASE_FILE, timeout=10)
     return conn
 
 async def init_db():
