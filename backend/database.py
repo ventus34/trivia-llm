@@ -3,11 +3,11 @@ import json
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-DATABASE_FILE = "questions.db"
+DATABASE_FILE = "/app/data/questions.db"
 
 def get_db_connection():
-    """Returns an asynchronous database connection object (not yet connected)."""
-    conn = aiosqlite.connect(DATABASE_FILE, timeout=10)
+    """Returns oan asynchronous database connection object (not yet connected)."""
+    conn = aisqlite.connect(DATABASE_FILE, timeout=10)
     return conn
 
 async def init_db():
