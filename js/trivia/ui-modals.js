@@ -9,8 +9,9 @@ import { UI } from './dom.js';
 import { renderExplanation } from './explanations.js';
 import { uiHandlers } from './ui-handlers.js';
 import { saveGameState } from './persistence.js';
-import { showNotification } from './ui-notifications.js';
+import { notify } from './error-bus.js';
 import { emit } from './store.js';
+import { getApiAdapter } from './services/api-service.js';
 
 /**
  * Displays the modal for choosing a category (used when on the HUB square).
@@ -110,7 +111,8 @@ export async function showMutationScreen() {
     try {
         const oldCategory = gameState.categories[categoryIndex];
         const otherCategories = gameState.categories.filter((c, i) => i !== categoryIndex);
-        const choices = await gameState.api.getCategoryMutationChoices(oldCategory, otherCategories);
+        const api = getApiAdapter();
+        const choices = await api.getCategoryMutationChoices(oldCategory, otherCategories);
 
         UI.mutationLoader.classList.add('hidden');
         UI.mutationButtons.classList.remove('hidden');
@@ -131,7 +133,7 @@ export async function showMutationScreen() {
                 if (!gameState.categoryTopicHistory[newCategoryName]) {
                     gameState.categoryTopicHistory[newCategoryName] = { subcategories: [], entities: [] };
                 }
-                showNotification({ title: translations.category_mutated[gameState.currentLanguage], body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategoryName) }, 'info');
+                notify({ title: translations.category_mutated[gameState.currentLanguage], body: translations.new_category_msg[gameState.currentLanguage].replace('{old_cat}', oldCategory).replace('{new_cat}', newCategoryName) }, 'info');
 
                 closePopupAndContinue();
             };
@@ -139,7 +141,7 @@ export async function showMutationScreen() {
         });
     } catch (error) {
         console.error("Category mutation failed:", error);
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: "Failed to mutate category." }, 'error');
+        notify({ title: translations.api_error[gameState.currentLanguage], body: "Failed to mutate category." }, 'error');
         closePopupAndContinue();
     }
 }

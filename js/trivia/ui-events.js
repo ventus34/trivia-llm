@@ -5,6 +5,7 @@
 
 import { UI } from './dom.js';
 import { gameState } from './state.js';
+import { getApiAdapter } from './services/api-service.js';
 import {
     setLanguage,
     updateDescriptions,
@@ -42,10 +43,12 @@ export function setupEventListeners() {
     UI.knowledgeLevelSelect.addEventListener('change', updateDescriptions);
 
     UI.includeThemeToggle.addEventListener('change', () => {
-        if (gameState.api.saveSettings) gameState.api.saveSettings();
+        const api = getApiAdapter();
+        if (api && api.saveSettings) api.saveSettings();
     });
     UI.mutateCategoriesToggle.addEventListener('change', () => {
-        if (gameState.api.saveSettings) gameState.api.saveSettings();
+        const api = getApiAdapter();
+        if (api && api.saveSettings) api.saveSettings();
     });
 
     UI.generateCategoriesBtn.addEventListener('click', generateCategories);
@@ -98,7 +101,8 @@ export function setupEventListeners() {
 
             if (UI.includeThemeToggle) {
                 UI.includeThemeToggle.checked = true;
-                if (gameState.api.saveSettings) gameState.api.saveSettings();
+                const api = getApiAdapter();
+                if (api && api.saveSettings) api.saveSettings();
             }
         }
     });

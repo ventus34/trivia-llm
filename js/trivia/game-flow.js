@@ -4,7 +4,7 @@
  */
 
 import { CONFIG, translations } from './config.js';
-import { gameState } from './state.js';
+import { gameState, setState } from './state.js';
 import { UI } from './dom.js';
 import { createBoardLayout, findPossibleMoves } from './board.js';
 import {
@@ -20,8 +20,9 @@ import {
 } from './ui-board.js';
 import { renderExplanation } from './explanations.js';
 import { saveGameState } from './persistence.js';
-import { showNotification } from './ui-notifications.js';
+import { notify } from './error-bus.js';
 import { emit } from './store.js';
+import { getApiAdapter } from './services/api-service.js';
 
 function generateGameId() {
     return 'game-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
@@ -38,7 +39,7 @@ export function initializeGame() {
     const categories = Array.from(document.querySelectorAll('#categories-container .category-input')).map(input => input.value.trim());
 
     if (categories.some(c => c === '')) {
-        showNotification({ title: "Setup Error", body: translations.min_categories_alert[gameState.currentLanguage] }, 'error');
+        notify({ title: "Setup Error", body: translations.min_categories_alert[gameState.currentLanguage] }, 'error');
         return;
     }
 
@@ -118,7 +119,8 @@ export async function askQuestion(forcedCategoryIndex = null) {
     UI.mcqOptionsContainer.innerHTML = '';
 
     try {
-        const data = await gameState.api.generateQuestion(category);
+        const api = getApiAdapter();
+        const data = await api.generateQuestion(category);
         gameState.currentQuestionData = data;
         UI.questionTextP.textContent = data.question;
 
@@ -140,15 +142,15 @@ export async function askQuestion(forcedCategoryIndex = null) {
         UI.questionContent.classList.remove('hidden');
         UI.llmLoader.classList.add('hidden');
 
-        if (gameState.api.preloadQuestions) {
+        if (api && api.preloadQuestions) {
             console.log("Triggering question preload while player is thinking...");
-            gameState.api.preloadQuestions();
+            api.preloadQuestions();
         }
 
     } catch (error) {
         console.error('Question generation error:', error);
         const errorMessage = error.message || translations.question_generation_error[gameState.currentLanguage];
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: errorMessage }, 'error');
+        notify({ title: translations.api_error[gameState.currentLanguage], body: errorMessage }, 'error');
 
         UI.llmLoader.classList.add('hidden');
         UI.questionTextP.textContent = translations.question_generation_error[gameState.currentLanguage];
@@ -225,8 +227,8 @@ export async function handleSquareClick(squareId) {
  * Proceeds to the next player's turn.
  */
 export function nextTurn() {
-    gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
-    emit('state:update');
+    const nextIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+    setState({ currentPlayerIndex: nextIndex });
 
     UI.diceResultDiv.querySelector('span').textContent = translations.roll_to_start[gameState.currentLanguage];
     UI.diceElement.disabled = false;
@@ -261,7 +263,7 @@ export function handleMcqAnswer(selectedOption) {
 export function handleOpenAnswer() {
     const userAnswer = UI.answerInput.value.trim();
     if (!userAnswer) {
-        showNotification({ title: "Input Error", body: translations.empty_answer_error[gameState.currentLanguage] }, 'error');
+        notify({ title: "Input Error", body: translations.empty_answer_error[gameState.currentLanguage] }, 'error');
         return;
     }
     hideModal();

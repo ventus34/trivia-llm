@@ -4,9 +4,8 @@
  * It initializes the game and sets up all event listeners.
  */
 
-import { gameState } from './state.js';
 import { UI } from './dom.js';
-import { showNotification } from './ui-notifications.js';
+import { notify } from './error-bus.js';
 import {
     setLanguage, populatePresetSelector,
     registerUIHandlers
@@ -23,6 +22,7 @@ import {
 import { handleSuggestAlternatives } from './game-api.js';
 import { setupEventListeners } from './ui-events.js';
 import { setupStateSubscriptions } from './ui-state.js';
+import { setApiAdapter, getApiAdapter } from './services/api-service.js';
 
 
 /**
@@ -41,13 +41,11 @@ export async function fetchWithErrorHandling(url, options) {
     } catch (error) {
         console.error('Network error:', error);
         // Show a user-friendly error message
-        if (typeof showNotification === 'function') {
-            showNotification(
-                { title: 'Network Error', body: 'Please check your internet connection and try again.' },
-                'error',
-                5000
-            );
-        }
+        notify(
+            { title: 'Network Error', body: 'Please check your internet connection and try again.' },
+            'error',
+            5000
+        );
         throw error;
     }
 }
@@ -57,7 +55,7 @@ export async function fetchWithErrorHandling(url, options) {
  * @param {object} apiAdapter - An object with methods for communicating with the backend.
  */
 export async function initializeApp(apiAdapter) {
-    gameState.api = apiAdapter;
+    setApiAdapter(apiAdapter);
 
     registerUIHandlers({
         handleSquareClick,
@@ -80,8 +78,9 @@ export async function initializeApp(apiAdapter) {
         });
     }
 
-    if (gameState.api.loadSettings) {
-        gameState.api.loadSettings();
+    const api = getApiAdapter();
+    if (api && api.loadSettings) {
+        api.loadSettings();
     }
 
     if (shouldLoadGame && savedGame) {

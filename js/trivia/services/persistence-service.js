@@ -10,7 +10,7 @@ import { createBoardLayout } from '../board.js';
 import { setLanguage } from '../ui.js';
 import { renderBoard } from '../ui-board.js';
 import { emit } from '../store.js';
-import { showNotification } from '../ui-notifications.js';
+import { notify } from '../error-bus.js';
 
 /**
  * Creates a "clean" version of the game state for saving.
@@ -104,13 +104,13 @@ export function handleStateUpload(event) {
             const loadedState = JSON.parse(e.target.result);
             if (loadedState && loadedState.players && loadedState.categories) {
                 restoreGameState(loadedState);
-                showNotification({ title: "Success", body: translations.game_loaded_success[gameState.currentLanguage] }, 'success');
+                notify({ title: "Success", body: translations.game_loaded_success[gameState.currentLanguage] }, 'success');
             } else {
                 throw new Error("Invalid game state format.");
             }
         } catch (error) {
             console.error("Failed to load or parse game state:", error);
-            showNotification({ title: "Error", body: translations.game_loaded_error[gameState.currentLanguage] }, 'error');
+            notify({ title: "Error", body: translations.game_loaded_error[gameState.currentLanguage] }, 'error');
         } finally {
             event.target.value = '';
         }

@@ -6,21 +6,22 @@
 import { translations } from './config.js';
 import { gameState } from './state.js';
 import { UI } from './dom.js';
-import { showNotification } from './ui-notifications.js';
+import { notify } from './error-bus.js';
 import { updateCategoryInputs, autoResizeTextarea } from './ui.js';
+import { getApiAdapter, isApiConfigured } from './services/api-service.js';
 
 /**
  * Handles the click event for the category suggestion button.
  */
 export async function handleSuggestAlternatives(targetTextarea) {
-    if (!gameState.api.isConfigured()) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
+    if (!isApiConfigured()) {
+        notify({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
         return;
     }
 
     const oldCategory = targetTextarea.value.trim();
     if (!oldCategory) {
-        showNotification({ title: "Input Required", body: translations.suggestion_input_needed[gameState.currentLanguage] }, 'info');
+        notify({ title: "Input Required", body: translations.suggestion_input_needed[gameState.currentLanguage] }, 'info');
         return;
     }
 
@@ -36,7 +37,8 @@ export async function handleSuggestAlternatives(targetTextarea) {
         .filter(cat => cat !== oldCategory && cat !== '');
 
     try {
-        const choices = await gameState.api.getCategoryMutationChoices(oldCategory, existingCategories);
+        const api = getApiAdapter();
+        const choices = await api.getCategoryMutationChoices(oldCategory, existingCategories);
 
         UI.suggestionLoader.classList.add('hidden');
         UI.suggestionButtons.classList.remove('hidden');
@@ -54,9 +56,10 @@ export async function handleSuggestAlternatives(targetTextarea) {
                 targetTextarea.value = choice.name;
                 autoResizeTextarea(targetTextarea);
                 UI.suggestionModal.classList.remove('visible');
-                if (gameState.api.preloadQuestions) {
+                const api = getApiAdapter();
+                if (api && api.preloadQuestions) {
                     console.log("Question preload on game start..");
-                    gameState.api.preloadQuestions();
+                    api.preloadQuestions();
                 }
             };
             UI.suggestionButtons.appendChild(button);
@@ -67,7 +70,7 @@ export async function handleSuggestAlternatives(targetTextarea) {
         UI.suggestionLoader.classList.add('hidden');
         UI.suggestionButtons.classList.remove('hidden');
         UI.suggestionButtons.textContent = translations.suggestion_error[gameState.currentLanguage];
-        showNotification({ title: "API Error", body: "Could not generate suggestions." }, 'error');
+        notify({ title: "API Error", body: "Could not generate suggestions." }, 'error');
     }
 }
 
@@ -78,8 +81,8 @@ export async function generateCategories() {
     const theme = UI.themeInput.value.trim();
     if (!theme) return;
 
-    if (!gameState.api.isConfigured()) {
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
+    if (!isApiConfigured()) {
+        notify({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
         return;
     }
 
@@ -88,12 +91,13 @@ export async function generateCategories() {
     UI.generateCategoriesBtn.disabled = true;
 
     try {
-        const generatedCats = await gameState.api.generateCategories(theme);
+        const api = getApiAdapter();
+        const generatedCats = await api.generateCategories(theme);
         updateCategoryInputs(generatedCats.slice(0, 6));
     } catch (error) {
         console.error("Category generation error:", error);
         const errorMessage = error.message || translations.generate_categories_error[gameState.currentLanguage];
-        showNotification({ title: translations.api_error[gameState.currentLanguage], body: errorMessage }, 'error');
+        notify({ title: translations.api_error[gameState.currentLanguage], body: errorMessage }, 'error');
     } finally {
         UI.generateCategoriesBtn.textContent = originalBtnText;
         UI.generateCategoriesBtn.disabled = false;
@@ -106,7 +110,8 @@ export async function verifyIncorrectAnswer() {
 
     if (UI.llmEvaluationContainer) UI.llmEvaluationContainer.classList.add('hidden');
     try {
-        const responseData = await gameState.api.getIncorrectAnswerExplanation();
+        const api = getApiAdapter();
+        const responseData = await api.getIncorrectAnswerExplanation();
 
         UI.incorrectExplanationText.innerHTML = (responseData.explanation || translations.incorrect_answer_analysis_error[gameState.currentLanguage]).replace(/\n/g, '<br>');
 
