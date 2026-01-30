@@ -6,7 +6,20 @@ class BaseModelWithModel(BaseModel):
     gameId: str
 
 from pydantic import BaseModel, field_validator
-import re
+
+def is_theme_valid(value: str) -> bool:
+    if value is None:
+        return True
+    # Rule 1: Max 8 words
+    words = value.split()
+    if len(words) > 8:
+        return False
+    # Rule 2: Allow letters (unicode), numbers, basic punctuation and spaces
+    for ch in value:
+        if ch.isalnum() or ch.isspace() or ch in {'-', '.', ',', '<', '>'}:
+            continue
+        return False
+    return True
 
 class GenerateCategoriesRequest(BaseModel):
     model: str
@@ -19,13 +32,8 @@ class GenerateCategoriesRequest(BaseModel):
     def validate_theme(cls, v: str) -> str:
         if not v:
             return v
-        # Rule 1: Max 8 words
-        words = v.split()
-        if len(words) > 8:
-            raise ValueError("Theme must be at most 8 words")
-        # Rule 2: Allow only letters, numbers, and basic characters: -, ., ,, <>, and spaces
-        if not re.match(r'^[a-zA-Z0-9\-\.\,\<\>\s]*$', v):
-            raise ValueError("Theme contains invalid characters")
+        if not is_theme_valid(v):
+            raise ValueError("Theme must be at most 8 words and contain only letters, numbers, spaces, and -.,<>")
         return v
 
 class QuestionRequest(BaseModelWithModel):
@@ -41,11 +49,8 @@ class QuestionRequest(BaseModelWithModel):
     def validate_theme(cls, v: Optional[str]) -> Optional[str]:
         if not v:
             return v
-        words = v.split()
-        if len(words) > 8:
-            raise ValueError("Theme must be at most 8 words")
-        if not re.match(r'^[a-zA-Z0-9\-\.\,\<\>\s]*$', v):
-            raise ValueError("Theme contains invalid characters")
+        if not is_theme_valid(v):
+            raise ValueError("Theme must be at most 8 words and contain only letters, numbers, spaces, and -.,<>")
         return v
 
 class ExplanationRequest(BaseModelWithModel):
@@ -66,11 +71,8 @@ class MutationRequest(BaseModel):
     def validate_theme(cls, v: Optional[str]) -> Optional[str]:
         if not v:
             return v
-        words = v.split()
-        if len(words) > 8:
-            raise ValueError("Theme must be at most 8 words")
-        if not re.match(r'^[a-zA-Z0-9\-\.\,\<\>\s]*$', v):
-            raise ValueError("Theme contains invalid characters")
+        if not is_theme_valid(v):
+            raise ValueError("Theme must be at most 8 words and contain only letters, numbers, spaces, and -.,<>")
         return v
 
 class PreloadRequest(BaseModelWithModel):
@@ -86,9 +88,6 @@ class PreloadRequest(BaseModelWithModel):
     def validate_theme(cls, v: Optional[str]) -> Optional[str]:
         if not v:
             return v
-        words = v.split()
-        if len(words) > 8:
-            raise ValueError("Theme must be at most 8 words")
-        if not re.match(r'^[a-zA-Z0-9\-\.\,\<\>\s]*$', v):
-            raise ValueError("Theme contains invalid characters")
+        if not is_theme_valid(v):
+            raise ValueError("Theme must be at most 8 words and contain only letters, numbers, spaces, and -.,<>")
         return v
