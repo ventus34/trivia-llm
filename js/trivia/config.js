@@ -472,6 +472,8 @@ export const translations = {
     theme_light_label: { pl: "Jasny", en: "Light" },
     theme_dark_label: { pl: "Ciemny", en: "Dark" },
     theme_oled_label: { pl: "OLED", en: "OLED" },
+    language_pl: { pl: "Polski", en: "Polish" },
+    language_en: { pl: "English", en: "English" },
     game_loaded_success: { pl: "Gra wczytana pomyślnie!", en: "Game loaded successfully!" },
     game_loaded_error: { pl: "Błąd wczytywania pliku. Upewnij się, że to poprawny plik zapisu.", en: "Error loading file. Make sure it's a valid save file." }
 };

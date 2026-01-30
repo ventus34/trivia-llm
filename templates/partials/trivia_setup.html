@@ -2,8 +2,8 @@
     <div class="flex-shrink-0">
         <div class="flex justify-center mb-4">
             <div class="inline-flex rounded-md shadow-sm">
-                <button id="lang-pl" class="lang-btn px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">Polski</button>
-                <button id="lang-en" class="lang-btn -ml-px px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">English</button>
+                <button id="lang-pl" data-lang-key="language_pl" class="lang-btn px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">Polski</button>
+                <button id="lang-en" data-lang-key="language_en" class="lang-btn -ml-px px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">English</button>
             </div>
         </div>
         <h1 data-lang-key="setup_title" class="text-3xl font-bold text-center text-gray-900 mb-6">Ustawienia</h1>
@@ -36,7 +36,7 @@
                 <div>
                     <label data-lang-key="category_theme_label" class="block text-sm font-medium text-gray-700">Temat do generacji kategorii (opcjonalnie)</label>
                     <div class="flex gap-2 mt-1">
-                        <input type="text" id="theme-input" data-lang-key="category_theme_placeholder" placeholder="Wpisz motyw, np. Władca Pierścieni" class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                        <input type="text" id="theme-input" data-lang-key="category_theme_placeholder" placeholder="Wpisz motyw" class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
                         <button id="generate-categories-btn" data-lang-key="category_generator_btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 active:bg-indigo-800 transition-colors themed-button">Generuj</button>
                     </div>
                 </div>

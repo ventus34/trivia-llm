@@ -72,6 +72,20 @@ export function setLanguage(lang) {
         }
     });
 
+    document.querySelectorAll('[data-lang-key][title]').forEach(el => {
+        const key = el.dataset.langKey;
+        if (translations[key] && translations[key][lang]) {
+            el.title = translations[key][lang];
+        }
+    });
+
+    document.querySelectorAll('[data-title-lang-key]').forEach(el => {
+        const key = el.dataset.titleLangKey;
+        if (translations[key] && translations[key][lang]) {
+            el.title = translations[key][lang];
+        }
+    });
+
     if (UI.suggestionModalTitle) {
         UI.suggestionModalTitle.textContent = translations.suggestion_modal_title[lang];
     }

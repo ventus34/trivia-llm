@@ -69,6 +69,11 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
         UI.playerAnswerText.classList.add('bg-red-100');
         UI.correctAnswerText.classList.remove('bg-green-100', 'bg-red-100');
         UI.correctAnswerText.classList.add('bg-red-100');
+
+        UI.incorrectExplanationContainer.classList.remove('hidden');
+        const api = getApiAdapter();
+        const canVerify = api && typeof api.getIncorrectAnswerExplanation === 'function';
+        UI.verifyAnswerBtn.classList.toggle('hidden', !canVerify);
     }
 
     renderExplanation({
