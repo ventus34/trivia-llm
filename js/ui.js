@@ -1,6 +1,6 @@
 /**
  * @file ui.js
- * Handles all UI rendering, updates, notifications, and modal management.
+ * Facade for trivia UI modules.
  */
 
 import { gameState } from './state.js';
