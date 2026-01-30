@@ -184,7 +184,7 @@ window.LiveQuizPlayer = (function(Common) {
                             setTimeout(() => {
                                 const answerStatus = document.getElementById('answer-status');
                                 if (answerStatus) {
-                                    answerStatus.innerHTML = '<div class="text-sm text-green-400">✓ Answer submitted!</div>';
+                                    answerStatus.innerHTML = `<div class="text-sm text-green-400">${Common.getTranslation('answer_submitted_text')}</div>`;
                                 }
                                 
                                 // Disable all buttons
@@ -364,7 +364,7 @@ window.LiveQuizPlayer = (function(Common) {
                         // Show that they've already answered
                         const answerStatus = document.getElementById('answer-status');
                         if (answerStatus) {
-                            answerStatus.innerHTML = '<div class="text-sm text-green-400">✓ Answer submitted!</div>';
+                            answerStatus.innerHTML = `<div class="text-sm text-green-400">${Common.getTranslation('answer_submitted_text')}</div>`;
                         }
                         // Disable answer buttons
                         setTimeout(() => {
@@ -659,7 +659,7 @@ window.LiveQuizPlayer = (function(Common) {
     }
 
     function showTimerPaused() {
-        Common.showNotification('Timer paused by host', 'info');
+        Common.showNotification(Common.getTranslation('timer_paused_by_host'), 'info');
         const timerElement = document.getElementById('timer');
         if (timerElement) {
             timerElement.textContent = '⏸️';
@@ -673,7 +673,7 @@ window.LiveQuizPlayer = (function(Common) {
     }
 
     function showTimerResumed() {
-        Common.showNotification('Timer resumed', 'info');
+        Common.showNotification(Common.getTranslation('timer_resumed'), 'info');
         
         // Sync to player fullscreen if active
         const fullscreenTimer = document.getElementById('player-fullscreen-timer');
@@ -698,7 +698,7 @@ window.LiveQuizPlayer = (function(Common) {
         // Update status
         const answerStatus = document.getElementById('answer-status');
         if (answerStatus) {
-            answerStatus.innerHTML = '<div class="text-sm text-green-400">✓ Answer submitted!</div>';
+            answerStatus.innerHTML = `<div class="text-sm text-green-400">${Common.getTranslation('answer_submitted_text')}</div>`;
         }
         
         try {
@@ -745,11 +745,11 @@ window.LiveQuizPlayer = (function(Common) {
         const fullscreenAnswerStatus = document.getElementById('player-fullscreen-answer-status');
         
         if (answerStatus) {
-            answerStatus.innerHTML = '<div class="text-sm text-gray-400">⏭️ Question skipped</div>';
+            answerStatus.innerHTML = `<div class="text-sm text-gray-400">${Common.getTranslation('question_skipped_text')}</div>`;
         }
         
         if (fullscreenAnswerStatus) {
-            fullscreenAnswerStatus.innerHTML = '<div class="text-lg text-gray-400">⏭️ Question skipped</div>';
+            fullscreenAnswerStatus.innerHTML = `<div class="text-lg text-gray-400">${Common.getTranslation('question_skipped_text')}</div>`;
         }
         
         try {
@@ -778,12 +778,12 @@ window.LiveQuizPlayer = (function(Common) {
         
         if (isSkipped) {
             if (resultIcon) resultIcon.textContent = '⏭️';
-            if (resultTitle) resultTitle.textContent = 'Skipped';
-            if (resultMessage) resultMessage.textContent = 'You skipped this question';
+            if (resultTitle) resultTitle.textContent = Common.getTranslation('skipped_title');
+            if (resultMessage) resultMessage.textContent = Common.getTranslation('skipped_message');
         } else {
             if (resultIcon) resultIcon.textContent = wasCorrect ? '✅' : '❌';
-            if (resultTitle) resultTitle.textContent = wasCorrect ? 'Correct!' : 'Incorrect';
-            if (resultMessage) resultMessage.textContent = wasCorrect ? 'Great job!' : 'Better luck next time!';
+            if (resultTitle) resultTitle.textContent = wasCorrect ? Common.getTranslation('correct_title') : Common.getTranslation('incorrect_title');
+            if (resultMessage) resultMessage.textContent = wasCorrect ? Common.getTranslation('correct_message') : Common.getTranslation('incorrect_message');
         }
         
         // Show answers (hide if skipped)

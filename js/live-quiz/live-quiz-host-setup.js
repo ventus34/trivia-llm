@@ -29,6 +29,19 @@ window.LiveQuizHostSetup = (function(Common) {
                     // Fallback if no models available
                     questionModelSelect.innerHTML = '<option value="default">Default Model</option>';
                 }
+
+                // Restore saved model selection if available
+                try {
+                    const saved = localStorage.getItem('liveQuizSetup');
+                    if (saved) {
+                        const setup = JSON.parse(saved);
+                        if (setup.questionModel) {
+                            questionModelSelect.value = setup.questionModel;
+                        }
+                    }
+                } catch (error) {
+                    console.log('Failed to restore saved question model:', error);
+                }
             }
             
             console.log('Models loaded successfully');
@@ -52,7 +65,7 @@ window.LiveQuizHostSetup = (function(Common) {
         const formElements = [
             'knowledge-level', 'language', 'theme',
             'include-theme', 'questions-per-category',
-            'answer-time', 'auto-advance-time', 'auto-advance-slider'
+            'answer-time', 'auto-advance-slider', 'question-model'
         ];
         formElements.forEach(id => {
             const element = document.getElementById(id);
@@ -132,6 +145,7 @@ window.LiveQuizHostSetup = (function(Common) {
 
     function setupLanguageChange() {
         document.getElementById('language')?.addEventListener('change', () => {
+            Common.setLanguage(document.getElementById('language').value);
             Common.populateCategoryPresets();
             Common.saveGameSetup();
         });
@@ -156,6 +170,7 @@ window.LiveQuizHostSetup = (function(Common) {
         
         Common.showLoading('Creating room...');
         try {
+            const selectedQuestionModel = document.getElementById('question-model')?.value || 'trivia';
             const response = await Common.apiCall('/api/live-quiz/create-room', 'POST', {
                 categories: categories,
                 game_mode: 'mcq', // Always multiple choice
@@ -163,7 +178,7 @@ window.LiveQuizHostSetup = (function(Common) {
                 language: document.getElementById('language').value,
                 theme: document.getElementById('theme').value.trim() || null,
                 include_category_theme: document.getElementById('include-theme').checked,
-                selected_question_model: "trivia",
+                selected_question_model: selectedQuestionModel,
                 selected_explanation_model: 'OR:.google/gemini-3-flash-preview', // Default value
                 selected_category_model: 'OR:.google/gemini-3-flash-preview', // Default value
                 questions_per_category: questionsPerCategory,
@@ -204,6 +219,8 @@ window.LiveQuizHostSetup = (function(Common) {
 
     function init() {
         setupEventListeners();
+        Common.setLanguage(document.getElementById('language')?.value || Common.getPreferredLanguage());
+        loadModels();
     }
 
     return {

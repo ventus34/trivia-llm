@@ -142,13 +142,13 @@ window.LiveQuizHostGame = (function(Common) {
         // Reset results toggle button text
         const toggleResultsBtn = document.getElementById('toggle-results');
         if (toggleResultsBtn) {
-            toggleResultsBtn.textContent = '📋 Show Explanation';
+            toggleResultsBtn.textContent = Common.getTranslation('toggle_results_btn');
         }
         
         // Reset fullscreen results toggle button text
         const fullscreenToggleResultsBtn = document.getElementById('fullscreen-toggle-results');
         if (fullscreenToggleResultsBtn) {
-            fullscreenToggleResultsBtn.textContent = '📋 Show Explanation';
+            fullscreenToggleResultsBtn.textContent = Common.getTranslation('toggle_results_btn');
         }
         
         // Remove any previous answer highlighting
@@ -393,10 +393,10 @@ window.LiveQuizHostGame = (function(Common) {
         if (questionResults && toggleBtn) {
             if (questionResults.classList.contains('hidden')) {
                 questionResults.classList.remove('hidden');
-                toggleBtn.textContent = '📋 Hide Explanation';
+                toggleBtn.textContent = Common.getTranslation('toggle_results_hide_btn');
             } else {
                 questionResults.classList.add('hidden');
-                toggleBtn.textContent = '📋 Show Explanation';
+                toggleBtn.textContent = Common.getTranslation('toggle_results_btn');
             }
         }
     }
@@ -409,10 +409,10 @@ window.LiveQuizHostGame = (function(Common) {
         if (questionResults && toggleBtn) {
             if (questionResults.classList.contains('hidden')) {
                 questionResults.classList.remove('hidden');
-                toggleBtn.textContent = '📋 Hide Explanation';
+                toggleBtn.textContent = Common.getTranslation('toggle_results_hide_btn');
             } else {
                 questionResults.classList.add('hidden');
-                toggleBtn.textContent = '📋 Show Explanation';
+                toggleBtn.textContent = Common.getTranslation('toggle_results_btn');
             }
         }
     }

@@ -77,7 +77,7 @@ window.LiveQuizHostResults = (function(Common) {
             // Show winner highlight
             const winner = nonHostScores[0];
             if (winnerHighlight && winnerName) {
-                winnerName.textContent = `${winner.name} (${winner.score} points)`;
+                winnerName.textContent = `${winner.name} (${winner.score} ${Common.getTranslation('points_label')})`;
                 winnerHighlight.classList.remove('hidden');
             }
         } else {
@@ -85,8 +85,8 @@ window.LiveQuizHostResults = (function(Common) {
             const noPlayersElement = document.createElement('tr');
             noPlayersElement.innerHTML = `
                 <td colspan="3" class="py-6 px-4 text-center text-gray-400">
-                    <h2 class="text-xl font-bold text-white mb-2">No Players Participated</h2>
-                    <p>No non-host players joined the game</p>
+                    <h2 class="text-xl font-bold text-white mb-2">${Common.getTranslation('no_players_title')}</h2>
+                    <p>${Common.getTranslation('no_players_message')}</p>
                 </td>
             `;
             finalScores.appendChild(noPlayersElement);

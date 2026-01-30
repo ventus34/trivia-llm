@@ -3,6 +3,300 @@ window.LiveQuizCommon = (function() {
     'use strict';
 
     // Category Presets are now imported from config.js or accessed via window.CATEGORY_PRESETS
+    const DEFAULT_CATEGORY_PRESETS = [
+        {
+            name: {pl: 'Wiedza Ogólna – Klasyk', en: 'General Knowledge – Classic'},
+            categories: [
+                {pl: 'Historia', en: 'History'},
+                {pl: 'Geografia', en: 'Geography'},
+                {pl: 'Nauka', en: 'Science'},
+                {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+                {pl: 'Sport', en: 'Sports'},
+                {pl: 'Media i rozrywka', en: 'Media & Entertainment'}
+            ]
+        },
+        {
+            name: {pl: 'Wiedza Ogólna – Współczesność', en: 'General Knowledge – Modern Times'},
+            categories: [
+                {pl: 'Wydarzenia bieżące', en: 'Current Events'},
+                {pl: 'Technologia', en: 'Technology'},
+                {pl: 'Popkultura', en: 'Pop Culture'},
+                {pl: 'Odkrycia naukowe', en: 'Scientific Discoveries'},
+                {pl: 'Polityka', en: 'Politics'},
+                {pl: 'Internet i media społecznościowe', en: 'Internet & Social Media'}
+            ]
+        },
+        {
+            name: {pl: 'Polska – Wiedza Ogólna', en: 'Poland – General Knowledge'},
+            categories: [
+                {pl: 'Historia', en: 'History'},
+                {pl: 'Geografia', en: 'Geography'},
+                {pl: 'Kultura i sztuka', en: 'Culture & Art'},
+                {pl: 'Znani Polacy', en: 'Famous Poles'},
+                {pl: 'Sport', en: 'Sports'},
+                {pl: 'Społeczeństwo', en: 'Society'}
+            ]
+        },
+        {
+            name: {pl: 'Polska – Lata 90.', en: 'Poland – The 90s'},
+            categories: [
+                {pl: 'Historia', en: 'History'},
+                {pl: 'Muzyka', en: 'Music'},
+                {pl: 'Film i seriale', en: 'Movies & TV'},
+                {pl: 'Życie codzienne', en: 'Everyday Life'},
+                {pl: 'Sport', en: 'Sports'},
+                {pl: 'Technologia', en: 'Technology'}
+            ]
+        },
+        {
+            name: {pl: 'Nauka – Podstawy', en: 'Science – The Basics'},
+            categories: [
+                {pl: 'Fizyka', en: 'Physics'},
+                {pl: 'Chemia', en: 'Chemistry'},
+                {pl: 'Biologia', en: 'Biology'},
+                {pl: 'Astronomia', en: 'Astronomy'},
+                {pl: 'Matematyka', en: 'Mathematics'},
+                {pl: 'Wielcy odkrywcy', en: 'Great Discoverers'}
+            ]
+        },
+        {
+            name: {pl: 'Gry wideo', en: 'Video Games'},
+            categories: [
+                {pl: 'Historia gier', en: 'History of Games'},
+                {pl: 'Serie i postacie', en: 'Series & Characters'},
+                {pl: 'Konsole', en: 'Consoles'},
+                {pl: 'Gatunki', en: 'Genres'},
+                {pl: 'Kultura graczy', en: 'Gaming Culture'},
+                {pl: 'E-sport', en: 'E-sports'}
+            ]
+        },
+        {
+            name: {pl: 'Rozrywka – Kino', en: 'Entertainment – Cinema'},
+            categories: [
+                {pl: 'Historia kina', en: 'History of Cinema'},
+                {pl: 'Gatunki filmowe', en: 'Film Genres'},
+                {pl: 'Reżyserzy', en: 'Directors'},
+                {pl: 'Aktorzy', en: 'Actors'},
+                {pl: 'Nagrody filmowe', en: 'Film Awards'},
+                {pl: 'Kultowe filmy', en: 'Cult Movies'}
+            ]
+        },
+        {
+            name: {pl: 'Podróże – Świat', en: 'Travel – World'},
+            categories: [
+                {pl: 'Kontynenty', en: 'Continents'},
+                {pl: 'Kraje', en: 'Countries'},
+                {pl: 'Miasta', en: 'Cities'},
+                {pl: 'Zabytki', en: 'Landmarks'},
+                {pl: 'Cuda natury', en: 'Natural Wonders'},
+                {pl: 'Kultury i tradycje', en: 'Cultures & Traditions'}
+            ]
+        },
+        {
+            name: {pl: 'Kuchnia Polska', en: 'Polish Cuisine'},
+            categories: [
+                {pl: 'Dania główne', en: 'Main Courses'},
+                {pl: 'Zupy', en: 'Soups'},
+                {pl: 'Przystawki', en: 'Appetizers'},
+                {pl: 'Desery', en: 'Desserts'},
+                {pl: 'Święta i tradycje kulinarne', en: 'Holiday & Traditional Foods'},
+                {pl: 'Znane potrawy regionalne', en: 'Famous Regional Dishes'}
+            ]
+        },
+        {
+            name: {pl: 'Sport – Ogólne', en: 'Sport – General'},
+            categories: [
+                {pl: 'Igrzyska olimpijskie', en: 'Olympic Games'},
+                {pl: 'Piłka nożna', en: 'Football (Soccer)'},
+                {pl: 'Koszykówka', en: 'Basketball'},
+                {pl: 'Lekkoatletyka', en: 'Athletics'},
+                {pl: 'Sporty zimowe', en: 'Winter Sports'},
+                {pl: 'Znani sportowcy', en: 'Famous Athletes'}
+            ]
+        }
+    ];
+
+    if (!window.CATEGORY_PRESETS) {
+        window.CATEGORY_PRESETS = DEFAULT_CATEGORY_PRESETS;
+    }
+
+    const TRANSLATIONS = {
+        live_quiz_host_title: { pl: '🎯 Live Quiz - Host', en: '🎯 Live Quiz - Host' },
+        live_quiz_setup_title: { pl: 'Ustawienia gry', en: 'Game Setup' },
+        knowledge_level_label: { pl: 'Poziom wiedzy', en: 'Knowledge Level' },
+        knowledge_level_basic: { pl: 'Podstawowy', en: 'Basic' },
+        knowledge_level_intermediate: { pl: 'Średniozaawansowany', en: 'Intermediate' },
+        knowledge_level_expert: { pl: 'Ekspercki', en: 'Expert' },
+        language_label: { pl: 'Język', en: 'Language' },
+        language_pl: { pl: 'Polski', en: 'Polish' },
+        language_en: { pl: 'English', en: 'English' },
+        questions_per_category_label: { pl: 'Pytania na kategorię', en: 'Questions per Category' },
+        answer_time_label: { pl: 'Czas odpowiedzi', en: 'Answer Time' },
+        seconds_label: { pl: 'sekund', en: 'seconds' },
+        question_model_label: { pl: 'Model pytań', en: 'Question Model' },
+        question_model_loading: { pl: 'Ładowanie modeli...', en: 'Loading models...' },
+        theme_label: { pl: 'Motyw (opcjonalnie)', en: 'Theme (Optional)' },
+        theme_placeholder: { pl: 'np. Władca Pierścieni', en: 'e.g., Lord of the Rings' },
+        include_theme_label: { pl: 'Uwzględnij motyw w pytaniach', en: 'Include theme in questions' },
+        category_presets_label: { pl: 'Gotowe zestawy kategorii', en: 'Category Presets' },
+        category_preset_placeholder: { pl: 'Wybierz zestaw...', en: 'Choose a preset...' },
+        load_preset_btn: { pl: 'Wczytaj zestaw', en: 'Load Preset' },
+        generate_categories_btn: { pl: 'Generuj kategorie', en: 'Generate Categories' },
+        categories_required_label: { pl: 'Kategorie (wymagane 6)', en: 'Categories (6 required)' },
+        category_1_placeholder: { pl: 'Kategoria 1', en: 'Category 1' },
+        category_2_placeholder: { pl: 'Kategoria 2', en: 'Category 2' },
+        category_3_placeholder: { pl: 'Kategoria 3', en: 'Category 3' },
+        category_4_placeholder: { pl: 'Kategoria 4', en: 'Category 4' },
+        category_5_placeholder: { pl: 'Kategoria 5', en: 'Category 5' },
+        category_6_placeholder: { pl: 'Kategoria 6', en: 'Category 6' },
+        create_room_btn: { pl: '🎮 Utwórz pokój', en: '🎮 Create Room' },
+        how_to_play_title: { pl: '🎯 Jak grać', en: '🎯 How to Play' },
+        how_to_play_setup_title: { pl: 'Ustawienia', en: 'Setup' },
+        how_to_play_setup_item_1: { pl: '• Wybierz język, poziom wiedzy i czas na pytanie.', en: '• Choose language, knowledge level and time per question.' },
+        how_to_play_setup_item_2: { pl: '• Wybierz lub wygeneruj 6 kategorii (wymagane).', en: '• Pick or generate 6 categories (required for the game).' },
+        how_to_play_setup_item_3: { pl: '• Opcjonalnie dodaj motyw dla generowanych pytań.', en: '• Optionally add a theme to shape generated questions.' },
+        how_to_play_invite_title: { pl: 'Zapraszanie graczy', en: 'Invite players' },
+        how_to_play_invite_item_1: { pl: '• Utwórz pokój, aby uzyskać kod i link dołączenia.', en: '• Create a room to get a 6-digit code and join link.' },
+        how_to_play_invite_item_2: { pl: '• Wyświetl kod QR na ekranie głównym.', en: '• Show the QR code on the main screen.' },
+        how_to_play_invite_item_3: { pl: '• Gracze dołączają kodem lub QR.', en: '• Players join on their phones with the code or QR.' },
+        how_to_play_during_title: { pl: 'W trakcie pytań', en: 'During questions' },
+        how_to_play_during_item_1: { pl: '• Pytania pojawiają się na telefonach z 4 opcjami.', en: '• Each question appears on players’ devices with up to 4 options.' },
+        how_to_play_during_item_2: { pl: '• Użyj pauzy/wznowienia timera w razie potrzeby.', en: '• Use the timer controls to pause, resume or extend the time.' },
+        how_to_play_during_item_3: { pl: '• Możesz odświeżyć pytanie lub pokazać wyjaśnienie.', en: '• You can regenerate a question or show the explanation when ready.' },
+        how_to_play_during_item_4: { pl: '• Auto-przejście uruchomi kolejne pytanie po zwłoce.', en: '• Auto-advance can move to the next question after a short delay.' },
+        how_to_play_scores_title: { pl: 'Wyniki', en: 'Scores & results' },
+        how_to_play_scores_item_1: { pl: '• Na panelu bocznym widać status odpowiedzi i wyniki.', en: '• Track live scores and answer status in the side panel.' },
+        how_to_play_scores_item_2: { pl: '• Ekran końcowy pokazuje ranking.', en: '• Final screen shows ranking based on the current scoring rules.' },
+        how_to_play_scores_item_3: { pl: '• Najlepiej: host na dużym ekranie, gracze na telefonach.', en: '• Best experience: host view on a big screen, players answer on phones.' },
+        game_lobby_title: { pl: '🏠 Lobby gry', en: '🏠 Game Lobby' },
+        join_game_title: { pl: '📱 Dołącz do gry', en: '📱 Join Game' },
+        scan_qr_to_join: { pl: 'Zeskanuj kod QR, aby dołączyć', en: 'Scan QR code to join' },
+        room_info_title: { pl: '📋 Informacje o pokoju', en: '📋 Room Information' },
+        room_code_label: { pl: 'Kod pokoju:', en: 'Room Code:' },
+        game_id_label: { pl: 'ID gry:', en: 'Game ID:' },
+        players_label: { pl: 'Gracze:', en: 'Players:' },
+        start_game_btn: { pl: '🚀 Start gry', en: '🚀 Start Game' },
+        back_to_setup_btn: { pl: '← Wróć do ustawień', en: '← Back to Setup' },
+        connected_players_title: { pl: '👥 Podłączeni gracze', en: '👥 Connected Players' },
+        copy_room_code_title: { pl: 'Skopiuj kod pokoju', en: 'Copy room code' },
+        copy_join_link_title: { pl: 'Skopiuj link dołączenia', en: 'Copy join link' },
+        controls_title: { pl: '🎮 Sterowanie', en: '🎮 Controls' },
+        fullscreen_btn: { pl: '📺 Pełny ekran', en: '📺 Fullscreen' },
+        toggle_results_btn: { pl: '📋 Pokaż wyjaśnienie', en: '📋 Show Explanation' },
+        toggle_results_hide_btn: { pl: '📋 Ukryj wyjaśnienie', en: '📋 Hide Explanation' },
+        pause_timer_btn: { pl: '⏸️ Pauza', en: '⏸️ Pause Timer' },
+        resume_timer_btn: { pl: '▶️ Wznów', en: '▶️ Resume Timer' },
+        regenerate_question_btn: { pl: '🔄 Nowe pytanie', en: '🔄 New Question' },
+        next_question_btn: { pl: '➡️ Następne pytanie', en: '➡️ Next Question' },
+        auto_advance_label: { pl: 'Auto-przejście', en: 'Auto-advance' },
+        auto_advance_time_label: { pl: 'Czas auto-przejścia:', en: 'Auto-advance time:' },
+        answer_status_title: { pl: '📊 Status odpowiedzi', en: '📊 Answer Status' },
+        current_scores_title: { pl: '🏆 Wyniki', en: '🏆 Current Scores' },
+        game_progress_title: { pl: '📈 Postęp gry', en: '📈 Game Progress' },
+        question_label: { pl: 'Pytanie:', en: 'Question:' },
+        results_title: { pl: '📋 Wyniki', en: '📋 Results' },
+        correct_answer_label: { pl: 'Poprawna odpowiedź:', en: 'Correct Answer:' },
+        explanation_label: { pl: 'Wyjaśnienie:', en: 'Explanation:' },
+        player_votes_label: { pl: 'Głosy graczy:', en: 'Player Votes:' },
+        game_finished_title: { pl: '🎉 Koniec gry!', en: '🎉 Game Finished!' },
+        final_results_title: { pl: 'Wyniki końcowe', en: 'Final Results' },
+        position_header: { pl: 'Miejsce', en: 'Position' },
+        player_header: { pl: 'Gracz', en: 'Player' },
+        score_header: { pl: 'Wynik', en: 'Score' },
+        winner_title: { pl: '🏆 Zwycięzca!', en: '🏆 Winner!' },
+        new_game_btn: { pl: '🎮 Nowa gra', en: '🎮 New Game' },
+        exit_fullscreen_btn: { pl: '❌ Wyjdź z pełnego ekranu', en: '❌ Exit Fullscreen' },
+        no_players_title: { pl: 'Brak graczy', en: 'No Players Participated' },
+        no_players_message: { pl: 'Nie dołączyli gracze poza hostem.', en: 'No non-host players joined the game' },
+        points_label: { pl: 'pkt', en: 'points' },
+        live_quiz_player_title: { pl: '🎮 Live Quiz', en: '🎮 Live Quiz' },
+        join_game_subtitle: { pl: 'Wpisz 6-cyfrowy kod pokoju z ekranu hosta i graj na telefonie.', en: 'Enter the 6-digit room code from the host screen and play on your phone while watching the main screen.' },
+        join_game_subtitle_short: { pl: 'Wpisz kod pokoju podany przez hosta', en: 'Enter the room code provided by the host' },
+        room_code_placeholder: { pl: '123456', en: '123456' },
+        player_name_label: { pl: 'Twoje imię', en: 'Your Name' },
+        player_name_placeholder: { pl: 'Wpisz swoje imię', en: 'Enter your name' },
+        join_game_btn: { pl: 'Dołącz do gry', en: 'Join Game' },
+        join_game_hint: { pl: 'Lub zeskanuj kod QR z ekranu hosta, aby dołączyć na tym urządzeniu.', en: 'Or scan the QR code from the host screen to join instantly on this device.' },
+        join_game_hint_short: { pl: 'Lub zeskanuj kod QR, aby dołączyć automatycznie', en: 'Or scan the QR code to join automatically' },
+        waiting_room_title: { pl: '🏠 Poczekalnia', en: '🏠 Waiting Room' },
+        players_connected_label: { pl: 'Połączeni gracze:', en: 'Players Connected:' },
+        game_categories_title: { pl: 'Kategorie gry:', en: 'Game Categories:' },
+        waiting_for_host_text: { pl: 'Czekamy na start. Zostaw tę stronę otwartą — pytania pojawią się tutaj.', en: 'Waiting for the host to start. Keep this page open — questions will appear here.' },
+        waiting_for_host_text_short: { pl: 'Czekamy, aż host wystartuje grę...', en: 'Waiting for host to start the game...' },
+        leave_game_btn: { pl: 'Opuść grę', en: 'Leave Game' },
+        player_answer_prompt: { pl: 'Wybierz odpowiedź przed końcem czasu. Możesz pominąć, jeśli nie jesteś pewien.', en: 'Select your answer before time runs out. You can skip if you are not sure.' },
+        player_answer_prompt_short: { pl: 'Wybierz odpowiedź', en: 'Select your answer' },
+        skip_question_btn: { pl: '⏭️ Pomiń pytanie', en: '⏭️ Skip Question' },
+        question_complete_title: { pl: 'Pytanie zakończone', en: 'Question Complete' },
+        waiting_next_question_text: { pl: 'Czekamy na następne pytanie...', en: 'Waiting for next question...' },
+        your_answer_label: { pl: 'Twoja odpowiedź:', en: 'Your Answer:' },
+        game_complete_title: { pl: 'Koniec gry!', en: 'Game Complete!' },
+        thanks_for_playing_text: { pl: 'Dzięki za grę!', en: 'Thanks for playing!' },
+        final_score_label: { pl: 'Wynik końcowy', en: 'Final Score' },
+        final_position_text: { pl: 'Miejsce: -/-', en: 'Position: -/-' },
+        play_again_btn: { pl: 'Zagraj ponownie', en: 'Play Again' },
+        answer_submitted_text: { pl: '✓ Odpowiedź wysłana!', en: '✓ Answer submitted!' },
+        question_skipped_text: { pl: '⏭️ Pytanie pominięte', en: '⏭️ Question skipped' },
+        skipped_title: { pl: 'Pominięto', en: 'Skipped' },
+        skipped_message: { pl: 'Pominąłeś to pytanie', en: 'You skipped this question' },
+        correct_title: { pl: 'Poprawnie!', en: 'Correct!' },
+        incorrect_title: { pl: 'Niepoprawnie', en: 'Incorrect' },
+        correct_message: { pl: 'Świetna robota!', en: 'Great job!' },
+        incorrect_message: { pl: 'Powodzenia następnym razem!', en: 'Better luck next time!' },
+        timer_paused_by_host: { pl: 'Timer wstrzymany przez hosta', en: 'Timer paused by host' },
+        timer_resumed: { pl: 'Timer wznowiony', en: 'Timer resumed' },
+        connection_lost_text: { pl: '🔌 Połączenie utracone. Próba ponownego połączenia...', en: '🔌 Connection lost. Trying to reconnect...' },
+        loading_text: { pl: 'Ładowanie...', en: 'Loading...' }
+    };
+
+    function getPreferredLanguage() {
+        const select = document.getElementById('language');
+        if (select && select.value) {
+            return select.value;
+        }
+        const saved = localStorage.getItem('liveQuizLanguage');
+        if (saved) {
+            return saved;
+        }
+        return document.documentElement.lang || 'pl';
+    }
+
+    function applyTranslations(lang = getPreferredLanguage()) {
+        const activeLang = lang || 'pl';
+
+        document.querySelectorAll('[data-lang-key]').forEach(el => {
+            const key = el.dataset.langKey;
+            const translation = TRANSLATIONS[key]?.[activeLang];
+            if (!translation) return;
+
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                if (typeof el.placeholder !== 'undefined') {
+                    el.placeholder = translation;
+                }
+            } else {
+                el.innerHTML = translation;
+            }
+        });
+
+        document.querySelectorAll('[data-title-lang-key]').forEach(el => {
+            const key = el.dataset.titleLangKey;
+            const translation = TRANSLATIONS[key]?.[activeLang];
+            if (translation) {
+                el.title = translation;
+            }
+        });
+    }
+
+    function getTranslation(key, lang = getPreferredLanguage()) {
+        return TRANSLATIONS[key]?.[lang] || TRANSLATIONS[key]?.en || '';
+    }
+
+    function setLanguage(lang) {
+        const normalized = lang || 'pl';
+        document.documentElement.lang = normalized;
+        localStorage.setItem('liveQuizLanguage', normalized);
+        applyTranslations(normalized);
+    }
 
     // API helper
     async function apiCall(endpoint, method = 'GET', data = null) {
@@ -19,10 +313,27 @@ window.LiveQuizCommon = (function() {
             }
             
             const response = await fetch(endpoint, options);
-            const result = await response.json();
+            let result = null;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                result = null;
+            }
             
             if (!response.ok) {
-                throw new Error(result.detail || 'API call failed');
+                let message = 'API call failed';
+                if (result) {
+                    if (typeof result.detail === 'string') {
+                        message = result.detail;
+                    } else if (Array.isArray(result.detail)) {
+                        message = result.detail.map(item => item.msg || JSON.stringify(item)).join(', ');
+                    } else if (result.detail) {
+                        message = JSON.stringify(result.detail);
+                    } else if (result.error) {
+                        message = result.error;
+                    }
+                }
+                throw new Error(message);
             }
             
             return result;
@@ -82,10 +393,11 @@ window.LiveQuizCommon = (function() {
     // Populate category presets
     function populateCategoryPresets() {
         const presetSelect = document.getElementById('category-preset-select');
-        const language = document.getElementById('language')?.value || 'pl';
+        const language = getPreferredLanguage();
         
         if (presetSelect) {
-            presetSelect.innerHTML = '<option value="">Choose a preset...</option>';
+            const placeholder = TRANSLATIONS.category_preset_placeholder?.[language] || 'Choose a preset...';
+            presetSelect.innerHTML = `<option value="">${placeholder}</option>`;
             
             const presets = window.CATEGORY_PRESETS || [];
             presets.forEach((preset, index) => {
@@ -173,6 +485,7 @@ window.LiveQuizCommon = (function() {
         const setup = {
             knowledgeLevel: document.getElementById('knowledge-level')?.value || 'intermediate',
             language: document.getElementById('language')?.value || 'pl',
+            questionModel: document.getElementById('question-model')?.value || '',
             theme: document.getElementById('theme')?.value || '',
             includeTheme: document.getElementById('include-theme')?.checked ?? true,
             questionsPerCategory: document.getElementById('questions-per-category')?.value || '3',
@@ -194,6 +507,9 @@ window.LiveQuizCommon = (function() {
                 }
                 if (setup.language && document.getElementById('language')) {
                     document.getElementById('language').value = setup.language;
+                }
+                if (setup.questionModel && document.getElementById('question-model')) {
+                    document.getElementById('question-model').value = setup.questionModel;
                 }
                 if (setup.theme && document.getElementById('theme')) {
                     document.getElementById('theme').value = setup.theme;
@@ -318,6 +634,10 @@ window.LiveQuizCommon = (function() {
         loadGameSetup,
         updateSliderDisplays,
         getCategoryPresets,
+        getPreferredLanguage,
+        applyTranslations,
+        setLanguage,
+        getTranslation,
         saveToSession,
         loadFromSession,
         removeFromSession,

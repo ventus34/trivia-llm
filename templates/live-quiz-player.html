@@ -99,8 +99,18 @@
     {% include 'partials/player_lobby.html' %}
     {% include 'partials/player_game.html' %}
     {% include 'partials/player_overlays.html' %}
-    {% include 'partials/player_templates.html' %}
 
-    <script src="/js/live-quiz/live-quiz-player-simple.js"></script>
+    <script src="/js/live-quiz/live-quiz-common.js"></script>
+    <script src="/js/live-quiz/live-quiz-player.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LiveQuizCommon) {
+                window.LiveQuizCommon.setLanguage(window.LiveQuizCommon.getPreferredLanguage());
+            }
+            if (window.LiveQuizPlayer) {
+                window.LiveQuizPlayer.init();
+            }
+        });
+    </script>
 </body>
 </html>

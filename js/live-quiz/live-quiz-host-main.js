@@ -27,6 +27,7 @@ window.LiveQuizHost = (function() {
 
         // Initialize common functionality
         if (window.LiveQuizCommon) {
+            window.LiveQuizCommon.setLanguage(window.LiveQuizCommon.getPreferredLanguage());
             window.LiveQuizCommon.populateCategoryPresets();
             window.LiveQuizCommon.showScreen('setup-screen');
         }

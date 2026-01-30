@@ -1,58 +1,58 @@
 <!-- Lobby Screen -->
 <div id="lobby-screen" class="hidden container mx-auto px-4 py-8">
     <div class="max-w-7xl mx-auto">
-        <h1 class="text-3xl font-bold text-center mb-8 text-white">🏠 Game Lobby</h1>
+        <h1 class="text-3xl font-bold text-center mb-8 text-white" data-lang-key="game_lobby_title">🏠 Game Lobby</h1>
         
         <!-- Top section with QR Code taking half screen -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <!-- Large QR Code Section -->
             <div class="bg-gray-800 rounded-2xl p-6 lg:p-8">
-                <h2 class="text-xl font-semibold mb-6 text-white text-center">📱 Join Game</h2>
+                <h2 class="text-xl font-semibold mb-6 text-white text-center" data-lang-key="join_game_title">📱 Join Game</h2>
                 <div class="flex flex-col items-center justify-center h-96 lg:h-[500px]">
                     <div id="qr-code" class="qr-code-container qr-code-large flex items-center justify-center">
                         <div class="qr-code-inner"></div>
                     </div>
-                    <p class="text-lg text-gray-300 mt-6 font-medium text-center">Scan QR code to join</p>
+                    <p class="text-lg text-gray-300 mt-6 font-medium text-center" data-lang-key="scan_qr_to_join">Scan QR code to join</p>
                     <div class="mt-4 flex items-center space-x-2">
                         <input type="text" id="join-url" readonly class="w-64 px-3 py-2 bg-gray-600 border border-gray-500 rounded text-sm text-white" value="">
-                        <button id="copy-join-url" class="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors">🔗</button>
+                        <button id="copy-join-url" class="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors" title="Copy join link" data-title-lang-key="copy_join_link_title">🔗</button>
                     </div>
                 </div>
             </div>
             
             <!-- Room Info and Controls -->
             <div class="bg-gray-800 rounded-2xl p-6">
-                <h2 class="text-xl font-semibold mb-4 text-white">📋 Room Information</h2>
+                <h2 class="text-xl font-semibold mb-4 text-white" data-lang-key="room_info_title">📋 Room Information</h2>
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-300">Room Code:</span>
+                        <span class="text-gray-300" data-lang-key="room_code_label">Room Code:</span>
                         <div class="flex items-center space-x-2">
                             <span id="room-code" class="text-2xl font-mono font-bold text-blue-400">------</span>
-                            <button id="copy-room-code" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                            <button id="copy-room-code" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Copy room code" data-title-lang-key="copy_room_code_title">
                                 📋
                             </button>
                         </div>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-300">Game ID:</span>
+                        <span class="text-gray-300" data-lang-key="game_id_label">Game ID:</span>
                         <span id="game-id" class="text-sm text-gray-400 font-mono">------------</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-300">Players:</span>
+                        <span class="text-gray-300" data-lang-key="players_label">Players:</span>
                         <span id="player-count" class="text-white font-semibold">0/12</span>
                     </div>
                 </div>
                 
                 <div class="mt-8 space-y-3">
-                    <button id="start-game" class="w-full py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">🚀 Start Game</button>
-                    <button id="back-to-setup" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">← Back to Setup</button>
+                    <button id="start-game" class="w-full py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors" data-lang-key="start_game_btn">🚀 Start Game</button>
+                    <button id="back-to-setup" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors" data-lang-key="back_to_setup_btn">← Back to Setup</button>
                 </div>
             </div>
         </div>
         
         <!-- Players List Section -->
         <div class="bg-gray-800 rounded-2xl p-6">
-            <h2 class="text-xl font-semibold mb-4 text-white">👥 Connected Players</h2>
+            <h2 class="text-xl font-semibold mb-4 text-white" data-lang-key="connected_players_title">👥 Connected Players</h2>
             <div id="players-list" class="space-y-2 max-h-64 overflow-y-auto">
                 <!-- Players will be added here -->
             </div>

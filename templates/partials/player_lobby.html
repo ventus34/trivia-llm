@@ -1,35 +1,35 @@
 <!-- Join Screen -->
 <div id="join-screen" class="container mx-auto px-4 py-8">
     <div class="max-w-md mx-auto">
-        <h1 class="text-3xl font-bold text-center mb-8 text-white">🎮 Live Quiz</h1>
+        <h1 class="text-3xl font-bold text-center mb-8 text-white" data-lang-key="live_quiz_player_title">🎮 Live Quiz</h1>
         
         <div class="bg-gray-800 rounded-2xl p-6 space-y-6">
             <div class="text-center">
                 <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
                     📱
                 </div>
-                <h2 class="text-xl font-semibold text-white mb-2">Join a Game</h2>
-                <p class="text-gray-400 text-sm">
+                <h2 class="text-xl font-semibold text-white mb-2" data-lang-key="join_game_title">Join a Game</h2>
+                <p class="text-gray-400 text-sm" data-lang-key="join_game_subtitle">
                     Enter the 6-digit room code from the host screen and play on your phone while watching the main screen.
                 </p>
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Room Code</label>
-                <input type="text" id="room-code" placeholder="123456" maxlength="6" class="w-full px-4 py-3 text-center text-2xl font-mono bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label class="block text-sm font-medium text-gray-300 mb-2" data-lang-key="room_code_label">Room Code</label>
+                <input type="text" id="room-code" data-lang-key="room_code_placeholder" placeholder="123456" maxlength="6" class="w-full px-4 py-3 text-center text-2xl font-mono bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Your Name</label>
-                <input type="text" id="player-name" placeholder="Enter your name" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label class="block text-sm font-medium text-gray-300 mb-2" data-lang-key="player_name_label">Your Name</label>
+                <input type="text" id="player-name" data-lang-key="player_name_placeholder" placeholder="Enter your name" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </div>
             
-            <button id="join-game" class="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+            <button id="join-game" class="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors" data-lang-key="join_game_btn">
                 Join Game
             </button>
             
             <div class="text-center">
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-gray-500" data-lang-key="join_game_hint">
                     Or scan the QR code from the host screen to join instantly on this device.
                 </p>
             </div>
@@ -40,23 +40,23 @@
 <!-- Lobby Screen -->
 <div id="lobby-screen" class="hidden container mx-auto px-4 py-8">
     <div class="max-w-md mx-auto">
-        <h1 class="text-2xl font-bold text-center mb-8 text-white">🏠 Waiting Room</h1>
+        <h1 class="text-2xl font-bold text-center mb-8 text-white" data-lang-key="waiting_room_title">🏠 Waiting Room</h1>
         
         <div class="bg-gray-800 rounded-2xl p-6 space-y-6">
             <div class="text-center">
                 <div class="text-4xl font-mono font-bold text-blue-400 mb-2" id="display-room-code">------</div>
-                <p class="text-gray-400 text-sm">Room Code</p>
+                <p class="text-gray-400 text-sm" data-lang-key="room_code_label">Room Code</p>
             </div>
             
             <div class="bg-gray-700 rounded-lg p-4">
                 <div class="flex items-center justify-between">
-                    <span class="text-gray-300">Players Connected:</span>
+                    <span class="text-gray-300" data-lang-key="players_connected_label">Players Connected:</span>
                     <span class="text-white font-semibold" id="player-count">0</span>
                 </div>
             </div>
             
             <div class="bg-gray-700 rounded-lg p-4">
-                <h3 class="text-white font-semibold mb-3">Game Categories:</h3>
+                <h3 class="text-white font-semibold mb-3" data-lang-key="game_categories_title">Game Categories:</h3>
                 <div id="categories-list" class="space-y-2">
                     <!-- Categories will be added here -->
                 </div>
@@ -64,12 +64,12 @@
             
             <div class="bg-blue-900 rounded-lg p-4 text-center">
                 <div class="text-2xl mb-2">⏳</div>
-                <p class="text-blue-200">
+                <p class="text-blue-200" data-lang-key="waiting_for_host_text">
                     Waiting for the host to start. Keep this page open — questions will appear here.
                 </p>
             </div>
             
-            <button id="leave-lobby" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            <button id="leave-lobby" class="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors" data-lang-key="leave_game_btn">
                 Leave Game
             </button>
         </div>
