@@ -21,7 +21,6 @@ import {
 import { renderExplanation } from './explanations.js';
 import { saveGameState } from './persistence.js';
 import { notify } from './error-bus.js';
-import { emit } from './store.js';
 import { getApiAdapter } from './services/api-service.js';
 
 function generateGameId() {
@@ -39,11 +38,11 @@ export function initializeGame() {
     const categories = Array.from(document.querySelectorAll('#categories-container .category-input')).map(input => input.value.trim());
 
     if (categories.some(c => c === '')) {
-        notify({ title: "Setup Error", body: translations.min_categories_alert[gameState.currentLanguage] }, 'error');
+        notify({ title: translations.setup_error_title[gameState.currentLanguage], body: translations.min_categories_alert[gameState.currentLanguage] }, 'error');
         return;
     }
 
-    Object.assign(gameState, {
+    setState({
         gameId: generateGameId(),
         players: [],
         categories: categories,
@@ -63,16 +62,18 @@ export function initializeGame() {
         selectedQuestionModel: 'trivia',
         selectedExplanationModel: 'trivia',
         selectedCategoryModel: 'trivia',
-    });
+    }, 'state:init');
 
+    const categoryTopicHistory = { ...gameState.categoryTopicHistory };
     gameState.categories.forEach(cat => {
-        if (!gameState.categoryTopicHistory[cat]) {
-            gameState.categoryTopicHistory[cat] = { subcategories: [], entities: [] };
+        if (!categoryTopicHistory[cat]) {
+            categoryTopicHistory[cat] = { subcategories: [], entities: [] };
         }
     });
 
+    const players = [];
     for (let i = 0; i < playerCount; i++) {
-        gameState.players.push({
+        players.push({
             name: playerNames[i],
             emoji: playerEmojis[i],
             position: 0,
@@ -80,11 +81,10 @@ export function initializeGame() {
             wedges: []
         });
     }
+    setState({ categoryTopicHistory, players }, 'state:init');
 
     createBoardLayout();
     renderBoard();
-    emit('categories:update');
-    emit('state:update');
     UI.diceResultDiv.classList.add('hint-pulsate');
     UI.setupScreen.classList.add('hidden');
     UI.gameScreen.classList.remove('hidden');
@@ -95,7 +95,7 @@ export function initializeGame() {
  * @param {number|null} [forcedCategoryIndex=null] - The index of a category to use.
  */
 export async function askQuestion(forcedCategoryIndex = null) {
-    gameState.currentForcedCategoryIndex = forcedCategoryIndex;
+    setState({ currentForcedCategoryIndex: forcedCategoryIndex }, 'state:question');
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
     const categoryIndex = forcedCategoryIndex !== null ? forcedCategoryIndex : square.categoryIndex;
@@ -121,7 +121,7 @@ export async function askQuestion(forcedCategoryIndex = null) {
     try {
         const api = getApiAdapter();
         const data = await api.generateQuestion(category);
-        gameState.currentQuestionData = data;
+        setState({ currentQuestionData: data }, 'state:question');
         UI.questionTextP.textContent = data.question;
 
         if (gameState.gameMode === 'mcq') {
@@ -158,7 +158,7 @@ export async function askQuestion(forcedCategoryIndex = null) {
         setTimeout(() => {
             hideModal();
             UI.diceElement.disabled = false;
-            UI.gameMessageDiv.textContent = 'Error, roll again.';
+            UI.gameMessageDiv.textContent = translations.roll_error_message[gameState.currentLanguage];
         }, 10000);
     }
 }
@@ -180,12 +180,12 @@ export async function rollDice() {
 
     const player = gameState.players[gameState.currentPlayerIndex];
     const possiblePaths = findPossibleMoves(player.position, roll);
-    gameState.possiblePaths = possiblePaths;
+    setState({ possiblePaths }, 'state:move');
 
     const destinationIds = Object.keys(possiblePaths);
 
     if (destinationIds.length > 0) {
-        gameState.isAwaitingMove = true;
+        setState({ isAwaitingMove: true }, 'state:move');
         UI.gameMessageDiv.textContent = translations.choose_move[gameState.currentLanguage];
         destinationIds.forEach(id => document.getElementById(`square-${id}`).classList.add('highlighted-move'));
     } else {
@@ -204,13 +204,15 @@ export async function handleSquareClick(squareId) {
     if (!path) return;
 
     document.querySelectorAll('.highlighted-move').forEach(el => el.classList.remove('highlighted-move'));
-    gameState.isAwaitingMove = false;
+    setState({ isAwaitingMove: false }, 'state:move');
     UI.gameMessageDiv.textContent = '';
 
     await animatePawnMovement(path.slice(1));
 
-    const player = gameState.players[gameState.currentPlayerIndex];
-    player.position = squareId;
+    const players = [...gameState.players];
+    const currentPlayer = players[gameState.currentPlayerIndex];
+    players[gameState.currentPlayerIndex] = { ...currentPlayer, position: squareId };
+    setState({ players });
 
     const landedSquare = gameState.board.find(s => s.id === squareId);
     if (landedSquare.type === CONFIG.SQUARE_TYPES.ROLL_AGAIN) {
@@ -263,7 +265,7 @@ export function handleMcqAnswer(selectedOption) {
 export function handleOpenAnswer() {
     const userAnswer = UI.answerInput.value.trim();
     if (!userAnswer) {
-        notify({ title: "Input Error", body: translations.empty_answer_error[gameState.currentLanguage] }, 'error');
+        notify({ title: translations.input_error_title[gameState.currentLanguage], body: translations.empty_answer_error[gameState.currentLanguage] }, 'error');
         return;
     }
     hideModal();
@@ -275,7 +277,7 @@ export function handleOpenAnswer() {
  * @param {boolean} isCorrect - Whether the player's answer was deemed correct.
  */
 export async function handleManualVerification(isCorrect) {
-    gameState.lastAnswerWasCorrect = isCorrect;
+    setState({ lastAnswerWasCorrect: isCorrect }, 'state:verification');
 
     const player = gameState.players[gameState.currentPlayerIndex];
     const square = gameState.board.find(s => s.id === player.position);
@@ -283,16 +285,20 @@ export async function handleManualVerification(isCorrect) {
     const isHqSquare = square.type === CONFIG.SQUARE_TYPES.HQ;
 
     if (isCorrect && isHqSquare && !player.wedges.includes(categoryIndex)) {
-        player.wedges.push(categoryIndex);
+        const players = [...gameState.players];
+        const updatedPlayer = { ...player, wedges: [...player.wedges, categoryIndex] };
+        players[gameState.currentPlayerIndex] = updatedPlayer;
+        setState({ players }, 'state:verification');
     }
 
     if (categoryIndex !== null && gameState.currentQuestionData.subcategory) {
         const oldCategory = gameState.categories[categoryIndex];
-        if (!gameState.categoryTopicHistory[oldCategory] || Array.isArray(gameState.categoryTopicHistory[oldCategory])) {
-            gameState.categoryTopicHistory[oldCategory] = { subcategories: [], entities: [] };
+        const categoryTopicHistory = { ...gameState.categoryTopicHistory };
+        if (!categoryTopicHistory[oldCategory] || Array.isArray(categoryTopicHistory[oldCategory])) {
+            categoryTopicHistory[oldCategory] = { subcategories: [], entities: [] };
         }
 
-        const history = gameState.categoryTopicHistory[oldCategory];
+        const history = categoryTopicHistory[oldCategory];
         const newSubcategory = gameState.currentQuestionData.subcategory;
         if (!history.subcategories.includes(newSubcategory)) {
             history.subcategories.push(newSubcategory);
@@ -312,10 +318,11 @@ export async function handleManualVerification(isCorrect) {
             history.entities = history.entities.slice(-CONFIG.MAX_ENTITY_HISTORY_ITEMS);
         }
 
-        localStorage.setItem('globalQuizHistory', JSON.stringify(gameState.categoryTopicHistory));
+        setState({ categoryTopicHistory }, 'state:history');
+        localStorage.setItem('globalQuizHistory', JSON.stringify(categoryTopicHistory));
     }
 
-    gameState.isMutationPending = isCorrect && isHqSquare && gameState.mutateCategories;
+    setState({ isMutationPending: isCorrect && isHqSquare && gameState.mutateCategories }, 'state:verification');
 
     UI.verificationButtons.classList.add('hidden');
     UI.postVerificationButtons.classList.remove('hidden');

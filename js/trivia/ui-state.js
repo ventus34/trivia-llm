@@ -11,7 +11,7 @@ import { updateUI, renderCategoryLegend } from './ui-board.js';
  */
 export function setupStateSubscriptions() {
     return subscribe((event) => {
-        if (event === 'state:update') {
+        if (event && event.startsWith('state:')) {
             updateUI();
         }
         if (event === 'categories:update') {

@@ -5,10 +5,11 @@
  */
 
 import { initializeApp } from './main.js';
-import { gameState } from './state.js';
+import { gameState, setState } from './state.js';
 import { UI } from './dom.js';
 import { updateModelSelection } from './ui.js';
 import { callApi } from './utils.js';
+import { translations } from './config.js';
 
 // Construct the API path dynamically from the deployment config.
 const basePath = '/';
@@ -130,13 +131,15 @@ const backendApiAdapter = {
         const response = await callApi(apiPath + 'generate-categories', payload);
         if (!response || !Array.isArray(response.categories) || response.categories.length < 6) {
             console.error("Backend did not return valid categories.", response);
-            throw new Error("Failed to generate categories from backend.");
+            throw new Error(translations.backend_categories_error[gameState.currentLanguage]);
         }
 
-        gameState.promptHistory.push({
-            prompt: JSON.stringify(payload, null, 2),
-            response: JSON.stringify(response, null, 2)
-        });
+        setState({
+            promptHistory: [
+                ...gameState.promptHistory,
+                { prompt: JSON.stringify(payload, null, 2), response: JSON.stringify(response, null, 2) }
+            ]
+        }, 'state:history');
         return response.categories.slice(0, 6);
     },
 
@@ -154,13 +157,15 @@ const backendApiAdapter = {
         const response = await callApi(apiPath + 'generate-question', payload);
         if (!response || typeof response.question !== 'string') {
             console.error("Backend response is not a valid question object.", response);
-            throw new Error("Failed to generate question from backend.");
+            throw new Error(translations.backend_question_error[gameState.currentLanguage]);
         }
 
-        gameState.promptHistory.push({
-            prompt: JSON.stringify(payload, null, 2),
-            response: JSON.stringify(response, null, 2)
-        });
+        setState({
+            promptHistory: [
+                ...gameState.promptHistory,
+                { prompt: JSON.stringify(payload, null, 2), response: JSON.stringify(response, null, 2) }
+            ]
+        }, 'state:history');
         return response;
     },
 
@@ -175,10 +180,12 @@ const backendApiAdapter = {
         };
         const data = await callApi(apiPath + 'explain-incorrect', payload);
 
-        gameState.promptHistory.push({
-            prompt: JSON.stringify(payload, null, 2),
-            response: JSON.stringify(data, null, 2)
-        });
+        setState({
+            promptHistory: [
+                ...gameState.promptHistory,
+                { prompt: JSON.stringify(payload, null, 2), response: JSON.stringify(data, null, 2) }
+            ]
+        }, 'state:history');
         return data;
     },
 
@@ -192,10 +199,12 @@ const backendApiAdapter = {
             existing_categories: existingCategories,
         };
         const data = await callApi(apiPath + 'mutate-category', payload);
-        gameState.promptHistory.push({
-            prompt: JSON.stringify(payload, null, 2),
-            response: JSON.stringify(data, null, 2)
-        });
+        setState({
+            promptHistory: [
+                ...gameState.promptHistory,
+                { prompt: JSON.stringify(payload, null, 2), response: JSON.stringify(data, null, 2) }
+            ]
+        }, 'state:history');
         return data.choices;
     }
 };

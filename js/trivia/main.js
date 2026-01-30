@@ -5,6 +5,8 @@
  */
 
 import { UI } from './dom.js';
+import { translations } from './config.js';
+import { gameState } from './state.js';
 import { notify } from './error-bus.js';
 import {
     setLanguage, populatePresetSelector,
@@ -42,7 +44,10 @@ export async function fetchWithErrorHandling(url, options) {
         console.error('Network error:', error);
         // Show a user-friendly error message
         notify(
-            { title: 'Network Error', body: 'Please check your internet connection and try again.' },
+            {
+                title: translations.network_error_title[gameState.currentLanguage],
+                body: translations.network_error_body[gameState.currentLanguage]
+            },
             'error',
             5000
         );

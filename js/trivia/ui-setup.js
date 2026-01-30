@@ -4,7 +4,7 @@
  */
 
 import { CONFIG, translations, CATEGORY_PRESETS } from './config.js';
-import { gameState } from './state.js';
+import { gameState, setState } from './state.js';
 import { UI } from './dom.js';
 import { uiHandlers } from './ui-handlers.js';
 
@@ -34,7 +34,7 @@ export function populatePresetSelector() {
     select.innerHTML = '';
 
     const defaultOption = document.createElement('option');
-    defaultOption.textContent = lang === 'pl' ? 'Wybierz gotowy zestaw...' : 'Select a preset...';
+    defaultOption.textContent = translations.category_preset_placeholder[lang];
     defaultOption.value = '';
     defaultOption.disabled = true;
     defaultOption.selected = true;
@@ -53,7 +53,7 @@ export function populatePresetSelector() {
  * @param {string} lang - The language code ('pl' or 'en').
  */
 export function setLanguage(lang) {
-    gameState.currentLanguage = lang;
+    setState({ currentLanguage: lang }, 'language:update');
     document.documentElement.lang = lang;
     UI.langPlBtn.classList.toggle('active', lang === 'pl');
     UI.langEnBtn.classList.toggle('active', lang === 'en');

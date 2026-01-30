@@ -15,13 +15,13 @@ import { getApiAdapter, isApiConfigured } from './services/api-service.js';
  */
 export async function handleSuggestAlternatives(targetTextarea) {
     if (!isApiConfigured()) {
-        notify({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
+        notify({ title: translations.api_error[gameState.currentLanguage], body: translations.configuration_error_body[gameState.currentLanguage] }, 'error');
         return;
     }
 
     const oldCategory = targetTextarea.value.trim();
     if (!oldCategory) {
-        notify({ title: "Input Required", body: translations.suggestion_input_needed[gameState.currentLanguage] }, 'info');
+        notify({ title: translations.input_required_title[gameState.currentLanguage], body: translations.suggestion_input_needed[gameState.currentLanguage] }, 'info');
         return;
     }
 
@@ -70,7 +70,7 @@ export async function handleSuggestAlternatives(targetTextarea) {
         UI.suggestionLoader.classList.add('hidden');
         UI.suggestionButtons.classList.remove('hidden');
         UI.suggestionButtons.textContent = translations.suggestion_error[gameState.currentLanguage];
-        notify({ title: "API Error", body: "Could not generate suggestions." }, 'error');
+        notify({ title: translations.api_error[gameState.currentLanguage], body: translations.suggestion_error[gameState.currentLanguage] }, 'error');
     }
 }
 
@@ -82,7 +82,7 @@ export async function generateCategories() {
     if (!theme) return;
 
     if (!isApiConfigured()) {
-        notify({ title: translations.api_error[gameState.currentLanguage], body: "Configuration error." }, 'error');
+        notify({ title: translations.api_error[gameState.currentLanguage], body: translations.configuration_error_body[gameState.currentLanguage] }, 'error');
         return;
     }
 

@@ -4,13 +4,12 @@
  */
 
 import { CONFIG, translations } from './config.js';
-import { gameState } from './state.js';
+import { gameState, setState } from './state.js';
 import { UI } from './dom.js';
 import { renderExplanation } from './explanations.js';
 import { uiHandlers } from './ui-handlers.js';
 import { saveGameState } from './persistence.js';
 import { notify } from './error-bus.js';
-import { emit } from './store.js';
 import { getApiAdapter } from './services/api-service.js';
 
 /**
@@ -42,7 +41,7 @@ export function promptCategoryChoice() {
 export function showVerificationPopup(playerAnswer, correctAnswer) {
     UI.playerAnswerText.textContent = playerAnswer;
     UI.correctAnswerText.textContent = correctAnswer;
-    gameState.currentPlayerAnswer = playerAnswer;
+    setState({ currentPlayerAnswer: playerAnswer }, 'state:verification');
 
     UI.explanationContainer.classList.add('hidden');
     UI.incorrectExplanationContainer.classList.add('hidden');
@@ -83,9 +82,6 @@ export function showVerificationPopup(playerAnswer, correctAnswer) {
     showAnswerPopup();
 }
 
-/**
- * Displays the answer verification popup with a transition.
- */
 export function showAnswerPopup() {
     UI.answerPopup.classList.remove('hidden');
     setTimeout(() => {
@@ -128,7 +124,6 @@ export async function showMutationScreen() {
                 const newCategoryName = choice.name;
                 gameState.categories[categoryIndex] = newCategoryName;
 
-                emit('categories:update');
                 delete gameState.categoryTopicHistory[oldCategory];
                 if (!gameState.categoryTopicHistory[newCategoryName]) {
                     gameState.categoryTopicHistory[newCategoryName] = { subcategories: [], entities: [] };
@@ -141,7 +136,7 @@ export async function showMutationScreen() {
         });
     } catch (error) {
         console.error("Category mutation failed:", error);
-        notify({ title: translations.api_error[gameState.currentLanguage], body: "Failed to mutate category." }, 'error');
+        notify({ title: translations.api_error[gameState.currentLanguage], body: translations.mutation_failed[gameState.currentLanguage] }, 'error');
         closePopupAndContinue();
     }
 }
@@ -151,7 +146,7 @@ export async function showMutationScreen() {
  */
 export function closePopupAndContinue() {
     if (gameState.isMutationPending) {
-        gameState.isMutationPending = false;
+        setState({ isMutationPending: false }, 'state:verification');
         showMutationScreen();
         return;
     }

@@ -3,7 +3,7 @@
  * Handles saving, loading, and restarting the game state.
  */
 
-import { gameState } from '../state.js';
+import { gameState, setState } from '../state.js';
 import { translations } from '../config.js';
 import { UI } from '../dom.js';
 import { createBoardLayout } from '../board.js';
@@ -104,13 +104,13 @@ export function handleStateUpload(event) {
             const loadedState = JSON.parse(e.target.result);
             if (loadedState && loadedState.players && loadedState.categories) {
                 restoreGameState(loadedState);
-                notify({ title: "Success", body: translations.game_loaded_success[gameState.currentLanguage] }, 'success');
+                notify({ title: translations.success_title[gameState.currentLanguage], body: translations.game_loaded_success[gameState.currentLanguage] }, 'success');
             } else {
-                throw new Error("Invalid game state format.");
+                throw new Error(translations.invalid_save_format[gameState.currentLanguage]);
             }
         } catch (error) {
             console.error("Failed to load or parse game state:", error);
-            notify({ title: "Error", body: translations.game_loaded_error[gameState.currentLanguage] }, 'error');
+            notify({ title: translations.error_title[gameState.currentLanguage], body: translations.game_loaded_error[gameState.currentLanguage] }, 'error');
         } finally {
             event.target.value = '';
         }
@@ -123,15 +123,14 @@ export function handleStateUpload(event) {
  * @param {object} stateToRestore - The game state object to load.
  */
 export function restoreGameState(stateToRestore) {
-    Object.assign(gameState, stateToRestore);
+    setState(stateToRestore, 'state:restore');
 
     if (!gameState.gameId) {
         console.warn("Loaded game state is missing a gameId. Generating a new one.");
-        gameState.gameId = 'game-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+        setState({ gameId: 'game-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9) }, 'state:restore');
     }
 
-    gameState.isAwaitingMove = false;
-    gameState.lastAnswerWasCorrect = false;
+    setState({ isAwaitingMove: false, lastAnswerWasCorrect: false }, 'state:restore');
 
     if (UI.modelSelect && gameState.selectedQuestionModel) {
         UI.modelSelect.value = gameState.selectedQuestionModel;

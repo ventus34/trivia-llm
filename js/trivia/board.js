@@ -4,7 +4,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { gameState } from './state.js';
+import { gameState, setState } from './state.js';
 
 /**
  * Creates the programmatic structure of the game board, including squares, positions, and connections.
@@ -88,7 +88,7 @@ export function createBoardLayout() {
         layout.find(s => s.id === previousId).connections.push(hq2.id);
         hq2.connections.push(previousId);
     }
-    gameState.board = layout;
+    setState({ board: layout }, 'state:board');
 }
 
 /**

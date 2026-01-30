@@ -103,7 +103,14 @@ export function renderPlayerTokens() {
  * Updates the entire game UI, including the current player display, scores, and tokens.
  */
 export function updateUI() {
+    if (!gameState.players || gameState.players.length === 0) {
+        return;
+    }
+
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer) {
+        return;
+    }
     UI.currentPlayerEmojiSpan.textContent = currentPlayer.emoji;
     UI.currentPlayerNameDiv.textContent = currentPlayer.name;
     UI.currentPlayerNameDiv.style.color = currentPlayer.color;

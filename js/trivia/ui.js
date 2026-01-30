@@ -3,7 +3,7 @@
  * Facade for trivia UI modules.
  */
 
-import { gameState } from './state.js';
+import { gameState, setState } from './state.js';
 import { registerUIHandlers } from './ui-handlers.js';
 export { setupGameMenu } from './ui-menu.js';
 export {
@@ -32,11 +32,11 @@ export { registerUIHandlers };
  */
 export function updateModelSelection(modelId, type) {
     if (type === 'question') {
-        gameState.selectedQuestionModel = modelId;
+        setState({ selectedQuestionModel: modelId }, 'state:model');
     } else if (type === 'explanation') {
-        gameState.selectedExplanationModel = modelId;
+        setState({ selectedExplanationModel: modelId }, 'state:model');
     } else if (type === 'category') {
-        gameState.selectedCategoryModel = modelId;
+        setState({ selectedCategoryModel: modelId }, 'state:model');
     }
 }
 
