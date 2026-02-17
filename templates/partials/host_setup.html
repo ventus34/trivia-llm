@@ -1,0 +1,158 @@
+<!-- Setup Screen -->
+<div id="setup-screen" class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-center mb-8 text-white" data-lang-key="live_quiz_host_title">🎯 Live Quiz - Host</h1>
+        
+        <!-- Host Setup Form -->
+        <div class="bg-gray-800 rounded-2xl p-8 space-y-6">
+            <div>
+                <h2 class="text-2xl font-semibold mb-6 text-center" data-lang-key="live_quiz_setup_title">Game Setup</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Basic Settings -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2" data-lang-key="knowledge_level_label">Knowledge Level</label>
+                            <select id="knowledge-level" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="basic" data-lang-key="knowledge_level_basic">Basic</option>
+                                <option value="intermediate" selected data-lang-key="knowledge_level_intermediate">Intermediate</option>
+                                <option value="expert" data-lang-key="knowledge_level_expert">Expert</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2" data-lang-key="language_label">Language</label>
+                            <select id="language" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="pl" selected data-lang-key="language_pl">Polski</option>
+                                <option value="en" data-lang-key="language_en">English</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <span data-lang-key="questions_per_category_label">Questions per Category</span>:
+                                    <span id="questions-slider-value" class="text-blue-400 font-semibold">3</span>
+                                </label>
+                                <input type="range" id="questions-per-category" min="1" max="10" value="3" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                    <span>1</span>
+                                    <span>5</span>
+                                    <span>10</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    <span data-lang-key="answer_time_label">Answer Time</span>:
+                                    <span id="answer-time-slider-value" class="text-blue-400 font-semibold">60</span>
+                                    <span data-lang-key="seconds_label">seconds</span>
+                                </label>
+                                <input type="range" id="answer-time" min="30" max="180" value="60" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                    <span>30</span>
+                                    <span>105</span>
+                                    <span>180</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Question Model -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2" data-lang-key="question_model_label">Question Model</label>
+                            <select id="question-model" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="" data-lang-key="question_model_loading">Loading models...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Theme and Categories Section -->
+                <div class="mt-6">
+                    <!-- Theme Settings -->
+                    <div class="mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2" data-lang-key="theme_label">Theme (Optional)</label>
+                                <input type="text" id="theme" data-lang-key="theme_placeholder" placeholder="e.g., Lord of the Rings" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="include-theme" checked class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                                <label for="include-theme" class="ml-2 text-sm text-gray-300" data-lang-key="include_theme_label">Include theme in questions</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2" data-lang-key="category_presets_label">Category Presets</label>
+                        <div class="flex gap-2">
+                            <select id="category-preset-select" class="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="" data-lang-key="category_preset_placeholder">Choose a preset...</option>
+                            </select>
+                            <button id="load-preset" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors" data-lang-key="load_preset_btn">Load Preset</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="block text-sm font-medium text-gray-300" data-lang-key="categories_required_label">Categories (6 required)</label>
+                        <button id="generate-categories" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" data-lang-key="generate_categories_btn">Generate Categories</button>
+                    </div>
+                    <div id="categories-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" data-lang-key="category_1_placeholder" placeholder="Category 1" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" data-lang-key="category_2_placeholder" placeholder="Category 2" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" data-lang-key="category_3_placeholder" placeholder="Category 3" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" data-lang-key="category_4_placeholder" placeholder="Category 4" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" data-lang-key="category_5_placeholder" placeholder="Category 5" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" data-lang-key="category_6_placeholder" placeholder="Category 6" class="category-input px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <button id="create-room" class="w-full py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors" data-lang-key="create_room_btn">🎮 Create Room</button>
+                </div>
+                
+                <!-- How to Play Section -->
+                <div class="mt-6 p-4 bg-gray-700 rounded-lg">
+                    <h3 class="text-lg font-semibold text-white mb-3" data-lang-key="how_to_play_title">🎯 How to Play</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-sm text-gray-300">
+                        <div>
+                            <h4 class="font-semibold text-white mb-2" data-lang-key="how_to_play_setup_title">Setup</h4>
+                            <ul class="space-y-1 text-xs">
+                                <li data-lang-key="how_to_play_setup_item_1">• Choose language, knowledge level and time per question.</li>
+                                <li data-lang-key="how_to_play_setup_item_2">• Pick or generate 6 categories (required for the game).</li>
+                                <li data-lang-key="how_to_play_setup_item_3">• Optionally add a theme to shape generated questions.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white mb-2" data-lang-key="how_to_play_invite_title">Invite players</h4>
+                            <ul class="space-y-1 text-xs">
+                                <li data-lang-key="how_to_play_invite_item_1">• Create a room to get a 6-digit code and join link.</li>
+                                <li data-lang-key="how_to_play_invite_item_2">• Show the QR code on the main screen.</li>
+                                <li data-lang-key="how_to_play_invite_item_3">• Players join on their phones with the code or QR.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white mb-2" data-lang-key="how_to_play_during_title">During questions</h4>
+                            <ul class="space-y-1 text-xs">
+                                <li data-lang-key="how_to_play_during_item_1">• Each question appears on players’ devices with up to 4 options.</li>
+                                <li data-lang-key="how_to_play_during_item_2">• Use the timer controls to pause, resume or extend the time.</li>
+                                <li data-lang-key="how_to_play_during_item_3">• You can regenerate a question or show the explanation when ready.</li>
+                                <li data-lang-key="how_to_play_during_item_4">• Auto-advance can move to the next question after a short delay.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-white mb-2" data-lang-key="how_to_play_scores_title">Scores & results</h4>
+                            <ul class="space-y-1 text-xs">
+                                <li data-lang-key="how_to_play_scores_item_1">• Track live scores and answer status in the side panel.</li>
+                                <li data-lang-key="how_to_play_scores_item_2">• Final screen shows ranking based on the current scoring rules.</li>
+                                <li data-lang-key="how_to_play_scores_item_3">• Best experience: host view on a big screen, players answer on phones.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

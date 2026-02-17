@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Live Quiz - Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <script>
+        (function() {
+            // Force dark theme for live quiz
+            document.documentElement.className = 'dark';
+        })();
+    </script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen live-quiz-app">
+
+    {% include 'partials/player_lobby.html' %}
+    {% include 'partials/player_game.html' %}
+    {% include 'partials/player_overlays.html' %}
+
+    <script src="/js/live-quiz/live-quiz-common.js"></script>
+    <script src="/js/live-quiz/live-quiz-player-api.js"></script>
+    <script src="/js/live-quiz/live-quiz-player-ui.js"></script>
+    <script src="/js/live-quiz/live-quiz-player.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LiveQuizCommon) {
+                window.LiveQuizCommon.setLanguage(window.LiveQuizCommon.getPreferredLanguage());
+            }
+            if (window.LiveQuizPlayer) {
+                window.LiveQuizPlayer.init();
+            }
+        });
+    </script>
+</body>
+</html>

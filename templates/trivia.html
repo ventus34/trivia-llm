@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    {% include 'partials/head.html' %}
+    <title>Trivia</title>
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen">
+
+<div id="notification-container" class="fixed top-5 right-5 z-[100] space-y-2"></div>
+
+{% include 'partials/trivia_setup.html' %}
+{% include 'partials/trivia_game.html' %}
+{% include 'partials/trivia_modals.html' %}
+{% include 'partials/trivia_menu.html' %}
+
+<script type="module">
+    import { initializeApp } from '/js/trivia/main.js';
+    import '/js/trivia/adapter.js';
+</script>
+<script src="/js/theme.js"></script>
+<script>
+    // Unregister any existing service workers
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister();
+                console.log('ServiceWorker unregistered');
+            }
+        });
+    }
+</script>
+</body>
+</html>

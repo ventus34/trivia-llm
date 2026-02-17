@@ -1,0 +1,79 @@
+<!-- Fullscreen Question View -->
+<div id="fullscreen-question" class="hidden fixed inset-0 bg-gray-900 z-50 flex flex-col">
+    <!-- Fullscreen Header -->
+    <div class="flex items-center justify-between p-6 bg-gray-800">
+        <div>
+            <h2 id="fullscreen-question-category" class="text-4xl font-bold text-blue-400">Category</h2>
+            <p id="fullscreen-question-number" class="text-2xl text-gray-400">Question 1/30</p>
+        </div>
+        <div class="text-right">
+            <div id="fullscreen-timer" class="text-8xl font-mono font-bold text-white">60</div>
+            <p class="text-xl text-gray-400" data-lang-key="seconds_label">seconds</p>
+        </div>
+        <button id="exit-fullscreen" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xl" data-lang-key="exit_fullscreen_btn">
+            ❌ Exit Fullscreen
+        </button>
+    </div>
+    
+    <!-- Fullscreen Question Content -->
+    <div class="flex-1 flex items-center justify-center p-6">
+        <div class="max-w-6xl w-full text-center">
+            <h3 id="fullscreen-question-text" class="text-6xl font-bold text-white leading-relaxing mb-8 min-h-[150px] flex items-center justify-center">
+                Loading question...
+            </h3>
+            
+            <!-- Fullscreen Answer Options -->
+            <div id="fullscreen-question-options" class="grid grid-cols-2 gap-6 max-w-5xl mx-auto mb-6">
+                <!-- Options will be added here in 2x2 grid -->
+            </div>
+            
+            <!-- Fullscreen Question Results (Hidden by default) -->
+            <div id="fullscreen-question-results" class="hidden">
+                <div class="bg-gray-800 rounded-2xl p-8">
+                    <h4 class="text-3xl font-semibold text-white mb-6" data-lang-key="results_title">📋 Results</h4>
+                    <div class="space-y-6">
+                        <div>
+                            <h5 class="text-2xl font-semibold text-green-300 mb-4" data-lang-key="correct_answer_label">Correct Answer:</h5>
+                            <p id="fullscreen-correct-answer" class="text-green-200 text-2xl"></p>
+                        </div>
+                        <div>
+                            <h5 class="text-2xl font-semibold text-blue-300 mb-4" data-lang-key="explanation_label">Explanation:</h5>
+                            <p id="fullscreen-question-explanation" class="text-blue-200 text-xl leading-relaxed"></p>
+                        </div>
+                        <div id="fullscreen-player-votes" class="hidden">
+                            <h5 class="text-2xl font-semibold text-purple-300 mb-4" data-lang-key="player_votes_label">Player Votes:</h5>
+                            <div id="fullscreen-player-votes-content" class="text-purple-200 text-lg space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fullscreen Controls -->
+    <div class="p-6 bg-gray-800">
+        <div class="flex justify-center gap-3 flex-wrap items-center">
+            <button id="fullscreen-toggle-results" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xl" data-lang-key="toggle_results_btn">📋 Show Explanation</button>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="fullscreen-auto-advance-toggle" class="h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                <label for="fullscreen-auto-advance-toggle" class="text-sm text-gray-300" data-lang-key="auto_advance_label">Auto-advance</label>
+            </div>
+            <div class="space-y-2">
+                <label class="block text-sm text-gray-300">
+                    <span data-lang-key="auto_advance_time_label">Auto-advance time:</span>
+                    <span id="fullscreen-auto-advance-slider-value" class="text-blue-400 font-semibold">15</span>s
+                </label>
+                <input type="range" id="fullscreen-auto-advance-slider" min="5" max="45" value="15" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                <div class="flex justify-between text-xs text-gray-400">
+                    <span>5s</span>
+                    <span>25s</span>
+                    <span>45s</span>
+                </div>
+            </div>
+            <button id="fullscreen-pause-timer" class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-xl" data-lang-key="pause_timer_btn">⏸️ Pause</button>
+            <button id="fullscreen-resume-timer" class="hidden px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xl" data-lang-key="resume_timer_btn">▶️ Resume</button>
+            <button id="fullscreen-regenerate-question" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xl" data-lang-key="regenerate_question_btn">🔄 New</button>
+            <button id="fullscreen-next-question" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xl" data-lang-key="next_question_btn">➡️ Next</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,57 @@
+<section id="questions-section" class="mt-12">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Przeglądaj Pytania</h2>
+    <div class="bg-white p-4 rounded-xl shadow-md space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="relative flex-grow md:col-span-1">
+                <input type="text" id="search-input" placeholder="Szukaj w pytaniu/kategorii..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <div>
+                <input type="text" id="explanation-search" placeholder="Szukaj w wyjaśnieniu..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <input type="text" id="answer-search" placeholder="Szukaj w odpowiedzi..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex space-x-2">
+                <select id="sort-select" class="flex-grow px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="created_at_desc">Sortuj: Najnowsze</option>
+                    <option value="created_at_asc">Sortuj: Najstarsze</option>
+                    <option value="category_asc">Sortuj: Kategoria (A-Z)</option>
+                    <option value="category_desc">Sortuj: Kategoria (Z-A)</option>
+                </select>
+                <button id="export-json-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center" title="Eksportuj przefiltrowane do JSON">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                </button>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label for="model-filter" class="text-sm font-medium text-gray-700">Model</label>
+                <select id="model-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+            </div>
+            <div>
+                <label for="level-filter" class="text-sm font-medium text-gray-700">Poziom</label>
+                <select id="level-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
+            </div>
+            <div>
+                <label for="date-from-filter" class="text-sm font-medium text-gray-700">Data od</label>
+                <input type="date" id="date-from-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
+            </div>
+            <div>
+                <label for="date-to-filter" class="text-sm font-medium text-gray-700">Data do</label>
+                <input type="date" id="date-to-filter" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"/>
+            </div>
+            <div>
+                <label for="items-per-page-select" class="text-sm font-medium text-gray-700">Wyników</label>
+                <select id="items-per-page-select" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
+                    <option value="9">9 na stronę</option>
+                    <option value="18">18 na stronę</option>
+                    <option value="36">36 na stronę</option>
+                    <option value="9999">Wszystkie</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
+    <div id="pagination-controls" class="flex justify-center items-center mt-8 space-x-2"></div>
+</section>

@@ -1,0 +1,119 @@
+/**
+ * @file ui-events.js
+ * Centralized DOM event bindings for trivia UI.
+ */
+
+import { UI } from './dom.js';
+import { gameState } from './state.js';
+import { getApiAdapter } from './services/api-service.js';
+import {
+    setLanguage,
+    updateDescriptions,
+    updatePlayerNameInputs,
+    closePopupAndContinue,
+    setupGameMenu,
+    updateCategoryInputs
+} from './ui.js';
+import { hideHistoryModal } from './ui-history.js';
+import {
+    restartGame,
+    downloadGameState,
+    handleStateUpload
+} from './persistence.js';
+import {
+    initializeGame,
+    askQuestion,
+    rollDice,
+    handleOpenAnswer,
+    handleManualVerification
+} from './game-flow.js';
+import {
+    generateCategories,
+    verifyIncorrectAnswer
+} from './game-api.js';
+import { CATEGORY_PRESETS } from './config.js';
+
+/**
+ * Wires up all UI event listeners.
+ */
+export function setupEventListeners() {
+    UI.langPlBtn.addEventListener('click', () => setLanguage('pl'));
+    UI.langEnBtn.addEventListener('click', () => setLanguage('en'));
+    UI.gameModeSelect.addEventListener('change', updateDescriptions);
+    UI.knowledgeLevelSelect.addEventListener('change', updateDescriptions);
+
+    UI.includeThemeToggle.addEventListener('change', () => {
+        const api = getApiAdapter();
+        if (api && api.saveSettings) api.saveSettings();
+    });
+    UI.mutateCategoriesToggle.addEventListener('change', () => {
+        const api = getApiAdapter();
+        if (api && api.saveSettings) api.saveSettings();
+    });
+
+    UI.generateCategoriesBtn.addEventListener('click', generateCategories);
+    UI.regenerateQuestionBtn.addEventListener('click', () => askQuestion(gameState.currentForcedCategoryIndex));
+    UI.popupRegenerateBtn.addEventListener('click', () => {
+        UI.answerPopup.classList.add('opacity-0', 'scale-90');
+        setTimeout(() => UI.answerPopup.classList.add('hidden'), 500);
+        askQuestion(gameState.currentForcedCategoryIndex);
+    });
+
+    UI.playerCountInput.addEventListener('input', updatePlayerNameInputs);
+    UI.startGameBtn.addEventListener('click', initializeGame);
+    UI.diceElement.addEventListener('click', rollDice);
+    UI.submitAnswerBtn.addEventListener('click', handleOpenAnswer);
+    UI.answerInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handleOpenAnswer(); });
+    UI.acceptAnswerBtn.addEventListener('click', () => handleManualVerification(true));
+    UI.rejectAnswerBtn.addEventListener('click', () => handleManualVerification(false));
+    UI.verifyAnswerBtn.addEventListener('click', verifyIncorrectAnswer);
+    UI.closePopupBtn.addEventListener('click', closePopupAndContinue);
+    UI.closeHistoryBtn.addEventListener('click', hideHistoryModal);
+    UI.restartGameBtn.addEventListener('click', restartGame);
+    UI.downloadStateBtn.addEventListener('click', downloadGameState);
+    UI.uploadStateInput.addEventListener('change', handleStateUpload);
+    UI.closeSuggestionModalBtn.addEventListener('click', () => {
+        UI.suggestionModal.classList.remove('visible');
+    });
+
+    UI.playAgainBtn.addEventListener('click', () => {
+        UI.winnerScreen.classList.add('hidden');
+        UI.setupScreen.classList.remove('hidden');
+        const oldSvg = UI.boardWrapper.querySelector('.board-connections');
+        if (oldSvg) oldSvg.remove();
+    });
+
+    UI.categoryPresetSelect.addEventListener('change', (e) => {
+        const selectedIndex = e.target.value;
+        if (selectedIndex !== '') {
+            const selectedPreset = CATEGORY_PRESETS[parseInt(selectedIndex)];
+            const lang = gameState.currentLanguage;
+
+            const categoryNames = selectedPreset.categories.map(cat => cat[lang] || cat.en);
+
+            updateCategoryInputs(categoryNames);
+
+            const presetName = selectedPreset.name[lang] || selectedPreset.name.en;
+
+            if (UI.themeInput) {
+                UI.themeInput.value = presetName;
+            }
+
+            if (UI.includeThemeToggle) {
+                UI.includeThemeToggle.checked = true;
+                const api = getApiAdapter();
+                if (api && api.saveSettings) api.saveSettings();
+            }
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        document.querySelectorAll('.emoji-panel.active').forEach(panel => {
+            if (!panel.parentElement.contains(e.target)) {
+                panel.classList.remove('active');
+            }
+        });
+    });
+
+    setupGameMenu();
+}

@@ -1,0 +1,101 @@
+<!-- Question Screen -->
+<div id="question-screen" class="hidden container mx-auto px-4 py-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header with timer and progress -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <p id="question-category" class="text-xl text-blue-400 font-semibold">Category</p>
+                <p id="question-number" class="text-lg text-gray-400">Question 1/30</p>
+            </div>
+            <div class="text-center">
+                <div class="timer-display" id="timer">60</div>
+                <p class="text-base text-gray-400" data-lang-key="seconds_label">seconds</p>
+            </div>
+            <div>
+                <button id="player-toggle-fullscreen" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm" data-lang-key="fullscreen_btn">📺 Fullscreen</button>
+            </div>
+        </div>
+        
+        <!-- Question - Larger for mobile/tablet -->
+        <div class="bg-gray-800 rounded-2xl p-6 mb-6">
+            <h2 id="question-text" class="question-text text-white font-medium leading-relaxing text-xl">
+                Loading question...
+            </h2>
+        </div>
+        
+        <!-- Answer Options - 2x2 Grid -->
+        <div id="answer-options" class="grid grid-cols-2 gap-4 mb-6">
+            <!-- Options will be added here in 2x2 grid -->
+        </div>
+        
+        <!-- Answer Status -->
+        <div id="answer-status" class="text-center">
+            <div class="text-lg text-gray-400" data-lang-key="player_answer_prompt">
+                Select your answer before time runs out. You can skip if you are not sure.
+            </div>
+        </div>
+        
+        <!-- Skip Question Button -->
+        <div class="text-center mt-4">
+            <button id="skip-question" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm" data-lang-key="skip_question_btn">
+                ⏭️ Skip Question
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Results Screen (waiting for next question) -->
+<div id="results-screen" class="hidden container mx-auto px-4 py-8">
+    <div class="max-w-md mx-auto">
+        <div class="bg-gray-800 rounded-2xl p-6 text-center space-y-6">
+            <div id="result-icon" class="text-6xl">⏳</div>
+            
+            <div>
+                <h2 id="result-title" class="text-xl font-semibold text-white mb-2" data-lang-key="question_complete_title">Question Complete</h2>
+                <p id="result-message" class="text-gray-400" data-lang-key="waiting_next_question_text">Waiting for next question...</p>
+            </div>
+            
+            <div id="your-answer" class="bg-gray-700 rounded-lg p-4 text-left hidden">
+                <h3 class="text-sm font-semibold text-gray-300 mb-2" data-lang-key="your_answer_label">Your Answer:</h3>
+                <p id="answer-text" class="text-white"></p>
+            </div>
+            
+            <div id="correct-answer" class="bg-green-900 rounded-lg p-4 text-left hidden">
+                <h3 class="text-sm font-semibold text-green-300 mb-2" data-lang-key="correct_answer_label">Correct Answer:</h3>
+                <p id="correct-answer-text" class="text-green-200"></p>
+            </div>
+            
+            <div id="explanation" class="bg-blue-900 rounded-lg p-4 text-left hidden">
+                <h3 class="text-sm font-semibold text-blue-300 mb-2" data-lang-key="explanation_label">Explanation:</h3>
+                <p id="explanation-text" class="text-blue-200 text-sm leading-relaxed"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Final Results Screen -->
+<div id="final-results-screen" class="hidden container mx-auto px-4 py-8">
+    <div class="max-w-md mx-auto">
+        <div class="bg-gray-800 rounded-2xl p-6 text-center space-y-6">
+            <div class="text-6xl">🎉</div>
+            
+            <div>
+                <h1 class="text-2xl font-bold text-yellow-400 mb-2" data-lang-key="game_complete_title">Game Complete!</h1>
+                <p class="text-gray-400" data-lang-key="thanks_for_playing_text">Thanks for playing!</p>
+            </div>
+            
+            <div id="final-position" class="bg-gray-700 rounded-lg p-4">
+                <div class="text-3xl font-bold text-white" id="final-score">0</div>
+                <div class="text-sm text-gray-400" data-lang-key="final_score_label">Final Score</div>
+            </div>
+            
+            <div id="final-rank" class="bg-blue-900 rounded-lg p-4">
+                <div class="text-lg font-semibold text-blue-200" id="final-position-text" data-lang-key="final_position_text">Position: -/-</div>
+            </div>
+            
+            <button id="play-again" class="w-full py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors" data-lang-key="play_again_btn">
+                Play Again
+            </button>
+        </div>
+    </div>
+</div>

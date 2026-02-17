@@ -18,7 +18,7 @@ function initializeThemeSwitcher() {
     });
 
     // Set the active button based on the saved theme
-    const savedTheme = localStorage.getItem('trivia_theme') || 'light';
+    const savedTheme = localStorage.getItem('trivia_theme') || 'oled';
     const currentRadio = switcher.querySelector(`input[value="${savedTheme}"]`);
     if (currentRadio) {
         currentRadio.checked = true;

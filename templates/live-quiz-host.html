@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Live Quiz - Host</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <script>
+        (function() {
+            // Force dark theme for live quiz
+            document.documentElement.className = 'dark';
+        })();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    
+    <!-- Load modular scripts -->
+    <script src="/js/live-quiz/live-quiz-common.js"></script>
+    <script src="/js/live-quiz/live-quiz-host-setup.js"></script>
+    <script src="/js/live-quiz/live-quiz-host-lobby.js"></script>
+    <script src="/js/live-quiz/live-quiz-host-game.js"></script>
+    <script src="/js/live-quiz/live-quiz-host-results.js"></script>
+    <script src="/js/live-quiz/live-quiz-host-main.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen live-quiz-app">
+
+    {% include 'partials/host_setup.html' %}
+    {% include 'partials/host_lobby.html' %}
+    {% include 'partials/host_game.html' %}
+    {% include 'partials/host_fullscreen.html' %}
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-2xl p-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p id="loading-text" class="text-white">Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize host application using modular approach
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.LiveQuizHost) {
+                window.LiveQuizHost.init();
+            }
+            
+            // Setup slider functionality after setup is loaded
+            setupSliders();
+        });
+        
+        function setupSliders() {
+            // Questions per category slider
+            const questionsSlider = document.getElementById('questions-per-category');
+            const questionsSliderValue = document.getElementById('questions-slider-value');
+
+            if (questionsSlider && questionsSliderValue) {
+                // Update value display on slider change
+                questionsSlider.addEventListener('input', (e) => {
+                    questionsSliderValue.textContent = e.target.value;
+                });
+            }
+
+            // Answer time slider
+            const answerTimeSlider = document.getElementById('answer-time');
+            const answerTimeSliderValue = document.getElementById('answer-time-slider-value');
+
+            if (answerTimeSlider && answerTimeSliderValue) {
+                // Update value display on slider change
+                answerTimeSlider.addEventListener('input', (e) => {
+                    answerTimeSliderValue.textContent = e.target.value;
+                });
+            }
+            
+            // Auto-advance sliders (both regular and fullscreen)
+            const autoAdvanceSlider = document.getElementById('auto-advance-slider');
+            const autoAdvanceSliderValue = document.getElementById('auto-advance-slider-value');
+            const fullscreenAutoAdvanceSlider = document.getElementById('fullscreen-auto-advance-slider');
+            const fullscreenAutoAdvanceSliderValue = document.getElementById('fullscreen-auto-advance-slider-value');
+
+            // Initialize regular auto-advance slider
+            if (autoAdvanceSlider && autoAdvanceSliderValue) {
+                autoAdvanceSlider.addEventListener('input', (e) => {
+                    autoAdvanceSliderValue.textContent = e.target.value;
+                });
+            }
+
+            // Initialize fullscreen auto-advance slider
+            if (fullscreenAutoAdvanceSlider && fullscreenAutoAdvanceSliderValue) {
+                fullscreenAutoAdvanceSlider.addEventListener('input', (e) => {
+                    fullscreenAutoAdvanceSliderValue.textContent = e.target.value;
+                });
+            }
+            
+            // Initialize all slider displays with current values
+            if (window.LiveQuizCommon) {
+                window.LiveQuizCommon.updateSliderDisplays();
+            } else {
+                // Fallback initialization if LiveQuizCommon is not available yet
+                setTimeout(() => {
+                    if (window.LiveQuizCommon) {
+                        window.LiveQuizCommon.updateSliderDisplays();
+                    }
+                }, 100);
+            }
+        }
+    </script>
+</body>
+</html>

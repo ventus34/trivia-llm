@@ -1,0 +1,103 @@
+<section id="stats-section">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Statystyki Bazy Danych</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+            <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
+            <div>
+                <p class="text-gray-500 text-sm">Wszystkich Pytań</p>
+                <p id="total-questions-stat" class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+            <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4v12l-4-2-4 2V4M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+            <div>
+                <p class="text-gray-500 text-sm">Unikalne Kategorie</p>
+                <p id="unique-categories-stat" class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+            <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 8v5a2 2 0 002 2h6" /></svg></div>
+            <div>
+                <p class="text-gray-500 text-sm">Unikalne Subkategorie</p>
+                <p id="unique-subcategories-stat" class="text-2xl font-bold text-gray-900">0</p>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Kategorie</h3>
+            <div id="category-wordcloud" class="wordcloud-container"></div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Subkategorie</h3>
+            <div id="subcategory-wordcloud" class="wordcloud-container"></div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Słowa Kluczowe</h3>
+            <div id="keys-wordcloud" class="wordcloud-container"></div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Pytania wg Modelu</h3>
+            <div class="chart-container"><canvas id="model-chart"></canvas></div>
+        </div>
+    </div>
+    <div class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
+            <h3 class="text-xl font-semibold text-gray-700 mb-2 sm:mb-0">Graf powiązań</h3>
+            <button id="render-graph-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition self-start sm:self-center hidden">Wyświetl Graf</button>
+        </div>
+        <div id="graph-controls" class="hidden bg-gray-50 p-4 rounded-lg mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 border">
+            <div class="lg:col-span-4">
+                <label class="block text-sm font-medium text-gray-700">Tryb Grafu (Relacja)</label>
+                <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="graph-mode-controls">
+                    <button data-mode="keywords" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Kategoria ↔ Słowo kluczowe</button>
+                    <button data-mode="subcategories" class="graph-mode-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Kategoria ↔ Subkategoria</button>
+                </div>
+            </div>
+            <div>
+                <label for="charge-slider" class="block text-sm font-medium text-gray-700">Siła odpychania</label>
+                <div class="flex items-center space-x-2 mt-1">
+                    <input type="range" id="charge-slider" min="-1000" max="0" value="-300" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span id="charge-value" class="text-sm font-mono w-12 text-center">-300</span>
+                </div>
+            </div>
+            <div>
+                <label for="link-dist-slider" class="block text-sm font-medium text-gray-700">Długość powiązań</label>
+                <div class="flex items-center space-x-2 mt-1">
+                    <input type="range" id="link-dist-slider" min="10" max="300" value="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span id="link-dist-value" class="text-sm font-mono w-12 text-center">100</span>
+                </div>
+            </div>
+            <div>
+                <label for="gravity-slider" class="block text-sm font-medium text-gray-700">Grawitacja (do centrum)</label>
+                <div class="flex items-center space-x-2 mt-1">
+                    <input type="range" id="gravity-slider" min="0" max="1" step="0.05" value="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span id="gravity-value" class="text-sm font-mono w-12 text-center">0.1</span>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Uporządkuj Graf</label>
+                <div class="flex items-center space-x-1 mt-1 bg-gray-200 rounded-lg p-1" id="layout-controls">
+                    <button data-layout="default" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors active">Domyślny</button>
+                    <button data-layout="group" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Grupuj</button>
+                    <button data-layout="radial" class="layout-btn flex-1 px-2 py-1 text-sm rounded-md transition-colors">Radialny</button>
+                </div>
+            </div>
+            <div class="lg:col-span-2">
+                <label for="min-node-weight-slider" class="block text-sm font-medium text-gray-700">Min. waga węzła (ilość powiązań)</label>
+                <div class="flex items-center space-x-2 mt-1">
+                    <input type="range" id="min-node-weight-slider" min="0" max="50" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span id="min-node-weight-value" class="text-sm font-mono w-12 text-center">0</span>
+                </div>
+            </div>
+            <div class="lg:col-span-2">
+                <label for="min-link-strength-slider" class="block text-sm font-medium text-gray-700">Min. siła powiązania (współwystąpienia)</label>
+                <div class="flex items-center space-x-2 mt-1">
+                    <input type="range" id="min-link-strength-slider" min="0" max="10" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <span id="min-link-strength-value" class="text-sm font-mono w-12 text-center">0</span>
+                </div>
+            </div>
+        </div>
+        <div id="network-graph" class="hidden network-container p-4"></div>
+    </div>
+</section>

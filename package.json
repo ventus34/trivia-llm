@@ -1,0 +1,16 @@
+{
+  "name": "trivia-llm-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint \"js/**/*.js\"",
+    "format": "prettier --write \"js/**/*.js\" \"templates/**/*.html\" \"css/**/*.css\"",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.2.5",
+    "vitest": "^1.5.0"
+  }
+}

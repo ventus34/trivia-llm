@@ -1,0 +1,16 @@
+.idea/dataSources.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/trivia-llm.iml
+.idea/vcs.xml
+__pycache__/database.cpython-313.pyc
+__pycache__/server.cpython-313.pyc
+models.json
+models2.json
+.env
+questions.db
+.kilocode/rules/restricted_files.md
+__pycache__/*
+.venv
+.venv/*
+venv
