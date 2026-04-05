@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trivial LLM</title>
+    <style>
+        :root {
+            --cat-1: #93278F;    /* Muzyka */
+            --cat-2: #00AEEF;    /* Podróże */
+            --cat-3: #ED1E79;    /* Lifestyle */
+            --cat-4: #F7941D;    /* Kuchnie Świata */
+            --cat-5: #FFF200;    /* Filmy i Seriale */
+            --cat-6: #8CC63F;    /* Kim jestem? */
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background: #1a1a1a; color: #f0f0f0; }
+        h1 { text-align: center; color: #fff; font-size: 24px; margin-bottom: 20px; }
+        
+        .panel { background: #2a2a2a; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-row > * { flex: 1; min-width: 200px; }
+        
+        label { display: block; font-size: 14px; margin-bottom: 6px; color: #aaa; }
+        input[type="password"], select, textarea { 
+            width: 100%; padding: 12px; border: 1px solid #444; border-radius: 8px; 
+            background: #333; color: white; font-size: 16px; box-sizing: border-box;
+        }
+        button { 
+            padding: 12px 20px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: all 0.2s; color: white; background: #4a4a4a;
+        }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .btn-primary { background: #3b82f6; }
+        .btn-secondary { background: #4b5563; padding: 6px 12px; font-size: 13px; }
+
+        .memory-info { font-size: 13px; color: #888; text-align: right; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .memory-info a { color: #ef4444; text-decoration: none; margin-left: 10px; font-weight: bold; }
+
+        .cat-setup-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        .cat-setup-grid input { font-size: 14px; padding: 8px; font-weight: bold; background: #333; color: white; border: 1px solid #444; border-radius: 6px; width: 100%; box-sizing: border-box; }
+        @media (min-width: 768px) { .cat-setup-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        .categories-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+        @media (min-width: 768px) { .categories-grid { grid-template-columns: repeat(3, 1fr); } }
+        
+        .cat-btn { padding: 30px 10px; font-size: 18px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
+        .cat-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: none; }
+        
+        .btn-cat1 { background: var(--cat-1); color: #fff; }
+        .btn-cat2 { background: var(--cat-2); color: #fff; }
+        .btn-cat3 { background: var(--cat-3); color: #fff; }
+        .btn-cat4 { background: var(--cat-4); color: #fff; }
+        .btn-cat5 { background: var(--cat-5); color: #000; text-shadow: none; }
+        .btn-cat6 { background: var(--cat-6); color: #000; text-shadow: none; }
+
+        #status { text-align: center; margin: 15px 0; font-size: 16px; color: #4ade80; min-height: 22px; font-weight: bold; }
+
+        #active-question { display: none; background: white; color: black; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; border-top: 15px solid #333; transition: opacity 0.3s; }
+        .loading-state { opacity: 0.4; pointer-events: none; }
+        .q-cat-label { position: absolute; top: -15px; left: 20px; padding: 5px 15px; border-radius: 0 0 8px 8px; color: white; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+        .q-text { font-size: 24px; font-weight: 700; margin: 20px 0; line-height: 1.3; }
+        
+        .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        @media (max-width: 600px) { .q-options { grid-template-columns: 1fr; gap: 10px; } }
+        .q-option { background: #f3f4f6; border: 3px solid #e5e7eb; padding: 15px; border-radius: 12px; font-size: 18px; color: #374151; font-weight: 500; display: flex; align-items: center; }
+        .q-option strong { margin-right: 10px; color: #111; font-size: 20px; background: #e5e7eb; padding: 4px 10px; border-radius: 6px; }
+        .q-option.correct { background: #dcfce7; border-color: #22c55e; color: #166534; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2); }
+        .q-option.correct strong { background: #22c55e; color: white; }
+
+        .q-explanation { font-size: 16px; color: #4b5563; line-height: 1.5; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .q-explanation p { margin: 5px 0; }
+
+        #debug-panel { display: none; background: #000; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #444; overflow-x: auto; font-family: monospace; }
+        .debug-section { margin-bottom: 20px; }
+        .debug-section h3 { color: #facc15; margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .debug-section pre { background: #111; padding: 10px; color: #a3e635; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; margin: 0; font-size: 12px; border: 1px solid #333; }
+        .debug-label { display: block; color: #888; font-size: 11px; margin-bottom: 2px; margin-top: 8px; }
+
+        .main-layout { display: flex; flex-direction: column; gap: 20px; }
+        .left-col { display: flex; flex-direction: column; }
+        .right-col { display: flex; flex-direction: column; }
+        
+        @media (min-width: 900px) {
+            .main-layout { flex-direction: row; align-items: flex-start; }
+            .left-col { flex: 0 0 55%; max-width: 55%; }
+            .right-col { flex: 1; position: sticky; top: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-layout">
+        <div class="left-col">
+            <h1>Trivial LLM - iPad Host</h1>
+
+            <div class="panel">
+                <div class="form-row">
+                    <div>
+                        <label>Klucz API (OpenRouter):</label>
+                        <input type="password" id="apiKeyInput" placeholder="sk-or-v1-..." />
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="btn-primary" id="fetchModelsBtn" onclick="fetchModels()" style="width: 100%;">Pobierz Modele</button>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label>Wybierz Model:</label>
+                        <select id="modelSelect">
+                            <option value="">Najpierw podaj klucz i pobierz modele...</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label>Ręczne wykluczenia (dla wszystkich kategorii jednocześnie):</label>
+                    <textarea id="avoid" rows="2" placeholder="Wpisz np. II Wojna Światowa, Star Wars... (aplikacja i tak automatycznie pamięta użyte pytania)"></textarea>
+                    
+                    <div class="memory-info">
+                        <div>
+                            <button class="btn-secondary" onclick="toggleDebug()">🐛 Pokaż/Ukryj Debug</button>
+                        </div>
+                        <div>
+                            Zadane: <span id="memoryStats" style="color: #fff; font-weight: bold;">0</span> |
+                            W puli (cache): <span id="cacheStats" style="color: #4ade80; font-weight: bold;">0</span> 
+                            <a href="#" onclick="clearMemory(event)">Wyczyść Pamięć</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="debug-panel">
+                    <div class="debug-section">
+                        <h3>Etap 1: Szukanie Tematu (Blueprint)</h3>
+                        <span class="debug-label">Wysłany Payload (w tym Prompt):</span>
+                        <pre id="debug-bp-payload">Oczekiwanie...</pre>
+                        <span class="debug-label">Zwrócona odpowiedź LLM:</span>
+                        <pre id="debug-bp-response">Oczekiwanie...</pre>
+                    </div>
+                    <div class="debug-section">
+                        <h3>Etap 2: Układanie Pytania Zamkniętego</h3>
+                        <span class="debug-label">Wysłany Payload (w tym Prompt):</span>
+                        <pre id="debug-q-payload">Oczekiwanie...</pre>
+                        <span class="debug-label">Zwrócona odpowiedź LLM:</span>
+                        <pre id="debug-q-response">Oczekiwanie...</pre>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="margin-top: 15px;">Konfiguracja kategorii (domyślne z planszy):</label>
+                    <div class="cat-setup-grid">
+                        <input type="text" id="cat-in-1" value="Muzyka" style="border-left: 5px solid var(--cat-1)" oninput="updateCatBtns()">
+                        <input type="text" id="cat-in-2" value="Podróże" style="border-left: 5px solid var(--cat-2)" oninput="updateCatBtns()">
+                        <input type="text" id="cat-in-3" value="Lifestyle" style="border-left: 5px solid var(--cat-3)" oninput="updateCatBtns()">
+                        <input type="text" id="cat-in-4" value="Kuchnie Świata" style="border-left: 5px solid var(--cat-4)" oninput="updateCatBtns()">
+                        <input type="text" id="cat-in-5" value="Filmy i Seriale" style="border-left: 5px solid var(--cat-5)" oninput="updateCatBtns()">
+                        <input type="text" id="cat-in-6" value="Kim jestem?" style="border-left: 5px solid var(--cat-6)" oninput="updateCatBtns()">
+                    </div>
+                </div>
+            </div>
+
+            <div id="status">Wpisz klucz API, aby rozpocząć.</div>
+
+            <div class="categories-grid">
+                <button class="cat-btn btn-cat1" id="btn-cat1" onclick="generate(document.getElementById('cat-in-1').value, 'var(--cat-1)')">Muzyka</button>
+                <button class="cat-btn btn-cat2" id="btn-cat2" onclick="generate(document.getElementById('cat-in-2').value, 'var(--cat-2)')">Podróże</button>
+                <button class="cat-btn btn-cat3" id="btn-cat3" onclick="generate(document.getElementById('cat-in-3').value, 'var(--cat-3)')">Lifestyle</button>
+                <button class="cat-btn btn-cat4" id="btn-cat4" onclick="generate(document.getElementById('cat-in-4').value, 'var(--cat-4)')">Kuchnie Świata</button>
+                <button class="cat-btn btn-cat5" id="btn-cat5" onclick="generate(document.getElementById('cat-in-5').value, 'var(--cat-5)')">Filmy i Seriale</button>
+                <button class="cat-btn btn-cat6" id="btn-cat6" onclick="generate(document.getElementById('cat-in-6').value, 'var(--cat-6)')">Kim jestem?</button>
+            </div>
+        </div> <!-- Koniec .left-col -->
+
+        <div class="right-col">
+            <div id="active-question">
+                <div id="q-color-bar" class="q-cat-label">Kategoria</div>
+                <div class="q-text" id="q-text">Pytanie...</div>
+                <div class="q-options" id="q-options">
+                    <!-- Tutaj wpadną opcje ABCD -->
+                </div>
+                <div class="q-explanation" id="q-explanation">Wyjaśnienie</div>
+            </div>
+        </div> <!-- Koniec .right-col -->
+    </div> <!-- Koniec .main-layout -->
+
+    <script>
+        // --- DEBUGER ---
+        window.debugData = { blueprint: {}, question: {} };
+        
+        function updateDebugUI() {
+            document.getElementById('debug-bp-payload').textContent = JSON.stringify(window.debugData.blueprint.payload || {}, null, 2);
+            document.getElementById('debug-bp-response').textContent = window.debugData.blueprint.response || '';
+            document.getElementById('debug-q-payload').textContent = JSON.stringify(window.debugData.question.payload || {}, null, 2);
+            document.getElementById('debug-q-response').textContent = window.debugData.question.response || '';
+        }
+
+        function toggleDebug() {
+            const panel = document.getElementById('debug-panel');
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+        }
+
+        function clearDebug() {
+            window.debugData = { blueprint: {}, question: {} };
+            updateDebugUI();
+        }
+
+        // --- PAMIĘĆ ORAZ CACHE DLA BLUEPRINTÓW ---
+        let memoryApiKey = "";
+        const MEMORY_KEY = 'trivial_llm_history';
+        const BLUEPRINT_CACHE_KEY = 'trivial_llm_blueprints';
+        
+        let historyMemory = {};
+        let blueprintCache = {};
+        
+        try {
+            const storedHistory = localStorage.getItem(MEMORY_KEY);
+            if (storedHistory) historyMemory = JSON.parse(storedHistory);
+            
+            const storedCache = localStorage.getItem(BLUEPRINT_CACHE_KEY);
+            if (storedCache) blueprintCache = JSON.parse(storedCache);
+        } catch (e) {
+            historyMemory = {};
+            blueprintCache = {};
+        }
+
+        function saveBlueprintCache() {
+            localStorage.setItem(BLUEPRINT_CACHE_KEY, JSON.stringify(blueprintCache));
+        }
+
+        function updateMemoryStats() {
+            // Liczenie użytych tematów
+            const totalUsed = Object.values(historyMemory).reduce((sum, arr) => sum + arr.length, 0);
+            document.getElementById('memoryStats').innerText = totalUsed;
+            
+            // Liczenie gotowych, jeszcze nieużytych szkiców w puli
+            let totalCached = 0;
+            for (const cat in blueprintCache) {
+                const safe = blueprintCache[cat].filter(t => !historyMemory[cat]?.includes(t.target_answer));
+                totalCached += safe.length;
+            }
+            const cacheEl = document.getElementById('cacheStats');
+            if(cacheEl) cacheEl.innerText = totalCached;
+        }
+
+        function saveToMemory(category, targetAnswer) {
+            if (!historyMemory[category]) historyMemory[category] = [];
+            if (!historyMemory[category].includes(targetAnswer)) {
+                historyMemory[category].push(targetAnswer);
+            }
+            if (historyMemory[category].length > 500) {
+                historyMemory[category] = historyMemory[category].slice(-500);
+            }
+            localStorage.setItem(MEMORY_KEY, JSON.stringify(historyMemory));
+            updateMemoryStats();
+        }
+
+        function clearMemory(e) {
+            e.preventDefault();
+            if(confirm("Czy na pewno chcesz wyczyścić historię użytych pytań ORAZ przygotowaną pulę szkiców (cache)?")) {
+                historyMemory = {};
+                blueprintCache = {};
+                localStorage.removeItem(MEMORY_KEY);
+                localStorage.removeItem(BLUEPRINT_CACHE_KEY);
+                updateMemoryStats();
+                alert("Pamięć i bufor zostały wyczyszczone.");
+            }
+        }
+        updateMemoryStats();
+
+        // --- PROMPTY I SCHEMATY ---
+        const SYSTEM_BLUEPRINT = `Jesteś architektem bazy danych wiedzy. Twoim celem jest ekstrakcja atomowych faktów.
+Dla podanej KATEGORII wygeneruj listę 50 unikalnych faktów (szkiców pytań).
+
+KRYTERIA JAKOŚCI DANYCH:
+1. WERYFIKOWALNOŚĆ: Fakt musi być bezsporny (data, nazwa własna, wzór, liczba). Unikaj opinii.
+2. ATOMOWOŚĆ: Jeden wpis dotyczy jednej konkretnej informacji.
+3. KRÓTKA ODPOWIEDŹ: Pole 'target_answer' musi być zwięzłe (max 3-4 słowa).
+4. RÓŻNORODNOŚĆ: Pokryj całe spektrum kategorii, nie tylko najpopularniejsze tematy.
+
+[WAŻNE: ZWRÓĆ TYLKO PRAWIDŁOWY OBIEKT JSON W DOKŁADNIE TAKIM FORMACIE, BEZ MARKDOWN:]
+{
+  "topics": [
+    {
+      "subcategory": "Precyzyjna dziedzina (np. 'Fizyka kwantowa')",
+      "modifier": "Typ pytania (np. 'Rok odkrycia')",
+      "target_answer": "Konkretna wartość (np. '1925')"
+    }
+  ]
+}`;
+
+        const SYSTEM_QUESTION = `Jesteś ekspertem teleturniejów. Tworzysz pytania wymagające precyzyjnej wiedzy.
+ZADANIE: Stwórz pytanie zamknięte na podstawie dostarczonego SZKICU.
+
+RYGORYSTYCZNE ZASADY TREŚCI:
+1. PRECYZJA: Pytanie musi być jednoznacznym zdaniem pytającym.
+2. BRAK SPOILERA: Pytanie NIE MOŻE zawierać słów sugerujących odpowiedź.
+3. HOMOGENICZNOŚĆ OPCJI: Dystraktory (błędne opcje) muszą należeć do TEJ SAMEJ kategorii semantycznej co poprawna odpowiedź (np. same daty, same miasta).
+4. POPRAWNA ODPOWIEDŹ: Musi być identyczna z 'Target Answer' ze szkicu i stanowić jeden z 4 elementów tablicy 'options'.
+
+[WAŻNE: ZWRÓĆ TYLKO PRAWIDŁOWY OBIEKT JSON W DOKŁADNIE TAKIM FORMACIE, BEZ MARKDOWN:]
+{
+  "question": "Treść pytania?",
+  "options": ["Opcja A", "Opcja B", "Opcja C", "Opcja D"],
+  "answer": "Poprawna opcja (dokładna kopia z tablicy options)",
+  "explanation_correct": "Faktograficzne wyjaśnienie (max 2 zdania).",
+  "explanation_incorrect": "Dlaczego inne są błędne (max 2 zdania)."
+}`;
+
+        const BLUEPRINT_SCHEMA = {
+            name: "blueprint",
+            strict: true,
+            schema: {
+                type: "object",
+                properties: {
+                    topics: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                subcategory: { type: "string" },
+                                modifier: { type: "string" },
+                                target_answer: { type: "string" }
+                            },
+                            required: ["subcategory", "modifier", "target_answer"],
+                            additionalProperties: false
+                        }
+                    }
+                },
+                required: ["topics"],
+                additionalProperties: false
+            }
+        };
+
+        const QUESTION_SCHEMA = {
+            name: "trivia_question",
+            strict: true,
+            schema: {
+                type: "object",
+                properties: {
+                    question: { type: "string" },
+                    options: { 
+                        type: "array", 
+                        items: { type: "string" },
+                        description: "Dokładnie 4 opcje do wyboru"
+                    },
+                    answer: { type: "string" },
+                    explanation_correct: { type: "string" },
+                    explanation_incorrect: { type: "string" }
+                },
+                required: ["question", "options", "answer", "explanation_correct", "explanation_incorrect"],
+                additionalProperties: false
+            }
+        };
+
+        function updateCatBtns() {
+            for(let i=1; i<=6; i++) {
+                document.getElementById(`btn-cat${i}`).innerText = document.getElementById(`cat-in-${i}`).value || "Brak nazwy";
+            }
+        }
+        updateCatBtns();
+
+        function parseLLMResponse(text) {
+            let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+            try {
+                return JSON.parse(cleanText);
+            } catch (e) {
+                try {
+                    const match = cleanText.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+                    if (!match) throw new Error("Brak struktury JSON.");
+                    return JSON.parse(match[0]);
+                } catch (e2) {
+                    console.error("Szczegóły błędu parsowania LLM:", text);
+                    throw new Error("Wybrany model nie zwrócił poprawnego formatu JSON.");
+                }
+            }
+        }
+
+        async function fetchModels() {
+            const inputKey = document.getElementById('apiKeyInput').value.trim();
+            if (!inputKey) return alert("Podaj klucz API OpenRouter");
+            memoryApiKey = inputKey; 
+            
+            const btn = document.getElementById('fetchModelsBtn');
+            const select = document.getElementById('modelSelect');
+            const status = document.getElementById('status');
+            
+            btn.disabled = true;
+            btn.innerText = "Pobieranie...";
+            status.innerText = "Łączenie z OpenRouter...";
+
+            try {
+                const res = await fetch('https://openrouter.ai/api/v1/models', {
+                    method: 'GET',
+                    headers: { "Authorization": `Bearer ${memoryApiKey}` }
+                });
+                
+                if (!res.ok) throw new Error(`Błąd API: ${res.status}`);
+                
+                const data = await res.json();
+                select.innerHTML = "";
+                data.data.sort((a,b) => a.name.localeCompare(b.name)).forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.innerText = m.name + " (" + m.id + ")";
+                    if(m.id === "openai/gpt-4o-mini" || m.id === "anthropic/claude-3-haiku") opt.selected = true;
+                    select.appendChild(opt);
+                });
+                status.innerText = "Modele pobrane! Gotowy do gry.";
+                status.style.color = "#4ade80";
+            } catch (err) {
+                alert(err.message);
+                status.innerText = "Błąd pobierania modeli.";
+                status.style.color = "#f87171";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Pobierz Modele";
+            }
+        }
+
+        async function callOpenRouter(system, prompt, schemaObj, debugPhaseStr) {
+            const model = document.getElementById('modelSelect').value;
+            const payload = {
+                model: model,
+                messages: [
+                    { role: 'system', content: system },
+                    { role: 'user', content: prompt }
+                ]
+            };
+
+            if (schemaObj) {
+                payload.response_format = { type: "json_schema", json_schema: schemaObj };
+            }
+
+            window.debugData[debugPhaseStr].payload = payload;
+            window.debugData[debugPhaseStr].response = "Trwa wysyłanie (próba 1)...";
+            updateDebugUI();
+
+            const url = 'https://openrouter.ai/api/v1/chat/completions';
+            const headers = { "Authorization": `Bearer ${memoryApiKey}`, "Content-Type": "application/json" };
+
+            let res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+
+            // Fallback na json_object
+            if (res.status === 400 && schemaObj) {
+                payload.response_format = { type: "json_object" };
+                window.debugData[debugPhaseStr].payload = payload;
+                updateDebugUI();
+                res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+                
+                // Fallback całkowity (brak wymuszania)
+                if (res.status === 400) {
+                    delete payload.response_format;
+                    window.debugData[debugPhaseStr].payload = payload;
+                    updateDebugUI();
+                    res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
+                }
+            }
+
+            if (!res.ok) throw new Error(`Błąd API (${res.status})`);
+            
+            const data = await res.json();
+            const rawText = data.choices[0].message.content || "";
+            
+            window.debugData[debugPhaseStr].response = rawText;
+            updateDebugUI();
+
+            return parseLLMResponse(rawText);
+        }
+
+        async function generate(category, colorHex) {
+            const inputKey = document.getElementById('apiKeyInput').value.trim();
+            if (inputKey) memoryApiKey = inputKey;
+            if (!memoryApiKey || !document.getElementById('modelSelect').value) return alert("Brakuje klucza API lub wybranego modelu!");
+
+            const avoidField = document.getElementById('avoid');
+            const manualAvoidText = avoidField.value.trim();
+            const status = document.getElementById('status');
+            const card = document.getElementById('active-question');
+
+            document.querySelectorAll('.cat-btn').forEach(b => b.disabled = true);
+            if (card.style.display === 'block') card.classList.add('loading-state');
+            status.style.color = "#fbbf24"; 
+            clearDebug();
+            
+            try {
+                // ETAP 1: Sprawdzamy, czy mamy coś w CACHE
+                if (!blueprintCache[category]) blueprintCache[category] = [];
+                
+                // Filtrujemy tylko te blueprinty, które nie zostały jeszcze użyte (nie ma ich w historii)
+                let safeTopics = blueprintCache[category].filter(t => !historyMemory[category]?.includes(t.target_answer));
+                let randomTopic = null;
+
+                if (safeTopics.length === 0) {
+                    // PULA JEST PUSTA - POBIERAMY NOWE 50 SZTUK
+                    status.innerText = `⚙️ Pula pusta! Trwa generowanie paczki 50 wariantów dla: ${category}...`;
+                    
+                    const autoAvoidText = historyMemory[category] ? historyMemory[category].join(", ") : "";
+                    const combinedAvoid = [manualAvoidText, autoAvoidText].filter(Boolean).join("\n- ");
+                    const avoidPrompt = combinedAvoid ? `\nBEZWZGLĘDNIE OMIJAJ TEMATY (Odpowiedzi docelowe), KTÓRE BYŁY JUŻ W GRZE:\n${combinedAvoid}` : "";
+                    
+                    const blueprintPrompt = `Kategoria: "${category}"\nMotyw przewodni: "Ogólna wiedza"${avoidPrompt}`;
+                    const bpData = await callOpenRouter(SYSTEM_BLUEPRINT, blueprintPrompt, BLUEPRINT_SCHEMA, 'blueprint');
+                    
+                    const topicsList = bpData.topics || [];
+                    if (!topicsList.length) throw new Error("Model nie wygenerował żadnych tematów w schemacie 'topics'.");
+
+                    // Zapisujemy nową pulę do pamięci podręcznej (nadpisując starą/pustą)
+                    blueprintCache[category] = topicsList;
+                    saveBlueprintCache();
+                    updateMemoryStats(); // Odśwież UI licznika
+                    
+                    // Ponownie filtrujemy nową pulę dla 100% pewności
+                    safeTopics = blueprintCache[category].filter(t => !historyMemory[category]?.includes(t.target_answer));
+                    
+                    // Bezpiecznik: gdyby jednak LLM zignorował listę blokad i wszystko by odrzucono
+                    const poolToPickFrom = safeTopics.length > 0 ? safeTopics : topicsList;
+                    randomTopic = poolToPickFrom[Math.floor(Math.random() * poolToPickFrom.length)];
+
+                } else {
+                    // MAMY COŚ W CACHE - OMIJAMY ZAPYTANIE DO API
+                    status.innerText = `⚡ Używam tematu z puli (zostało ${safeTopics.length} wolnych dla: ${category})...`;
+                    
+                    randomTopic = safeTopics[Math.floor(Math.random() * safeTopics.length)];
+                    
+                    // Logujemy mockowaną zawartość do debugera, aby nie był pusty
+                    window.debugData['blueprint'].payload = { info: "Szkic pobrano natychmiastowo z wygenerowanej wcześniej lokalnej puli (cache)." };
+                    window.debugData['blueprint'].response = JSON.stringify(randomTopic, null, 2);
+                    updateDebugUI();
+
+                    // Krótkie oczekiwanie, by użytkownik mógł przeczytać co się dzieje
+                    await new Promise(r => setTimeout(r, 600)); 
+                }
+
+                // ETAP 2: Generowanie ostatecznego pytania na podstawie uzyskanego Blueprintu
+                status.innerText = `📝 Formułowanie pytania (${randomTopic.subcategory} / ${randomTopic.modifier})...`;
+                
+                const qPrompt = `Kategoria: "${category}"\nSZKIC DO PRZEKSZTAŁCENIA NA PYTANIE:\n- Podkategoria: ${randomTopic.subcategory}\n- Typ pytania: ${randomTopic.modifier}\n- Odpowiedź docelowa: ${randomTopic.target_answer}\n\nPoziom trudności: Średni`;
+
+                const qData = await callOpenRouter(SYSTEM_QUESTION, qPrompt, QUESTION_SCHEMA, 'question');
+
+                if(!qData.question || !qData.options || !Array.isArray(qData.options)) {
+                     throw new Error("Model nie zwrócił poprawnej struktury pytania (brak 'question' lub tablicy 'options').");
+                }
+
+                // Renderowanie widoku
+                document.getElementById('q-color-bar').style.backgroundColor = colorHex;
+                document.getElementById('q-color-bar').style.color = (colorHex === 'var(--cat-5)' || colorHex === 'var(--cat-6)') ? '#000' : '#fff';
+                document.getElementById('q-color-bar').innerText = `${category} • ${randomTopic.subcategory}`;
+                
+                document.getElementById('q-text').innerText = qData.question;
+                
+                const optsContainer = document.getElementById('q-options');
+                optsContainer.innerHTML = '';
+                
+                const letters = ['A', 'B', 'C', 'D'];
+                const correctAnswerClean = String(qData.answer).trim().toLowerCase();
+
+                qData.options.slice(0, 4).forEach((optText, index) => {
+                    const div = document.createElement('div');
+                    const isCorrect = String(optText).trim().toLowerCase() === correctAnswerClean;
+                    
+                    div.className = 'q-option' + (isCorrect ? ' correct' : '');
+                    div.innerHTML = `<strong>${letters[index] || '-'}</strong> <span>${optText}</span>`;
+                    optsContainer.appendChild(div);
+                });
+
+                document.getElementById('q-explanation').innerHTML = `
+                    <p>✅ <strong>Poprawna:</strong> ${qData.explanation_correct || ''}</p>
+                    <p>❌ <strong>Zmyłki:</strong> ${qData.explanation_incorrect || ''}</p>
+                `;
+
+                card.style.display = 'block';
+                card.style.borderColor = colorHex;
+                status.innerText = "✨ Gotowe!";
+                status.style.color = "#4ade80"; 
+
+                // Zapisujemy unikalny target_answer do historii (zapobiega to ponownemu wylosowaniu tego blueprintu)
+                saveToMemory(category, randomTopic.target_answer);
+
+            } catch (e) {
+                console.error(e);
+                status.innerText = `⚠️ ${e.message}`;
+                status.style.color = "#f87171";
+            } finally {
+                card.classList.remove('loading-state');
+                document.querySelectorAll('.cat-btn').forEach(b => b.disabled = false);
+            }
+        }
+    </script>
+</body>
+</html>
