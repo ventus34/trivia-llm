@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trivial LLM</title>
+    <title>Trivia</title>
     <style>
         :root {
             --cat-1: #93278F;    /* Muzyka */
@@ -65,13 +65,25 @@
         
         .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         @media (max-width: 600px) { .q-options { grid-template-columns: 1fr; gap: 10px; } }
-        .q-option { background: #f3f4f6; border: 3px solid #e5e7eb; padding: 15px; border-radius: 12px; font-size: 18px; color: #374151; font-weight: 500; display: flex; align-items: center; }
-        .q-option strong { margin-right: 10px; color: #111; font-size: 20px; background: #e5e7eb; padding: 4px 10px; border-radius: 6px; }
-        .q-option.correct { background: #dcfce7; border-color: #22c55e; color: #166534; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2); }
-        .q-option.correct strong { background: #22c55e; color: white; }
+        
+        .q-option { background: #f3f4f6; border: 3px solid #e5e7eb; padding: 15px; border-radius: 12px; font-size: 18px; color: #374151; font-weight: 500; display: flex; align-items: center; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+        .q-option:active { transform: scale(0.98); }
+        .q-option strong { margin-right: 10px; color: #111; font-size: 20px; background: #e5e7eb; padding: 4px 10px; border-radius: 6px; transition: background 0.2s; }
+        
+        /* Stan po wybraniu odpowiedzi */
+        .q-options.answered { pointer-events: none; }
+        .q-options.answered .q-option:not(.revealed-correct):not(.revealed-wrong) { opacity: 0.6; }
+        
+        .q-option.revealed-correct { background: #dcfce7; border-color: #22c55e; color: #166534; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2); opacity: 1 !important; transform: scale(1.02); }
+        .q-option.revealed-correct strong { background: #22c55e; color: white; }
+        
+        .q-option.revealed-wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; opacity: 1 !important; }
+        .q-option.revealed-wrong strong { background: #ef4444; color: white; }
 
-        .q-explanation { font-size: 16px; color: #4b5563; line-height: 1.5; padding-top: 15px; border-top: 1px dashed #ccc; }
+        .q-explanation { display: none; font-size: 16px; color: #4b5563; line-height: 1.5; padding-top: 15px; border-top: 1px dashed #ccc; animation: fadeIn 0.5s ease; }
         .q-explanation p { margin: 5px 0; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         #debug-panel { display: none; background: #000; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #444; overflow-x: auto; font-family: monospace; }
         .debug-section { margin-bottom: 20px; }
@@ -79,6 +91,7 @@
         .debug-section pre { background: #111; padding: 10px; color: #a3e635; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; margin: 0; font-size: 12px; border: 1px solid #333; }
         .debug-label { display: block; color: #888; font-size: 11px; margin-bottom: 2px; margin-top: 8px; }
 
+        /* --- UKŁAD HORYZONTALNY DLA IPADA --- */
         .main-layout { display: flex; flex-direction: column; gap: 20px; }
         .left-col { display: flex; flex-direction: column; }
         .right-col { display: flex; flex-direction: column; }
@@ -94,7 +107,7 @@
 
     <div class="main-layout">
         <div class="left-col">
-            <h1>Trivial LLM - iPad Host</h1>
+            <h1>Trivial LLM</h1>
 
             <div class="panel">
                 <div class="form-row">
@@ -170,21 +183,16 @@
                 <button class="cat-btn btn-cat5" id="btn-cat5" onclick="generate(document.getElementById('cat-in-5').value, 'var(--cat-5)')">Filmy i Seriale</button>
                 <button class="cat-btn btn-cat6" id="btn-cat6" onclick="generate(document.getElementById('cat-in-6').value, 'var(--cat-6)')">Kim jestem?</button>
             </div>
-        </div> <!-- Koniec .left-col -->
-
-        <div class="right-col">
+        </div> <div class="right-col">
             <div id="active-question">
                 <div id="q-color-bar" class="q-cat-label">Kategoria</div>
                 <div class="q-text" id="q-text">Pytanie...</div>
+                
                 <div class="q-options" id="q-options">
-                    <!-- Tutaj wpadną opcje ABCD -->
-                </div>
+                    </div>
                 <div class="q-explanation" id="q-explanation">Wyjaśnienie</div>
             </div>
-        </div> <!-- Koniec .right-col -->
-    </div> <!-- Koniec .main-layout -->
-
-    <script>
+        </div> </div> <script>
         // --- DEBUGER ---
         window.debugData = { blueprint: {}, question: {} };
         
@@ -441,14 +449,12 @@ RYGORYSTYCZNE ZASADY TREŚCI:
 
             let res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
 
-            // Fallback na json_object
             if (res.status === 400 && schemaObj) {
                 payload.response_format = { type: "json_object" };
                 window.debugData[debugPhaseStr].payload = payload;
                 updateDebugUI();
                 res = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(payload) });
                 
-                // Fallback całkowity (brak wymuszania)
                 if (res.status === 400) {
                     delete payload.response_format;
                     window.debugData[debugPhaseStr].payload = payload;
@@ -484,15 +490,12 @@ RYGORYSTYCZNE ZASADY TREŚCI:
             clearDebug();
             
             try {
-                // ETAP 1: Sprawdzamy, czy mamy coś w CACHE
                 if (!blueprintCache[category]) blueprintCache[category] = [];
                 
-                // Filtrujemy tylko te blueprinty, które nie zostały jeszcze użyte (nie ma ich w historii)
                 let safeTopics = blueprintCache[category].filter(t => !historyMemory[category]?.includes(t.target_answer));
                 let randomTopic = null;
 
                 if (safeTopics.length === 0) {
-                    // PULA JEST PUSTA - POBIERAMY NOWE 50 SZTUK
                     status.innerText = `⚙️ Pula pusta! Trwa generowanie paczki 50 wariantów dla: ${category}...`;
                     
                     const autoAvoidText = historyMemory[category] ? historyMemory[category].join(", ") : "";
@@ -505,36 +508,25 @@ RYGORYSTYCZNE ZASADY TREŚCI:
                     const topicsList = bpData.topics || [];
                     if (!topicsList.length) throw new Error("Model nie wygenerował żadnych tematów w schemacie 'topics'.");
 
-                    // Zapisujemy nową pulę do pamięci podręcznej (nadpisując starą/pustą)
                     blueprintCache[category] = topicsList;
                     saveBlueprintCache();
-                    updateMemoryStats(); // Odśwież UI licznika
+                    updateMemoryStats(); 
                     
-                    // Ponownie filtrujemy nową pulę dla 100% pewności
                     safeTopics = blueprintCache[category].filter(t => !historyMemory[category]?.includes(t.target_answer));
-                    
-                    // Bezpiecznik: gdyby jednak LLM zignorował listę blokad i wszystko by odrzucono
                     const poolToPickFrom = safeTopics.length > 0 ? safeTopics : topicsList;
                     randomTopic = poolToPickFrom[Math.floor(Math.random() * poolToPickFrom.length)];
-
                 } else {
-                    // MAMY COŚ W CACHE - OMIJAMY ZAPYTANIE DO API
                     status.innerText = `⚡ Używam tematu z puli (zostało ${safeTopics.length} wolnych dla: ${category})...`;
-                    
                     randomTopic = safeTopics[Math.floor(Math.random() * safeTopics.length)];
                     
-                    // Logujemy mockowaną zawartość do debugera, aby nie był pusty
                     window.debugData['blueprint'].payload = { info: "Szkic pobrano natychmiastowo z wygenerowanej wcześniej lokalnej puli (cache)." };
                     window.debugData['blueprint'].response = JSON.stringify(randomTopic, null, 2);
                     updateDebugUI();
 
-                    // Krótkie oczekiwanie, by użytkownik mógł przeczytać co się dzieje
                     await new Promise(r => setTimeout(r, 600)); 
                 }
 
-                // ETAP 2: Generowanie ostatecznego pytania na podstawie uzyskanego Blueprintu
                 status.innerText = `📝 Formułowanie pytania (${randomTopic.subcategory} / ${randomTopic.modifier})...`;
-                
                 const qPrompt = `Kategoria: "${category}"\nSZKIC DO PRZEKSZTAŁCENIA NA PYTANIE:\n- Podkategoria: ${randomTopic.subcategory}\n- Typ pytania: ${randomTopic.modifier}\n- Odpowiedź docelowa: ${randomTopic.target_answer}\n\nPoziom trudności: Średni`;
 
                 const qData = await callOpenRouter(SYSTEM_QUESTION, qPrompt, QUESTION_SCHEMA, 'question');
@@ -543,15 +535,18 @@ RYGORYSTYCZNE ZASADY TREŚCI:
                      throw new Error("Model nie zwrócił poprawnej struktury pytania (brak 'question' lub tablicy 'options').");
                 }
 
-                // Renderowanie widoku
                 document.getElementById('q-color-bar').style.backgroundColor = colorHex;
                 document.getElementById('q-color-bar').style.color = (colorHex === 'var(--cat-5)' || colorHex === 'var(--cat-6)') ? '#000' : '#fff';
                 document.getElementById('q-color-bar').innerText = `${category} • ${randomTopic.subcategory}`;
-                
                 document.getElementById('q-text').innerText = qData.question;
                 
                 const optsContainer = document.getElementById('q-options');
+                const explContainer = document.getElementById('q-explanation');
+                
+                // Resetowanie stylów widoku
+                optsContainer.className = 'q-options'; // reset
                 optsContainer.innerHTML = '';
+                explContainer.style.display = 'none'; // ukrycie wyjaśnienia
                 
                 const letters = ['A', 'B', 'C', 'D'];
                 const correctAnswerClean = String(qData.answer).trim().toLowerCase();
@@ -560,13 +555,36 @@ RYGORYSTYCZNE ZASADY TREŚCI:
                     const div = document.createElement('div');
                     const isCorrect = String(optText).trim().toLowerCase() === correctAnswerClean;
                     
-                    div.className = 'q-option' + (isCorrect ? ' correct' : '');
+                    div.className = 'q-option';
+                    div.dataset.correct = isCorrect; // Zapisujemy info o poprawności w datasecie
                     div.innerHTML = `<strong>${letters[index] || '-'}</strong> <span>${optText}</span>`;
+                    
+                    // Logika kliknięcia w odpowiedź
+                    div.onclick = function() {
+                        // 1. Zablokuj dalsze kliknięcia
+                        optsContainer.classList.add('answered');
+                        
+                        // 2. Podświetl wszystkie poprawne (zwykle jedna, ale dmuchamy na zimne)
+                        document.querySelectorAll('.q-option').forEach(opt => {
+                            if (opt.dataset.correct === 'true') {
+                                opt.classList.add('revealed-correct');
+                            }
+                        });
+                        
+                        // 3. Jeśli kliknięta odpowiedź była błędna, podświetl ją na czerwono
+                        if (this.dataset.correct !== 'true') {
+                            this.classList.add('revealed-wrong');
+                        }
+                        
+                        // 4. Pokaż wyjaśnienie
+                        explContainer.style.display = 'block';
+                    };
+                    
                     optsContainer.appendChild(div);
                 });
 
-                document.getElementById('q-explanation').innerHTML = `
-                    <p>✅ <strong>Poprawna:</strong> ${qData.explanation_correct || ''}</p>
+                explContainer.innerHTML = `
+                    <p>✅ <strong>Fakt:</strong> ${qData.explanation_correct || ''}</p>
                     <p>❌ <strong>Zmyłki:</strong> ${qData.explanation_incorrect || ''}</p>
                 `;
 
@@ -575,7 +593,6 @@ RYGORYSTYCZNE ZASADY TREŚCI:
                 status.innerText = "✨ Gotowe!";
                 status.style.color = "#4ade80"; 
 
-                // Zapisujemy unikalny target_answer do historii (zapobiega to ponownemu wylosowaniu tego blueprintu)
                 saveToMemory(category, randomTopic.target_answer);
 
             } catch (e) {
